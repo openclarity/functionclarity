@@ -39,5 +39,5 @@ func (o *Sha256) Hash(path string) (string, error) {
 	sort.Strings(hashArray)
 	joinedShaString := strings.Join(hashArray[:], ",")
 	sha256 := sha256.Sum256([]byte(joinedShaString))
-	return fmt.Sprintf("%x\n", sha256), nil
+	return fmt.Sprintf("%x", sha256), nil
 }

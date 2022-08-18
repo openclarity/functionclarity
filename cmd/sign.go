@@ -1,16 +1,18 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 )
+
+type SignOptions struct {
+	key string
+}
 
 func Sign() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sign",
 		Short: "sign and upload the code content",
-		Run:   func(cmd *cobra.Command, args []string) { fmt.Println("sign") },
 	}
-
+	cmd.AddCommand(AwsSign())
 	return cmd
 }

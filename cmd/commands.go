@@ -7,8 +7,8 @@ import (
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "function-clarity",
-		Short: "cli for signing and verifying functions",
-		Long:  `fdsf sdffsd dfsfds dfsfds`,
+		Short: "cli for signing and verifying function content",
+		Long:  `cli for signing and verifying function content`,
 		// Uncomment the following line if your bare application
 		// has an action associated with it:
 		//Run: func(cmd *cobra.Command, args []string) { fmt.Println("aaaa") },
