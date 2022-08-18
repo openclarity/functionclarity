@@ -5,7 +5,7 @@ import "github.com/spf13/cobra"
 type AwsOptions struct {
 	AccessKey      string
 	SecretKey      string
-	S3             string
+	Bucket         string
 	Region         string
 	SigningOptions SigningOptions
 }
@@ -21,7 +21,7 @@ func (o *AwsOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.Region, "region", "",
 		"aws region to perform the operation against")
 
-	cmd.Flags().StringVar(&o.S3, "s3", "",
+	cmd.Flags().StringVar(&o.Bucket, "bucket", "",
 		"s3 bucket to work against")
-	cmd.MarkFlagRequired("s3")
+	cmd.MarkFlagRequired("bucket")
 }
