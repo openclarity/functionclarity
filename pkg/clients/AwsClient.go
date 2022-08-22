@@ -97,8 +97,8 @@ func (o *AwsClient) getSession() *session.Session {
 			Credentials: credentials.NewStaticCredentials(o.accessKey, o.secretKey, ""),
 		}
 	}
-	session := session.Must(session.NewSession(cfgs))
-	return session
+	result := session.Must(session.NewSession(cfgs))
+	return result
 }
 
 func ExtractZip(zipPath string, dstToExtract string) error {
