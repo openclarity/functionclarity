@@ -1,5 +1,5 @@
 package integrity
 
 type Hash interface {
-	Hash(path string) (string, error)
+	GenerateIdentity(path string) (string, error)
 }

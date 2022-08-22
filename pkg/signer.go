@@ -2,18 +2,22 @@ package pkg
 
 import (
 	"fmt"
-	"function-clarity/pkg/clients"
-	"function-clarity/pkg/integrity"
+	"github.com/openclarity/function-clarity/cmd/sign"
+	"github.com/openclarity/function-clarity/pkg/clients"
+	"github.com/openclarity/function-clarity/pkg/integrity"
 )
 
-func SignAndUpload(client clients.SignatureClient, folderPath string, key string) error {
+func SignAndUpload(client clients.SignatureClient, codePath string, keyPath string) error {
 	hash := new(integrity.Sha256)
-	codeIdentity, err := hash.Hash(folderPath)
+	codeIdentity, err := hash.GenerateIdentity(codePath)
 	if err != nil {
-		return fmt.Errorf("failed to create identity for folder: %s", folderPath)
+		return fmt.Errorf("failed to create identity for folder: %s", codePath)
 	}
-	//run the signing command here
-	err = client.Upload(codeIdentity, codeIdentity+".sig")
+	signedIdentity, err := sign.SignIdentity(keyPath, codeIdentity)
+	if err != nil {
+		return fmt.Errorf("failed to sign identity: %s with private key in path: %s", codeIdentity, keyPath)
+	}
+	err = client.Upload(signedIdentity, codeIdentity+".sig")
 	if err != nil {
 		return fmt.Errorf("failed to upload code signature")
 	}

@@ -3,7 +3,6 @@ package integrity
 import (
 	"crypto/sha256"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,15 +10,19 @@ import (
 	"strings"
 )
 
+type IdentityGenerator interface {
+	GenerateIdentity(path string) (string, error)
+}
+
 type Sha256 struct{}
 
-func (o *Sha256) Hash(path string) (string, error) {
-	var hashArray []string
+func (o *Sha256) GenerateIdentity(path string) (string, error) {
+	var identities []string
 	rootFolderName := ""
 	err := filepath.Walk(path,
 		func(path string, info os.FileInfo, err error) error {
 			if !info.IsDir() {
-				data, err := ioutil.ReadFile(path)
+				data, err := os.ReadFile(path)
 				if err != nil {
 					fmt.Println("File reading error", err)
 				}
@@ -27,7 +30,7 @@ func (o *Sha256) Hash(path string) (string, error) {
 				dataString = dataString + path[strings.Index(path, rootFolderName)+len(rootFolderName):]
 				sha := sha256.Sum256([]byte(dataString))
 				fmt.Printf("%s %x\n", path[strings.Index(path, rootFolderName)+len(rootFolderName):], sha)
-				hashArray = append(hashArray, fmt.Sprintf("%x", sha))
+				identities = append(identities, fmt.Sprintf("%x", sha))
 			} else if rootFolderName == "" {
 				rootFolderName = info.Name()
 			}
@@ -36,8 +39,8 @@ func (o *Sha256) Hash(path string) (string, error) {
 	if err != nil {
 		log.Println(err)
 	}
-	sort.Strings(hashArray)
-	joinedShaString := strings.Join(hashArray[:], ",")
-	sha256 := sha256.Sum256([]byte(joinedShaString))
-	return fmt.Sprintf("%x", sha256), nil
+	sort.Strings(identities)
+	joinedShaString := strings.Join(identities[:], ",")
+	identitiesSha256 := sha256.Sum256([]byte(joinedShaString))
+	return fmt.Sprintf("%x", identitiesSha256), nil
 }

@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"function-clarity/cmd/options"
-	"function-clarity/pkg"
-	"function-clarity/pkg/clients"
+	"github.com/openclarity/function-clarity/cmd/options"
+	"github.com/openclarity/function-clarity/pkg"
+	"github.com/openclarity/function-clarity/pkg/clients"
 	"github.com/spf13/cobra"
 )
 
