@@ -1,8 +1,8 @@
-package pkg
+package sign
 
 import (
 	"fmt"
-	"github.com/openclarity/function-clarity/cmd/sign"
+	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/sign"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	"github.com/openclarity/function-clarity/pkg/integrity"
 )

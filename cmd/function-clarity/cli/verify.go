@@ -1,4 +1,4 @@
-package cmd
+package cli
 
 import (
 	"fmt"
@@ -11,6 +11,6 @@ func Verify() *cobra.Command {
 		Short: "verify code content integrity",
 		Run:   func(cmd *cobra.Command, args []string) { fmt.Println("verify") },
 	}
-
+	cmd.AddCommand(AwsVerify())
 	return cmd
 }
