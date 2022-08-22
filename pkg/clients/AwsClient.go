@@ -111,7 +111,6 @@ func ExtractZip(zipPath string, dstToExtract string) error {
 
 	for _, f := range archive.File {
 		filePath := filepath.Join(dstToExtract, f.Name)
-		fmt.Println("unzipping file ", filePath)
 
 		if !strings.HasPrefix(filePath, filepath.Clean(dstToExtract)+string(os.PathSeparator)) {
 			return fmt.Errorf("invalid file path")
