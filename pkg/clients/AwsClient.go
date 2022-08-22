@@ -105,7 +105,7 @@ func ExtractZip(zipPath string, dstToExtract string) error {
 
 	archive, err := zip.OpenReader(zipPath)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to open archive file : %s. %v", zipPath, err)
 	}
 	defer archive.Close()
 
@@ -114,7 +114,6 @@ func ExtractZip(zipPath string, dstToExtract string) error {
 		fmt.Println("unzipping file ", filePath)
 
 		if !strings.HasPrefix(filePath, filepath.Clean(dstToExtract)+string(os.PathSeparator)) {
-			fmt.Println("invalid file path")
 			return fmt.Errorf("invalid file path")
 		}
 		if f.FileInfo().IsDir() {
@@ -124,21 +123,21 @@ func ExtractZip(zipPath string, dstToExtract string) error {
 		}
 
 		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-			panic(err)
+			return fmt.Errorf("failed to create directories for path: %s. %v", filePath, err)
 		}
 
 		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("failed to open destination file for writing: %s. %v", filePath, err)
 		}
 
 		fileInArchive, err := f.Open()
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("failed to open file in archive : %s. %v", f.Name, err)
 		}
 
 		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			panic(err)
+			return fmt.Errorf("failed to copy file: %s from archive to local path: %s. %v", f.Name, dstFile.Name(), err)
 		}
 
 		dstFile.Close()
