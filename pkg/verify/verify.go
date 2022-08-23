@@ -2,6 +2,7 @@ package verify
 
 import (
 	"fmt"
+	"github.com/openclarity/function-clarity/cmd/function-clarity/verify"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	"github.com/openclarity/function-clarity/pkg/integrity"
 )
@@ -20,7 +21,9 @@ func Verify(client clients.Client, functionIdentifier string, key string) error 
 	if err != nil {
 		return fmt.Errorf("failed to get signed identity for function: %s. %v", functionIdentifier, err)
 	}
-	//todo: Roman code here instead of the next line
-	fmt.Printf(signedIdentity)
+	err = verify.Verify(key, signedIdentity, functionIdentity)
+	if err != nil {
+		return err
+	}
 	return nil
 }

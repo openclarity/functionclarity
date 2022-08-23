@@ -54,7 +54,7 @@ func (o *AwsClient) Download(identity string) (string, error) {
 	sess := o.getSession()
 	downloader := s3manager.NewDownloader(sess)
 
-	w := aws.NewWriteAtBuffer(make([]byte, 256))
+	w := aws.NewWriteAtBuffer(make([]byte, 64))
 	_, err := downloader.Download(w, &s3.GetObjectInput{
 		Bucket: aws.String(o.s3),
 		Key:    aws.String(identity),
@@ -63,7 +63,7 @@ func (o *AwsClient) Download(identity string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to download content: %s from bucket: %s, %v", identity, o.s3, err)
 	}
-	return fmt.Sprintf("%s", string(w.Bytes())), nil
+	return fmt.Sprintf("%s", w.Bytes()), nil
 }
 
 func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
