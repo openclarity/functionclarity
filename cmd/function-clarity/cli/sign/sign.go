@@ -27,11 +27,13 @@ func SignIdentity(keyPath string, identity string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	privateKey, err := loadPrivateKey(key, password, identity)
+	privateKey, err := loadPrivateKey(key, password)
+	sig, err := ecdsa.SignASN1(rand.Reader, privateKey, []byte(identity))
 	if err != nil {
 		return "", err
 	}
-	return privateKey, nil
+	encodedSig := base64.StdEncoding.EncodeToString(sig)
+	return encodedSig, nil
 }
 
 func readPassword() ([]byte, error) {
@@ -58,29 +60,25 @@ func readPrivateKey(path string) ([]byte, error) {
 	return raw, nil
 }
 
-func loadPrivateKey(key []byte, password []byte, identity string) (string, error) {
+func loadPrivateKey(key []byte, password []byte) (*ecdsa.PrivateKey, error) {
 	decodedKey, _ := pem.Decode(key)
+	empty := &ecdsa.PrivateKey{}
 	if decodedKey == nil {
-		return "", errors.New("invalid pem block")
+		return empty, errors.New("invalid pem block")
 	}
 	if decodedKey.Type != CosignPrivateKeyPemType {
-		return "", fmt.Errorf("unsupported pem type: %s", decodedKey.Type)
+		return empty, fmt.Errorf("unsupported pem type: %s", decodedKey.Type)
 	}
 	unencryptedKey, err := encrypted.Decrypt(decodedKey.Bytes, password)
 	if err != nil {
-		return "", fmt.Errorf("decrypt: %w", err)
+		return empty, fmt.Errorf("decrypt: %w", err)
 	}
 
 	parsedKey, err := x509.ParsePKCS8PrivateKey(unencryptedKey)
 	if err != nil {
-		return "", fmt.Errorf("parsing private key: %w", err)
+		return empty, fmt.Errorf("parsing private key: %w", err)
 	}
 
-	privateKey := parsedKey.(*ecdsa.PrivateKey)
-	sig, err := ecdsa.SignASN1(rand.Reader, privateKey, []byte(identity))
-	if err != nil {
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(sig), nil
+	return parsedKey.(*ecdsa.PrivateKey), nil
 
 }
