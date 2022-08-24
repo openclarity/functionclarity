@@ -28,6 +28,9 @@ func SignIdentity(keyPath string, identity string) (string, error) {
 		return "", err
 	}
 	privateKey, err := loadPrivateKey(key, password)
+	if err != nil {
+		return "", err
+	}
 	sig, err := ecdsa.SignASN1(rand.Reader, privateKey, []byte(identity))
 	if err != nil {
 		return "", err
