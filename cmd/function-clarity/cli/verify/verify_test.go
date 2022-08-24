@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestSignIdentitySuccess(t *testing.T) {
-	const pathToTestingPair = "../../../../tasting_keys/"
+func TestVerifyIdentitySuccess(t *testing.T) {
+	const pathToTestingPair = "../../../../test_utils/tasting_keys/"
 	const identity = "739356fc846067a7aa2e80fb6c3bf4e7f482ad80870cdf225ece9582576f3b2c"
 	const si = "MEQCIEvNqHFMor+DAlHVexDzrW4o81xGmIuznepLyMLzYw2mAiB6FdUT85eA6ZDMy6GByiVuQXDH03qCvAsGMxse5t0vxg=="
 
@@ -17,8 +17,8 @@ func TestSignIdentitySuccess(t *testing.T) {
 	}
 }
 
-func TestSignIdentityFailureOnWrongIdentity(t *testing.T) {
-	const pathToTestingPair = "../../../../tasting_keys/"
+func TestVerifyIdentityFailureOnWrongIdentity(t *testing.T) {
+	const pathToTestingPair = "../../../../test_utils/tasting_keys/"
 	const identity_wrong = "4e725b9b14ccdf2149608747152c04b1ea6717049276302ffdfd30dacee99436"
 	const si = "MEQCIEvNqHFMor+DAlHVexDzrW4o81xGmIuznepLyMLzYw2mAiB6FdUT85eA6ZDMy6GByiVuQXDH03qCvAsGMxse5t0vxg=="
 
@@ -31,7 +31,7 @@ func TestSignIdentityFailureOnWrongIdentity(t *testing.T) {
 
 func TestVerifyIdentityFailureOnWrongPublicKey(t *testing.T) {
 	const identity = "739356fc846067a7aa2e80fb6c3bf4e7f482ad80870cdf225ece9582576f3b2c"
-	const pathToTestingPair = "../../../../tasting_keys/"
+	const pathToTestingPair = "../../../../test_utils/tasting_keys/"
 	const si = "MEQCIEvNqHFMor+DAlHVexDzrW4o81xGmIuznepLyMLzYw2mAiB6FdUT85eA6ZDMy6GByiVuQXDH03qCvAsGMxse5t0vxg=="
 
 	err := VerifyIdentity(pathToTestingPair+"cosign_wrong.pub", si, identity)
