@@ -9,7 +9,7 @@ import (
 
 func TestSignIdentitySuccess(t *testing.T) {
 	const identity = "739356fc846067a7aa2e80fb6c3bf4e7f482ad80870cdf225ece9582576f3b2c"
-	const pathToTestingPair = "../../../../tasting_keys/"
+	const pathToTestingPair = "../../../../test_utils/tasting_keys/"
 
 	funcDefer, err := mockStdin(t, "pass")
 	if err != nil {
