@@ -3,25 +3,17 @@ package cli
 import (
 	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
 	"github.com/openclarity/function-clarity/pkg/clients"
-	"github.com/openclarity/function-clarity/pkg/sign"
 	"github.com/openclarity/function-clarity/pkg/verify"
 	"github.com/spf13/cobra"
 )
 
 func AwsSign() *cobra.Command {
-	awsOptions := &options.AwsOptions{}
-
 	cmd := &cobra.Command{
 		Use:   "aws",
-		Short: "sign and upload the code content to aws",
-		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			awsClient := clients.NewAwsClient(awsOptions.AccessKey, awsOptions.SecretKey, awsOptions.Bucket, awsOptions.Region)
-			sign.SignAndUpload(awsClient, args[0], awsOptions.SigningOptions.Key)
-		},
+		Short: "sign content from aws",
 	}
-	awsOptions.AddFlags(cmd)
-
+	cmd.AddCommand(AwsSignCode())
+	cmd.AddCommand(AwsSignImage())
 	return cmd
 }
 
