@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/aws"
 	"github.com/spf13/cobra"
 )
 
@@ -13,6 +14,6 @@ func Sign() *cobra.Command {
 		Use:   "sign",
 		Short: "sign and upload the code content",
 	}
-	cmd.AddCommand(AwsSign())
+	cmd.AddCommand(aws.AwsSign())
 	return cmd
 }
