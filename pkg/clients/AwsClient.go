@@ -33,6 +33,19 @@ func NewAwsClient(accessKey string, secretKey string, s3 string, region string) 
 	return p
 }
 
+func (o *AwsClient) ResolvePackageType(funcIdentifier string) (string, error) {
+	sess := o.getSession()
+	svc := lambda.New(sess)
+	input := &lambda.GetFunctionInput{
+		FunctionName: aws.String(funcIdentifier),
+	}
+	result, err := svc.GetFunction(input)
+	if err != nil {
+		return "", fmt.Errorf("failed to download function: %s from region: %s, %v", funcIdentifier, o.region, err)
+	}
+	return *result.Configuration.PackageType, nil
+}
+
 func (o *AwsClient) Upload(signature string, identity string) error {
 	sess := o.getSession()
 
@@ -46,7 +59,7 @@ func (o *AwsClient) Upload(signature string, identity string) error {
 	if err != nil {
 		return fmt.Errorf("failed to upload key: %s, value: %s to bucket: %s %v", identity, signature, o.s3, err)
 	}
-	fmt.Printf("file uploaded to, %s\n", aws.StringValue(&result.Location))
+	fmt.Printf("\nfile uploaded to, %s\n", aws.StringValue(&result.Location))
 	return nil
 }
 
@@ -76,7 +89,6 @@ func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to download function: %s from region: %s, %v", funcIdentifier, o.region, err)
 	}
-	//fmt.Printf(result.Code.GoString())
 	contentName := uuid.New().String()
 	zipFileName := contentName + ".zip"
 	if err := DownloadFile(contentName+".zip", result.Code.Location); err != nil {
@@ -86,6 +98,19 @@ func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
 		return "", fmt.Errorf("failed to extract code for function: %s. %v", funcIdentifier, err)
 	}
 	return "/tmp/" + contentName, nil
+}
+
+func (o *AwsClient) GetFuncImageURI(funcIdentifier string) (string, error) {
+	sess := o.getSession()
+	svc := lambda.New(sess)
+	input := &lambda.GetFunctionInput{
+		FunctionName: aws.String(funcIdentifier),
+	}
+	result, err := svc.GetFunction(input)
+	if err != nil {
+		return "", fmt.Errorf("failed to download function: %s from region: %s, %v", funcIdentifier, o.region, err)
+	}
+	return *result.Code.ImageUri, nil
 }
 
 func (o *AwsClient) getSession() *session.Session {

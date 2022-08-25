@@ -11,7 +11,6 @@ type AwsOptions struct {
 }
 
 func (o *AwsOptions) AddFlags(cmd *cobra.Command) {
-	o.SigningOptions.AddFlags(cmd)
 	cmd.Flags().StringVar(&o.SecretKey, "aws-secret-key", "",
 		"aws secret key")
 
