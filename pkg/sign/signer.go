@@ -7,7 +7,7 @@ import (
 	"github.com/openclarity/function-clarity/pkg/integrity"
 )
 
-func SignAndUpload(client clients.SignatureClient, codePath string, keyPath string) error {
+func SignAndUploadCode(client clients.SignatureClient, codePath string, keyPath string) error {
 	hash := new(integrity.Sha256)
 	codeIdentity, err := hash.GenerateIdentity(codePath)
 	if err != nil {

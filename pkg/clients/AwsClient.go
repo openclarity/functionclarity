@@ -54,7 +54,7 @@ func (o *AwsClient) Download(identity string) (string, error) {
 	sess := o.getSession()
 	downloader := s3manager.NewDownloader(sess)
 
-	w := aws.NewWriteAtBuffer(make([]byte, 64))
+	w := aws.NewWriteAtBuffer(make([]byte, 0, 256))
 	_, err := downloader.Download(w, &s3.GetObjectInput{
 		Bucket: aws.String(o.s3),
 		Key:    aws.String(identity),
