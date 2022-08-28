@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/sigstore/cosign/cmd/cosign/cli"
 	"github.com/spf13/cobra"
 )
 
@@ -16,5 +17,7 @@ func New() *cobra.Command {
 
 	cmd.AddCommand(Sign())
 	cmd.AddCommand(Verify())
+	cmd.AddCommand(cli.GenerateKeyPair())
+	cmd.AddCommand(cli.ImportKeyPair())
 	return cmd
 }
