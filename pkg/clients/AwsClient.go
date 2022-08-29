@@ -113,6 +113,22 @@ func (o *AwsClient) GetFuncImageURI(funcIdentifier string) (string, error) {
 	return *result.Code.ImageUri, nil
 }
 
+func (o *AwsClient) TagFunction(funcIdentifier string, tag string, tagValue string) (string, error) {
+	sess := o.getSession()
+	svc := lambda.New(sess)
+	input := &lambda.TagResourceInput{
+		Resource: aws.String(funcIdentifier),
+		Tags: map[string]*string{
+			tag: aws.String(tagValue),
+		},
+	}
+	result, err := svc.TagResource(input)
+	if err != nil {
+		return "", err
+	}
+	return result.GoString(), nil
+}
+
 func (o *AwsClient) getSession() *session.Session {
 	cfgs := &aws.Config{
 		Region: aws.String(o.region)}
