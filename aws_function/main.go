@@ -122,14 +122,23 @@ func getVerifierOptions() *co.VerifyOptions {
 	return o
 }
 
-func extractDataFromEvent(cloudWatchEvent events.CloudwatchLogsEvent) (FilterRecord, error) {
+func extractDataFromEvent(cloudWatchEvent events.CloudwatchLogsEvent) (*FilterRecord, error) {
 	b64z := cloudWatchEvent.AWSLogs.Data
-	z, _ := base64.StdEncoding.DecodeString(b64z)
-	r, _ := gzip.NewReader(bytes.NewReader(z))
-	result, _ := io.ReadAll(r)
+	z, err := base64.StdEncoding.DecodeString(b64z)
+	if err != nil {
+		return nil, err
+	}
+	r, err := gzip.NewReader(bytes.NewReader(z))
+	if err != nil {
+		return nil, err
+	}
+	result, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
 	filterRecord := FilterRecord{}
-	err := json.Unmarshal(result, &filterRecord)
-	return filterRecord, err
+	err = json.Unmarshal(result, &filterRecord)
+	return &filterRecord, err
 }
 
 func main() {
