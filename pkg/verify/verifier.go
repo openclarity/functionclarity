@@ -6,18 +6,18 @@ import (
 	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/verify"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	"github.com/openclarity/function-clarity/pkg/integrity"
-	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
+	"github.com/openclarity/function-clarity/pkg/options"
 	v "github.com/sigstore/cosign/cmd/cosign/cli/verify"
 )
 
-func Verify(client clients.Client, functionIdentifier string, o *co.VerifyOptions, ctx context.Context) error {
+func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context) error {
 	packageType, err := client.ResolvePackageType(functionIdentifier)
 	if err != nil {
 		return fmt.Errorf("failed to resolve package type for function: %s. %v", functionIdentifier, err)
 	}
 	switch packageType {
 	case "Zip":
-		return verifyCode(client, functionIdentifier, o.Key)
+		return verifyCode(client, functionIdentifier, o, ctx)
 	case "Image":
 		return verifyImage(client, functionIdentifier, o, ctx)
 	default:
@@ -25,7 +25,7 @@ func Verify(client clients.Client, functionIdentifier string, o *co.VerifyOption
 	}
 }
 
-func verifyImage(client clients.Client, functionIdentifier string, o *co.VerifyOptions, ctx context.Context) error {
+func verifyImage(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context) error {
 	imageURI, err := client.GetFuncImageURI(functionIdentifier)
 	if err != nil {
 		return fmt.Errorf("failed to fetch function image URI for function: %s. %v", functionIdentifier, err)
@@ -68,7 +68,7 @@ func verifyImage(client clients.Client, functionIdentifier string, o *co.VerifyO
 	return v.Exec(ctx, []string{imageURI})
 }
 
-func verifyCode(client clients.Client, functionIdentifier string, key string) error {
+func verifyCode(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context) error {
 	codePath, err := client.GetFuncCode(functionIdentifier)
 	if err != nil {
 		return fmt.Errorf("failed to fetch function code for function: %s. %v", functionIdentifier, err)
@@ -82,7 +82,7 @@ func verifyCode(client clients.Client, functionIdentifier string, key string) er
 	if err != nil {
 		return fmt.Errorf("failed to get signed identity for function: %s. %v", functionIdentifier, err)
 	}
-	err = verify.VerifyIdentity(key, signedIdentity, functionIdentity)
+	err = verify.VerifyIdentity(signedIdentity, functionIdentity, o, ctx)
 	if err != nil {
 		return err
 	}

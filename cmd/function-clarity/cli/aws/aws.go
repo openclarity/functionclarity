@@ -1,10 +1,10 @@
 package aws
 
 import (
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
+	opts "github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
 	"github.com/openclarity/function-clarity/pkg/clients"
+	"github.com/openclarity/function-clarity/pkg/options"
 	"github.com/openclarity/function-clarity/pkg/verify"
-	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
 	"github.com/spf13/cobra"
 )
 
@@ -19,8 +19,8 @@ func AwsSign() *cobra.Command {
 }
 
 func AwsVerify() *cobra.Command {
-	awsOptions := &options.AwsOptions{}
-	o := &co.VerifyOptions{}
+	awsOptions := &opts.AwsOptions{}
+	o := &options.VerifyOpts{}
 	var functionIdentifier string
 	cmd := &cobra.Command{
 		Use:   "aws",

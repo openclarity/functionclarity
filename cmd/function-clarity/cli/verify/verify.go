@@ -1,68 +1,34 @@
 package verify
 
 import (
-	"crypto/ecdsa"
-	"crypto/x509"
-	"encoding/base64"
-	"encoding/pem"
+	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/openclarity/function-clarity/pkg/integrity"
+	opts "github.com/openclarity/function-clarity/pkg/options"
+	"github.com/sigstore/cosign/cmd/cosign/cli/options"
+	"github.com/sigstore/cosign/cmd/cosign/cli/verify"
 )
 
-import (
-	"errors"
-)
-
-const PublicKeyPEMType = "PUBLIC KEY"
-
-func VerifyIdentity(publicKeyPath string, signature string, identity string) error {
-	fmt.Printf("Verification for code identity: %s started\n", identity)
-	fmt.Printf("Signed identity: %s\n", signature)
-
-	publicKey, err := loadPublicKey(publicKeyPath)
-	if err != nil {
+func VerifyIdentity(signature string, identity string, o *opts.VerifyOpts, ctx context.Context) error {
+	path := "/tmp/" + uuid.New().String()
+	if err := integrity.SaveTextToFile(identity, path); err != nil {
 		return err
 	}
 
-	err = verifySignature(signature, publicKey, identity)
-	if err != nil {
-		return err
+	ko := options.KeyOpts{
+		KeyRef:     o.Key,
+		Sk:         o.SecurityKey.Use,
+		Slot:       o.SecurityKey.Slot,
+		RekorURL:   o.Rekor.URL,
+		BundlePath: o.BundlePath,
+	}
+	if err := verify.VerifyBlobCmd(ctx, ko, o.CertVerify.Cert,
+		o.CertVerify.CertEmail, o.CertVerify.CertOidcIssuer, o.CertVerify.CertChain,
+		signature, path, o.CertVerify.CertGithubWorkflowTrigger, o.CertVerify.CertGithubWorkflowSha,
+		o.CertVerify.CertGithubWorkflowName, o.CertVerify.CertGithubWorkflowRepository, o.CertVerify.CertGithubWorkflowRef,
+		o.CertVerify.EnforceSCT); err != nil {
+		return fmt.Errorf("verifying identity: %s, %w", identity, err)
 	}
 	return nil
-}
-
-func verifySignature(signature string, publicKey *ecdsa.PublicKey, identity string) error {
-	decodedSig, err := base64.StdEncoding.DecodeString(signature)
-	if err != nil {
-		return fmt.Errorf("Signature decoding failed: %s", signature)
-	}
-	hash := []byte(identity)
-	if !ecdsa.VerifyASN1(publicKey, hash[:], decodedSig) {
-		return errors.New("Signature verification failed")
-	}
-	fmt.Println("Signature verification completed successfully")
-	return nil
-}
-
-func loadPublicKey(publicKeyPath string) (*ecdsa.PublicKey, error) {
-	key, err := integrity.ReadFile(publicKeyPath)
-	emptyKey := &ecdsa.PublicKey{}
-	if err != nil {
-		return emptyKey, err
-	}
-	decodedKey, _ := pem.Decode(key)
-	if decodedKey == nil {
-		return emptyKey, errors.New("Public key decoding failed")
-	}
-
-	if decodedKey.Type != PublicKeyPEMType {
-		return emptyKey, fmt.Errorf("unknown Public key PEM file type: %v. Are you passing the correct public key?", decodedKey.Type)
-	}
-
-	parsedKey, err := x509.ParsePKIXPublicKey(decodedKey.Bytes)
-	if err != nil {
-		return emptyKey, fmt.Errorf("parsing public key: %w", err)
-	}
-	fmt.Printf("\nPublic key for verification loaded successfully: \n%s\n", string(key[:]))
-	return parsedKey.(*ecdsa.PublicKey), nil
 }
