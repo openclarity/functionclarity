@@ -39,15 +39,15 @@ type FilterRecord struct {
 	MessageType string   `json:"messageType"`
 }
 
-func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLogsEvent) (interface{}, error) {
+func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLogsEvent) error {
 	if &cloudWatchEvent.AWSLogs == nil || &cloudWatchEvent.AWSLogs.Data == nil || cloudWatchEvent.AWSLogs.Data == "" {
 		log.Printf("Event is empty, nothing to do")
-		return nil, nil
+		return nil
 	}
 	filterRecord, err := extractDataFromEvent(cloudWatchEvent)
 	if err != nil {
 		log.Printf("Failed to extract data from event: %v", err)
-		return nil, err
+		return err
 	}
 	recordMessage := RecordMessage{}
 	logEvents := filterRecord.LogEvents
@@ -63,7 +63,7 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 		}
 	}
 
-	return nil, nil
+	return nil
 }
 
 func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Context) {
@@ -74,9 +74,9 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 	var tagVerificationString string
 	if err == nil {
 		log.Println("Function verified")
-		tagVerificationString = "Code verified by Function Clarity"
+		tagVerificationString = "Function Clarity - Code verified"
 	} else {
-		tagVerificationString = "Code not verified by Function Clarity"
+		tagVerificationString = "Function Clarity - Code verification failed"
 		log.Printf("function not verified: %v", err)
 	}
 	_, err = awsClient.TagFunction(recordMessage.ResponseElements.FunctionArn, "CODE VERIFICATION", tagVerificationString)
@@ -109,7 +109,7 @@ func getVerifierOptions() *co.VerifyOptions {
 			CertChain:                    "",
 			EnforceSCT:                   false,
 		},
-		Rekor: co.RekorOptions{URL: ""},
+		Rekor: co.RekorOptions{URL: "https://rekor.sigstore.dev"},
 		Registry: co.RegistryOptions{
 			AllowInsecure:      false,
 			KubernetesKeychain: false,
