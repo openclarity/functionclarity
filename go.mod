@@ -3,6 +3,7 @@ module github.com/openclarity/function-clarity
 go 1.19
 
 require (
+	github.com/aws/aws-lambda-go v1.13.3
 	github.com/aws/aws-sdk-go v1.44.76
 	github.com/google/uuid v1.3.0
 	github.com/sigstore/cosign v1.11.0
