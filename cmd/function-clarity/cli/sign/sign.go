@@ -1,87 +1,48 @@
 package sign
 
 import (
-	"crypto/ecdsa"
-	"crypto/rand"
-	"crypto/x509"
-	"encoding/base64"
-	"encoding/pem"
-	"errors"
 	"fmt"
-	"github.com/theupdateframework/go-tuf/encrypted"
-	"golang.org/x/term"
-	"io"
-	"os"
-	"path/filepath"
-	"syscall"
+	"github.com/google/uuid"
+	"github.com/openclarity/function-clarity/pkg/integrity"
+	"github.com/sigstore/cosign/cmd/cosign/cli/generate"
+	"github.com/sigstore/cosign/cmd/cosign/cli/options"
+	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
+	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 )
 
-const CosignPrivateKeyPemType = "ENCRYPTED COSIGN PRIVATE KEY"
+func SignIdentity(identity string, o *co.SignBlobOptions, ro *co.RootOptions) (string, error) {
+	path := "/tmp/" + uuid.New().String()
+	if err := integrity.SaveTextToFile(identity, path); err != nil {
+		return "", err
+	}
 
-func SignIdentity(keyPath string, identity string) (string, error) {
-	key, err := readPrivateKey(keyPath)
+	oidcClientSecret, err := o.OIDC.ClientSecret()
 	if err != nil {
 		return "", err
 	}
-	password, err := readPassword()
-	if err != nil {
-		return "", err
+	ko := options.KeyOpts{
+		KeyRef:                   o.Key,
+		PassFunc:                 generate.GetPass,
+		Sk:                       o.SecurityKey.Use,
+		Slot:                     o.SecurityKey.Slot,
+		FulcioURL:                o.Fulcio.URL,
+		IDToken:                  o.Fulcio.IdentityToken,
+		InsecureSkipFulcioVerify: o.Fulcio.InsecureSkipFulcioVerify,
+		RekorURL:                 o.Rekor.URL,
+		OIDCIssuer:               o.OIDC.Issuer,
+		OIDCClientID:             o.OIDC.ClientID,
+		OIDCClientSecret:         oidcClientSecret,
+		OIDCRedirectURL:          o.OIDC.RedirectURL,
+		OIDCDisableProviders:     o.OIDC.DisableAmbientProviders,
+		BundlePath:               o.BundlePath,
+		SkipConfirmation:         o.SkipConfirmation,
 	}
-	privateKey, err := loadPrivateKey(key, password)
-	if err != nil {
-		return "", err
-	}
-	sig, err := ecdsa.SignASN1(rand.Reader, privateKey, []byte(identity))
-	if err != nil {
-		return "", err
-	}
-	encodedSig := base64.StdEncoding.EncodeToString(sig)
-	return encodedSig, nil
-}
+	sig, err := sign.SignBlobCmd(ro, ko, o.Registry, path, o.Base64Output, o.OutputSignature, o.OutputCertificate)
 
-func readPassword() ([]byte, error) {
-	stat, _ := os.Stdin.Stat()
-	if (stat.Mode() & os.ModeCharDevice) != 0 {
-		fmt.Fprint(os.Stderr, "Enter password for private key: ")
-		pw, err := term.ReadPassword(int(syscall.Stdin))
-		if err != nil {
-			return nil, err
-		}
-		return pw, nil
-	} else {
-		return io.ReadAll(os.Stdin)
-	}
-}
-
-func readPrivateKey(path string) ([]byte, error) {
-	var raw []byte
-	var err error
-	raw, err = os.ReadFile(filepath.Clean(path))
 	if err != nil {
-		return nil, err
-	}
-	return raw, nil
-}
-
-func loadPrivateKey(key []byte, password []byte) (*ecdsa.PrivateKey, error) {
-	decodedKey, _ := pem.Decode(key)
-	empty := &ecdsa.PrivateKey{}
-	if decodedKey == nil {
-		return empty, errors.New("invalid pem block")
-	}
-	if decodedKey.Type != CosignPrivateKeyPemType {
-		return empty, fmt.Errorf("unsupported pem type: %s", decodedKey.Type)
-	}
-	unencryptedKey, err := encrypted.Decrypt(decodedKey.Bytes, password)
-	if err != nil {
-		return empty, fmt.Errorf("decrypt: %w", err)
+		return "", fmt.Errorf("signing identity: %s, %w", identity, err)
 	}
 
-	parsedKey, err := x509.ParsePKCS8PrivateKey(unencryptedKey)
-	if err != nil {
-		return empty, fmt.Errorf("parsing private key: %w", err)
-	}
-
-	return parsedKey.(*ecdsa.PrivateKey), nil
+	return string(sig), nil
 
 }

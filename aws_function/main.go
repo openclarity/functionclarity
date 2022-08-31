@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/openclarity/function-clarity/pkg/clients"
+	opts "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/openclarity/function-clarity/pkg/verify"
 	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
 	"io"
@@ -85,39 +86,42 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 	}
 }
 
-func getVerifierOptions() *co.VerifyOptions {
-	o := &co.VerifyOptions{
-		Key:          "cosign.pub",
-		CheckClaims:  true,
-		Attachment:   "",
-		Output:       "json",
-		SignatureRef: "",
-		LocalImage:   false,
-		SecurityKey: co.SecurityKeyOptions{
-			Use:  false,
-			Slot: "",
+func getVerifierOptions() *opts.VerifyOpts {
+	o := &opts.VerifyOpts{
+		BundlePath: "",
+		VerifyOptions: co.VerifyOptions{
+			Key:          "cosign.pub",
+			CheckClaims:  true,
+			Attachment:   "",
+			Output:       "json",
+			SignatureRef: "",
+			LocalImage:   false,
+			SecurityKey: co.SecurityKeyOptions{
+				Use:  false,
+				Slot: "",
+			},
+			CertVerify: co.CertVerifyOptions{
+				Cert:                         "",
+				CertEmail:                    "",
+				CertOidcIssuer:               "",
+				CertGithubWorkflowTrigger:    "",
+				CertGithubWorkflowSha:        "",
+				CertGithubWorkflowName:       "",
+				CertGithubWorkflowRepository: "",
+				CertGithubWorkflowRef:        "",
+				CertChain:                    "",
+				EnforceSCT:                   false,
+			},
+			Rekor: co.RekorOptions{URL: "https://rekor.sigstore.dev"},
+			Registry: co.RegistryOptions{
+				AllowInsecure:      false,
+				KubernetesKeychain: false,
+				RefOpts:            co.ReferenceOptions{},
+				Keychain:           nil,
+			},
+			SignatureDigest:   co.SignatureDigestOptions{AlgorithmName: ""},
+			AnnotationOptions: co.AnnotationOptions{Annotations: nil},
 		},
-		CertVerify: co.CertVerifyOptions{
-			Cert:                         "",
-			CertEmail:                    "",
-			CertOidcIssuer:               "",
-			CertGithubWorkflowTrigger:    "",
-			CertGithubWorkflowSha:        "",
-			CertGithubWorkflowName:       "",
-			CertGithubWorkflowRepository: "",
-			CertGithubWorkflowRef:        "",
-			CertChain:                    "",
-			EnforceSCT:                   false,
-		},
-		Rekor: co.RekorOptions{URL: "https://rekor.sigstore.dev"},
-		Registry: co.RegistryOptions{
-			AllowInsecure:      false,
-			KubernetesKeychain: false,
-			RefOpts:            co.ReferenceOptions{},
-			Keychain:           nil,
-		},
-		SignatureDigest:   co.SignatureDigestOptions{AlgorithmName: ""},
-		AnnotationOptions: co.AnnotationOptions{Annotations: nil},
 	}
 	return o
 }
