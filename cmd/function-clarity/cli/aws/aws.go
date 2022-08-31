@@ -47,7 +47,7 @@ func AwsInit() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var input i.AWSInput
-			if err := input.RecieveParameters(); err != nil {
+			if err := input.ReceiveParameters(); err != nil {
 				return err
 			}
 			clients.NewAwsClientInit(input.AccessKey, input.SecretKey, input.Region)
