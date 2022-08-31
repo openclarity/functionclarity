@@ -46,7 +46,7 @@ func AwsInit() *cobra.Command {
 		Short: "initialize configuration in aws",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var input i.Input
+			var input i.AWSInput
 			if err := input.RecieveParameters(); err != nil {
 				return err
 			}

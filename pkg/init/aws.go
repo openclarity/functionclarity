@@ -2,13 +2,18 @@ package init
 
 import "fmt"
 
-type Input struct {
-	AccessKey string
-	SecretKey string
-	Region    string
+type AWSInput struct {
+	AccessKey  string
+	SecretKey  string
+	Region     string
+	CloudTrail CloudTrail
 }
 
-func (i *Input) RecieveParameters() error {
+type CloudTrail struct {
+	Name string
+}
+
+func (i *AWSInput) RecieveParameters() error {
 	if err := inputParameter("Enter Access Key: ", &i.AccessKey); err != nil {
 		return err
 	}
@@ -16,6 +21,10 @@ func (i *Input) RecieveParameters() error {
 		return err
 	}
 	if err := inputParameter("Enter region: ", &i.Region); err != nil {
+		return err
+	}
+
+	if err := inputParameter("is there existing trail in CloudTrail which you would like to use (if no please press enter): ", &i.CloudTrail.Name); err != nil {
 		return err
 	}
 	return nil
