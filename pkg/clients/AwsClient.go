@@ -33,6 +33,14 @@ func NewAwsClient(accessKey string, secretKey string, s3 string, region string) 
 	return p
 }
 
+func NewAwsClientInit(accessKey string, secretKey string, region string) *AwsClient {
+	p := new(AwsClient)
+	p.accessKey = accessKey
+	p.secretKey = secretKey
+	p.region = region
+	return p
+}
+
 func (o *AwsClient) ResolvePackageType(funcIdentifier string) (string, error) {
 	sess := o.getSession()
 	svc := lambda.New(sess)
