@@ -153,7 +153,8 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string) erro
 		return err
 	}
 	svc := cloudformation.New(sess)
-	stackExists, err := stackExists("function-clarity-stack", svc)
+	const funcClarityStackName = "function-clarity-stack"
+	stackExists, err := stackExists(funcClarityStackName, svc)
 	if err != nil {
 		return err
 	}
@@ -166,7 +167,7 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string) erro
 	if err != nil {
 		return err
 	}
-	stackName := "function-clarity-stack"
+	stackName := funcClarityStackName
 	_, err = svc.CreateStack(&cloudformation.CreateStackInput{
 		TemplateBody: &stackCalculatedTemplate,
 		StackName:    &stackName,
