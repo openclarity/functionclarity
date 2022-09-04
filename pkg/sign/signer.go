@@ -11,8 +11,9 @@ import (
 func SignAndUploadCode(client clients.SignatureClient, codePath string, o *co.SignBlobOptions, ro *co.RootOptions) error {
 	hash := new(integrity.Sha256)
 	codeIdentity, err := hash.GenerateIdentity(codePath)
+	fmt.Printf("code identity: %s", codeIdentity)
 	if err != nil {
-		return fmt.Errorf("failed to create identity for folder: %s", codePath)
+		return fmt.Errorf("failed to create identity: %v", err)
 	}
 	signedIdentity, err := sign.SignIdentity(codeIdentity, o, ro)
 	if err != nil {
@@ -21,5 +22,6 @@ func SignAndUploadCode(client clients.SignatureClient, codePath string, o *co.Si
 	if client.Upload(signedIdentity, codeIdentity+".sig"); err != nil {
 		return fmt.Errorf("failed to upload code signature")
 	}
+	fmt.Println("Code uploaded successfully")
 	return nil
 }

@@ -50,8 +50,11 @@ func AwsInit() *cobra.Command {
 			if err := input.ReceiveParameters(); err != nil {
 				return err
 			}
-			clients.NewAwsClientInit(input.AccessKey, input.SecretKey, input.Region)
-			//int cloud formation
+			awsClient := clients.NewAwsClientInit(input.AccessKey, input.SecretKey, input.Region)
+			err := awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKeyPath)
+			if err != nil {
+				return err
+			}
 			return nil
 		},
 	}

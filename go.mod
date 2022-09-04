@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/sigstore/cosign v1.11.0
 	github.com/spf13/cobra v1.5.0
+	github.com/vbauerster/mpb/v5 v5.4.0
 )
 
 require (
@@ -28,6 +29,8 @@ require (
 	github.com/PaesslerAG/gval v1.0.0 // indirect
 	github.com/PaesslerAG/jsonpath v0.1.1 // indirect
 	github.com/ThalesIgnite/crypto11 v1.2.5 // indirect
+	github.com/VividCortex/ewma v1.1.1 // indirect
+	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/agnivade/levenshtein v1.0.1 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/aws/aws-sdk-go-v2 v1.16.11 // indirect
