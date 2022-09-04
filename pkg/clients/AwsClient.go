@@ -159,8 +159,7 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string) erro
 		return err
 	}
 	if stackExists {
-		//should delete stack first or return error?
-		return fmt.Errorf("function clarity already deployed, use clean command first")
+		return fmt.Errorf("function clarity already deployed, please delete stack before you dpeloy")
 	}
 
 	err, stackCalculatedTemplate := calculateStackTemplate(trailName, sess)
