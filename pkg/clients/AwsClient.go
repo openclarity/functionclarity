@@ -64,36 +64,60 @@ func (o *AwsClient) ResolvePackageType(funcIdentifier string) (string, error) {
 	return *result.Configuration.PackageType, nil
 }
 
-func (o *AwsClient) Upload(signature string, identity string) error {
+func (o *AwsClient) Upload(signature string, identity string, isKeyless bool) error {
 	sess := o.getSession()
 
 	uploader := s3manager.NewUploader(sess)
 	// Upload the file to S3.
 	_, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(o.s3),
-		Key:    aws.String(identity),
+		Key:    aws.String(identity + ".sig"),
 		Body:   strings.NewReader(signature),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to upload key: %s, value: %s to bucket: %s %v", identity, signature, o.s3, err)
 	}
+
+	if isKeyless {
+		certificatePath := "/tmp/" + identity + ".crt.base64"
+		f, err := os.Open(certificatePath)
+		if err != nil {
+			return fmt.Errorf("failed to open file %q, %v", certificatePath, err)
+		}
+
+		result, err := uploader.Upload(&s3manager.UploadInput{
+			Bucket: aws.String(o.s3),
+			Key:    aws.String(identity + ".crt.base64"),
+			Body:   f,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to upload key: %s, value: %s to bucket: %s %v", identity, certificatePath, o.s3, err)
+		}
+		fmt.Printf("\ncertificate file uploaded to, %s\n", aws.StringValue(&result.Location))
+	}
 	return nil
 }
 
-func (o *AwsClient) Download(identity string) (string, error) {
+func (o *AwsClient) Download(fileName string, outputType string) error {
 	sess := o.getSession()
 	downloader := s3manager.NewDownloader(sess)
 
-	w := aws.NewWriteAtBuffer(make([]byte, 0, 256))
-	_, err := downloader.Download(w, &s3.GetObjectInput{
+	outputFile := "/tmp/" + fileName + "." + outputType
+	f, err := os.Create(outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to create file %q, %v", outputFile, err)
+	}
+	defer f.Close()
+
+	_, err = downloader.Download(f, &s3.GetObjectInput{
 		Bucket: aws.String(o.s3),
-		Key:    aws.String(identity),
+		Key:    aws.String(fileName + "." + outputType),
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("failed to download content: %s from bucket: %s, %v", identity, o.s3, err)
+		return fmt.Errorf("failed to download file: %s from bucket: %s, %v", fileName, o.s3, err)
 	}
-	return fmt.Sprintf("%s", w.Bytes()), nil
+	return nil
 }
 
 func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {

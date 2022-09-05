@@ -10,7 +10,7 @@ import (
 	"github.com/sigstore/cosign/cmd/cosign/cli/verify"
 )
 
-func VerifyIdentity(signature string, identity string, o *opts.VerifyOpts, ctx context.Context) error {
+func VerifyIdentity(identity string, o *opts.VerifyOpts, ctx context.Context, isKeyless bool) error {
 	path := "/tmp/" + uuid.New().String()
 	if err := integrity.SaveTextToFile(identity, path); err != nil {
 		return err
@@ -23,9 +23,16 @@ func VerifyIdentity(signature string, identity string, o *opts.VerifyOpts, ctx c
 		RekorURL:   o.Rekor.URL,
 		BundlePath: o.BundlePath,
 	}
-	if err := verify.VerifyBlobCmd(ctx, ko, o.CertVerify.Cert,
+
+	certRef := o.CertVerify.Cert
+	if isKeyless {
+		certRef = "/tmp/" + identity + ".crt.base64"
+	}
+	sigRef := "/tmp/" + identity + ".sig"
+
+	if err := verify.VerifyBlobCmd(ctx, ko, certRef,
 		o.CertVerify.CertEmail, o.CertVerify.CertOidcIssuer, o.CertVerify.CertChain,
-		signature, path, o.CertVerify.CertGithubWorkflowTrigger, o.CertVerify.CertGithubWorkflowSha,
+		sigRef, path, o.CertVerify.CertGithubWorkflowTrigger, o.CertVerify.CertGithubWorkflowSha,
 		o.CertVerify.CertGithubWorkflowName, o.CertVerify.CertGithubWorkflowRepository, o.CertVerify.CertGithubWorkflowRef,
 		o.CertVerify.EnforceSCT); err != nil {
 		return fmt.Errorf("verifying identity: %s, %w", identity, err)

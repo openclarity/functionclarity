@@ -1,6 +1,6 @@
 package clients
 
 type SignatureClient interface {
-	Upload(signature string, identity string) error
-	Download(identity string) (string, error)
+	Upload(signature string, identity string, isKeyless bool) error
+	Download(fileName string, outputType string) error
 }

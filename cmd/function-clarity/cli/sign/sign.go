@@ -10,7 +10,7 @@ import (
 	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 )
 
-func SignIdentity(identity string, o *co.SignBlobOptions, ro *co.RootOptions) (string, error) {
+func SignIdentity(identity string, o *co.SignBlobOptions, ro *co.RootOptions, isKeyless bool) (string, error) {
 	path := "/tmp/" + uuid.New().String()
 	if err := integrity.SaveTextToFile(identity, path); err != nil {
 		return "", err
@@ -37,7 +37,14 @@ func SignIdentity(identity string, o *co.SignBlobOptions, ro *co.RootOptions) (s
 		BundlePath:               o.BundlePath,
 		SkipConfirmation:         o.SkipConfirmation,
 	}
-	sig, err := sign.SignBlobCmd(ro, ko, o.Registry, path, o.Base64Output, o.OutputSignature, o.OutputCertificate)
+	outputSignature := o.OutputSignature
+	outputCertificate := o.OutputCertificate
+	if isKeyless {
+		outputSignature = "/tmp/" + identity + ".sig"
+		outputCertificate = "/tmp/" + identity + ".crt.base64"
+	}
+
+	sig, err := sign.SignBlobCmd(ro, ko, o.Registry, path, o.Base64Output, outputSignature, outputCertificate)
 
 	if err != nil {
 		return "", fmt.Errorf("signing identity: %s, %w", identity, err)
