@@ -40,7 +40,7 @@ func verifyImage(client clients.Client, functionIdentifier string, o *options.Ve
 		return err
 	}
 
-	v := v.VerifyCommand{
+	vc := v.VerifyCommand{
 		RegistryOptions:              o.Registry,
 		CheckClaims:                  o.CheckClaims,
 		KeyRef:                       o.Key,
@@ -65,7 +65,7 @@ func verifyImage(client clients.Client, functionIdentifier string, o *options.Ve
 		LocalImage:                   o.LocalImage,
 	}
 
-	return v.Exec(ctx, []string{imageURI})
+	return vc.Exec(ctx, []string{imageURI})
 }
 
 func verifyCode(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context) error {
@@ -78,13 +78,33 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 	if err != nil {
 		return fmt.Errorf("failed to generate function identity for function: %s. %v", functionIdentifier, err)
 	}
-	signedIdentity, err := client.Download(functionIdentity + ".sig")
+
+	isKeyless := false
+	if !o.SecurityKey.Use && o.Key == "" && o.BundlePath == "" && integrity.IsExperimentalEnv() {
+		isKeyless = true
+	}
+
+	err = downloadSignatureAndCertificate(client, functionIdentifier, err, functionIdentity, isKeyless)
+	if err != nil {
+		return err
+	}
+	err = verify.VerifyIdentity(functionIdentity, o, ctx, isKeyless)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func downloadSignatureAndCertificate(client clients.Client, functionIdentifier string, err error, functionIdentity string, isKeyless bool) error {
+	err = client.Download(functionIdentity, "sig")
 	if err != nil {
 		return fmt.Errorf("failed to get signed identity for function: %s. %v", functionIdentifier, err)
 	}
-	err = verify.VerifyIdentity(signedIdentity, functionIdentity, o, ctx)
-	if err != nil {
-		return err
+	if isKeyless {
+		err = client.Download(functionIdentity, "crt.base64")
+		if err != nil {
+			return fmt.Errorf("failed to get certificate for function: %s. %v", functionIdentifier, err)
+		}
 	}
 	return nil
 }
