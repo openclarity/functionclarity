@@ -74,13 +74,13 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 
 	var tagVerificationString string
 	if err == nil {
-		log.Println("Function verified")
+		log.Println("Function signed and verified")
 		tagVerificationString = "Function Clarity - Code verified"
 	} else {
-		tagVerificationString = "Function Clarity - Code verification failed"
+		tagVerificationString = "Function not signed"
 		log.Printf("function not verified: %v", err)
 	}
-	_, err = awsClient.TagFunction(recordMessage.ResponseElements.FunctionArn, "CODE VERIFICATION", tagVerificationString)
+	_, err = awsClient.TagFunction(recordMessage.ResponseElements.FunctionArn, "Function clarity result", tagVerificationString)
 	if err != nil {
 		log.Printf("Failed to tag lambda: %s, %v", recordMessage.ResponseElements.FunctionArn, err)
 	}

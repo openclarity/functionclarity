@@ -2,20 +2,30 @@ package clients
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudformation"
+	"github.com/aws/aws-sdk-go/service/cloudtrail"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/google/uuid"
+	"github.com/openclarity/function-clarity/pkg/utils"
+	"github.com/vbauerster/mpb/v5"
+	"github.com/vbauerster/mpb/v5/decor"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 )
+
+const FunctionClarityBucketName = "functionclarity"
 
 type AwsClient struct {
 	accessKey string
@@ -59,7 +69,7 @@ func (o *AwsClient) Upload(signature string, identity string) error {
 
 	uploader := s3manager.NewUploader(sess)
 	// Upload the file to S3.
-	result, err := uploader.Upload(&s3manager.UploadInput{
+	_, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(o.s3),
 		Key:    aws.String(identity),
 		Body:   strings.NewReader(signature),
@@ -67,7 +77,6 @@ func (o *AwsClient) Upload(signature string, identity string) error {
 	if err != nil {
 		return fmt.Errorf("failed to upload key: %s, value: %s to bucket: %s %v", identity, signature, o.s3, err)
 	}
-	fmt.Printf("\nfile uploaded to, %s\n", aws.StringValue(&result.Location))
 	return nil
 }
 
@@ -137,6 +146,89 @@ func (o *AwsClient) TagFunction(funcIdentifier string, tag string, tagValue stri
 	return result.GoString(), nil
 }
 
+func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string) error {
+	sess := o.getSession()
+	err := uploadFuncClarityCode(sess, keyPath)
+	if err != nil {
+		return err
+	}
+	svc := cloudformation.New(sess)
+	const funcClarityStackName = "function-clarity-stack"
+	stackExists, err := stackExists(funcClarityStackName, svc)
+	if err != nil {
+		return err
+	}
+	if stackExists {
+		return fmt.Errorf("function clarity already deployed, please delete stack before you dpeloy")
+	}
+
+	err, stackCalculatedTemplate := calculateStackTemplate(trailName, sess)
+	if err != nil {
+		return err
+	}
+	stackName := funcClarityStackName
+	_, err = svc.CreateStack(&cloudformation.CreateStackInput{
+		TemplateBody: &stackCalculatedTemplate,
+		StackName:    &stackName,
+		Capabilities: []*string{aws.String(cloudformation.CapabilityCapabilityIam)},
+	})
+	fmt.Println("deployment request sent to provider")
+	if err != nil {
+		return err
+	}
+	fmt.Println("waiting for deployment to complete")
+	err = svc.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
+		StackName: &stackName,
+	})
+	if err != nil {
+		fmt.Println("Got an error waiting for stack to be created")
+		return err
+	}
+	return nil
+}
+
+func calculateStackTemplate(trailName string, sess *session.Session) (error, string) {
+	templateFile := "utils/unified-template.template"
+	content, err := os.ReadFile(templateFile)
+	if err != nil {
+		return err, ""
+	}
+	templateBody := string(content)
+	data := make(map[string]interface{}, 4)
+	data["bucketName"] = FunctionClarityBucketName
+	if trailName == "" {
+		data["withTrail"] = "True"
+	} else {
+		svt := cloudtrail.New(sess)
+		trail, err := svt.GetTrail(&cloudtrail.GetTrailInput{Name: &trailName})
+		if err != nil {
+			return err, ""
+		}
+		err = trailValid(trail)
+		if err != nil {
+			return err, ""
+		}
+		cloudWatchArn, err := arn.Parse(*trail.Trail.CloudWatchLogsLogGroupArn)
+		data["logGroupArn"] = *trail.Trail.CloudWatchLogsLogGroupArn
+		data["logGroupName"] = strings.Split(cloudWatchArn.Resource, ":")[1]
+	}
+	tmpl := template.Must(template.New("template.json").Parse(templateBody))
+	buf := &bytes.Buffer{}
+	err = tmpl.Execute(buf, data)
+	if err != nil {
+		return err, ""
+	}
+	stackCalculatedTemplate := buf.String()
+	return err, stackCalculatedTemplate
+}
+
+func trailValid(trail *cloudtrail.GetTrailOutput) error {
+	if *trail.Trail.CloudWatchLogsLogGroupArn == "" {
+		return fmt.Errorf("trail doesn't have cloudwatch logs defined")
+	}
+	return nil
+}
+
 func (o *AwsClient) getSession() *session.Session {
 	cfgs := &aws.Config{
 		Region: aws.String(o.region)}
@@ -148,6 +240,82 @@ func (o *AwsClient) getSession() *session.Session {
 	}
 	result := session.Must(session.NewSession(cfgs))
 	return result
+}
+
+func uploadFuncClarityCode(sess *session.Session, keyPath string) error {
+	s3svc := s3.New(sess)
+
+	_, err := s3svc.CreateBucket(&s3.CreateBucketInput{
+		Bucket: aws.String(FunctionClarityBucketName),
+	})
+	if err != nil {
+		return nil
+	}
+	archive, err := os.Create("function-clarity.zip")
+	if err != nil {
+		return err
+	}
+	defer archive.Close()
+	zipWriter := zip.NewWriter(archive)
+	binaryFile, err := os.Open("aws_function")
+	if err != nil {
+		return err
+	}
+	defer binaryFile.Close()
+
+	w1, err := zipWriter.Create("function-clarity")
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(w1, binaryFile); err != nil {
+		return err
+	}
+
+	publicKey, err := os.Open(keyPath)
+	if err != nil {
+		return err
+	}
+	defer publicKey.Close()
+
+	w2, err := zipWriter.Create("cosign.pub")
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(w2, publicKey); err != nil {
+		return err
+	}
+	zipWriter.Close()
+	uploader := s3manager.NewUploader(sess)
+	// Upload the file to S3.
+	p := mpb.New()
+	file, err := os.Open("function-clarity.zip")
+	fileInfo, err := file.Stat()
+	reader := &utils.ProgressBarReader{
+		Fp:      file,
+		Size:    fileInfo.Size(),
+		SignMap: map[int64]struct{}{},
+		Bar: p.AddBar(fileInfo.Size(),
+			mpb.PrependDecorators(
+				decor.Name("uploading..."),
+				decor.Percentage(decor.WCSyncSpace),
+			),
+		),
+	}
+
+	if err != nil {
+		return err
+	}
+	fmt.Println("Uploading function-clarity function code to s3 bucket, this may take a few minutes")
+	_, err = uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(FunctionClarityBucketName),
+		Key:    aws.String("function-clarity.zip"),
+		Body:   reader,
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Println("function-clarity function code upload successfully")
+	return nil
 }
 
 func ExtractZip(zipPath string, dstToExtract string) error {
@@ -192,6 +360,23 @@ func ExtractZip(zipPath string, dstToExtract string) error {
 		fileInArchive.Close()
 	}
 	return nil
+}
+
+func stackExists(stackNameOrID string, cf *cloudformation.CloudFormation) (bool, error) {
+	describeStacksInput := &cloudformation.DescribeStacksInput{
+		StackName: aws.String(stackNameOrID),
+	}
+	_, err := cf.DescribeStacks(describeStacksInput)
+
+	if err != nil {
+		// If the stack doesn't exist, then no worries
+		if strings.Contains(err.Error(), "does not exist") {
+			return false, nil
+		}
+		return false, err
+
+	}
+	return true, nil
 }
 
 func DownloadFile(fileName string, url *string) error {

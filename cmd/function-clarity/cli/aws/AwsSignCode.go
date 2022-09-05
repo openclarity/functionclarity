@@ -17,9 +17,9 @@ func AwsSignCode() *cobra.Command {
 		Use:   "code",
 		Short: "sign and upload the code content to aws",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			awsClient := clients.NewAwsClient(awsOptions.AccessKey, awsOptions.SecretKey, awsOptions.Bucket, awsOptions.Region)
-			sign.SignAndUploadCode(awsClient, args[0], o, ro)
+			return sign.SignAndUploadCode(awsClient, args[0], o, ro)
 		},
 	}
 	awsOptions.AddFlags(cmd)
