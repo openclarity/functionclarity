@@ -91,7 +91,7 @@ func (o *AwsClient) Upload(signature string, identity string, isKeyless bool) er
 			Body:   f,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to upload key: %s, value: %s to bucket: %s %v", identity, f, o.s3, err)
+			return fmt.Errorf("failed to upload key: %s, value: %s to bucket: %s %v", identity, certificatePath, o.s3, err)
 		}
 		fmt.Printf("\ncertificate file uploaded to, %s\n", aws.StringValue(&result.Location))
 	}
