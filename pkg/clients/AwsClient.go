@@ -368,18 +368,11 @@ func stackExists(stackNameOrID string, cf *cloudformation.CloudFormation) (bool,
 	}
 	_, err := cf.DescribeStacks(describeStacksInput)
 
-	exists := false
 	if err != nil {
-		// If the stack doesn't exist, then no worries
-		if strings.Contains(err.Error(), "does not exist") {
-			exists = false
-		} else {
-			return false, err
-		}
+		return false, err
 	} else {
-		exists = true
+		return true, nil
 	}
-	return exists, nil
 }
 
 func DownloadFile(fileName string, url *string) error {
