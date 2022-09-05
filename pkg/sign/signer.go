@@ -8,7 +8,7 @@ import (
 	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
 )
 
-func SignAndUploadCode(client clients.SignatureClient, codePath string, o *co.SignBlobOptions, ro *co.RootOptions) error {
+func SignAndUploadCode(client clients.Client, codePath string, o *co.SignBlobOptions, ro *co.RootOptions) error {
 	hash := new(integrity.Sha256)
 	codeIdentity, err := hash.GenerateIdentity(codePath)
 	fmt.Printf("code identity: %s", codeIdentity)

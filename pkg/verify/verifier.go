@@ -83,26 +83,21 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 	if !o.SecurityKey.Use && o.Key == "" && o.BundlePath == "" && integrity.IsExperimentalEnv() {
 		isKeyless = true
 	}
-
-	err = downloadSignatureAndCertificate(client, functionIdentifier, err, functionIdentity, isKeyless)
-	if err != nil {
+	if err = downloadSignatureAndCertificate(client, functionIdentifier, err, functionIdentity, isKeyless); err != nil {
 		return err
 	}
-	err = verify.VerifyIdentity(functionIdentity, o, ctx, isKeyless)
-	if err != nil {
+	if err = verify.VerifyIdentity(functionIdentity, o, ctx, isKeyless); err != nil {
 		return err
 	}
 	return nil
 }
 
 func downloadSignatureAndCertificate(client clients.Client, functionIdentifier string, err error, functionIdentity string, isKeyless bool) error {
-	err = client.Download(functionIdentity, "sig")
-	if err != nil {
+	if err = client.Download(functionIdentity, "sig"); err != nil {
 		return fmt.Errorf("failed to get signed identity for function: %s. %v", functionIdentifier, err)
 	}
 	if isKeyless {
-		err = client.Download(functionIdentity, "crt.base64")
-		if err != nil {
+		if err = client.Download(functionIdentity, "crt.base64"); err != nil {
 			return fmt.Errorf("failed to get certificate for function: %s. %v", functionIdentifier, err)
 		}
 	}
