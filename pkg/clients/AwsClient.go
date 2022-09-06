@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/cloudtrail"
+	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -170,6 +171,16 @@ func (o *AwsClient) TagFunction(funcIdentifier string, tag string, tagValue stri
 	return result.GoString(), nil
 }
 
+func (o *AwsClient) GetEcrToken() (*ecr.GetAuthorizationTokenOutput, error) {
+	sess := o.getSession()
+	ecrClient := ecr.New(sess)
+	output, err := ecrClient.GetAuthorizationToken(&ecr.GetAuthorizationTokenInput{})
+	if err != nil {
+		return nil, err
+	}
+	return output, nil
+}
+
 func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string) error {
 	sess := o.getSession()
 	err := uploadFuncClarityCode(sess, keyPath)
@@ -208,6 +219,7 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string) erro
 		fmt.Println("Got an error waiting for stack to be created")
 		return err
 	}
+	fmt.Println("deployment finished successfully")
 	return nil
 }
 

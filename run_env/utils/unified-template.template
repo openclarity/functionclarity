@@ -11,7 +11,8 @@
         "Description": "Function clarity function",
         "Environment": {
           "Variables": {
-            "FUNCTION_CLARITY_BUCKET": "{{.bucketName}}"
+            "FUNCTION_CLARITY_BUCKET": "{{.bucketName}}",
+            "HOME": "/tmp"
           }
         },
         "FunctionName": "FunctionClarityFunctionVerifier",
