@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/openclarity/function-clarity/pkg/integrity"
+	o "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/generate"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
 	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
+	"github.com/spf13/viper"
 )
 
-func SignIdentity(identity string, o *co.SignBlobOptions, ro *co.RootOptions, isKeyless bool) (string, error) {
+func SignIdentity(identity string, o *o.SignBlobOptions, ro *co.RootOptions, isKeyless bool) (string, error) {
 	path := "/tmp/" + uuid.New().String()
 	if err := integrity.SaveTextToFile(identity, path); err != nil {
 		return "", err
@@ -21,7 +23,7 @@ func SignIdentity(identity string, o *co.SignBlobOptions, ro *co.RootOptions, is
 		return "", err
 	}
 	ko := options.KeyOpts{
-		KeyRef:                   o.Key,
+		KeyRef:                   viper.GetString("privatekey"),
 		PassFunc:                 generate.GetPass,
 		Sk:                       o.SecurityKey.Use,
 		Slot:                     o.SecurityKey.Slot,
