@@ -8,7 +8,6 @@ import (
 	"github.com/openclarity/function-clarity/pkg/integrity"
 	"github.com/openclarity/function-clarity/pkg/options"
 	v "github.com/sigstore/cosign/cmd/cosign/cli/verify"
-	"log"
 )
 
 func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context, action string) error {
@@ -30,10 +29,10 @@ func Verify(client clients.Client, functionIdentifier string, o *options.VerifyO
 func HandleVerification(client clients.Client, action string, funcIdentifier string, failed bool) error {
 	switch action {
 	case "":
-		log.Printf("no action defined, nothing to do")
+		fmt.Printf("no action defined, nothing to do")
 		return nil
 	case "notify":
-		log.Printf("handle notify")
+		fmt.Printf("handle notify")
 		return nil
 	case "block":
 		return client.HandleBlock(&funcIdentifier, failed)
