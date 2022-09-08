@@ -70,7 +70,8 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 			continue
 		}
 		log.Printf("handling function name: %s, event name: %s, event source: %s, region: %s\n", recordMessage.ResponseElements.FunctionName, recordMessage.EventName, recordMessage.EventSource, recordMessage.AwsRegion)
-		if strings.Contains(recordMessage.EventName, "CreateFunction") || strings.Contains(recordMessage.EventName, "UpdateFunctionCode") {
+		if (strings.Contains(recordMessage.EventName, "CreateFunction") || strings.Contains(recordMessage.EventName, "UpdateFunctionCode")) &&
+			"FunctionClarityLambdaVerifier" != recordMessage.ResponseElements.FunctionName && "us-east-2" == recordMessage.AwsRegion {
 			handleFunctionEvent(recordMessage, err, context)
 		}
 	}
@@ -88,20 +89,13 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 		}
 		initDocker = false
 	}
+	action := os.Getenv("FUNC_CLARITY_ACTION")
 	o := getVerifierOptions()
-	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx)
+	log.Printf("about to execute verification with post action: %s.", action)
+	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, action)
 
-	var tagVerificationString string
-	if err == nil {
-		log.Println("Function signed and verified")
-		tagVerificationString = "Function Clarity - Code verified"
-	} else {
-		tagVerificationString = "Function not signed"
-		log.Printf("function not verified: %v", err)
-	}
-	_, err = awsClient.TagFunction(recordMessage.ResponseElements.FunctionArn, "Function clarity result", tagVerificationString)
 	if err != nil {
-		log.Printf("Failed to tag lambda: %s, %v", recordMessage.ResponseElements.FunctionArn, err)
+		log.Printf("Failed to handle lambda result: %s, %v", recordMessage.ResponseElements.FunctionArn, err)
 	}
 }
 

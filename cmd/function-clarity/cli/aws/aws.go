@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"fmt"
 	opts "github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	i "github.com/openclarity/function-clarity/pkg/init"
@@ -29,7 +30,9 @@ func AwsVerify() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			awsClient := clients.NewAwsClient(awsOptions.AccessKey, awsOptions.SecretKey, awsOptions.Bucket, awsOptions.Region)
-			return verify.Verify(awsClient, args[0], o, cmd.Context())
+			action := "block"
+			fmt.Printf("about to execute verification with post action: %s.", action)
+			return verify.Verify(awsClient, args[0], o, cmd.Context(), action)
 		},
 	}
 	cmd.Flags().StringVar(&functionIdentifier, "function-identifier", "",

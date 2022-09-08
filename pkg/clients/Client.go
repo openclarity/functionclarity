@@ -6,4 +6,7 @@ type Client interface {
 	GetFuncImageURI(funcIdentifier string) (string, error)
 	Upload(signature string, identity string, isKeyless bool) error
 	Download(fileName string, outputType string) error
+	TagFunction(funcIdentifier string, tag string, tagValue string) error
+	HandleBlock(funcIdentifier *string, failed bool) error
+	HandleDetect(funcIdentifier *string, failed bool) error
 }
