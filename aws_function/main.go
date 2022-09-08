@@ -13,6 +13,7 @@ import (
 	opts "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/openclarity/function-clarity/pkg/verify"
 	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
+	"gopkg.in/yaml.v3"
 	"io"
 	"log"
 	"os"
@@ -90,11 +91,19 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 		}
 		initDocker = false
 	}
-	//if readConfig {
-	//	envConfig := os.Getenv("CONFIGURATION")
-	//	decodedConfig, err := base64.StdEncoding.DecodeString(envConfig)
-	//	if err
-	//}
+	if config == nil {
+		envConfig := os.Getenv("CONFIGURATION")
+		decodedConfig, err := base64.StdEncoding.DecodeString(envConfig)
+		if err != nil {
+			log.Printf("Failed to load configuration from env var. %v", err)
+			return
+		}
+		err = yaml.Unmarshal(decodedConfig, config)
+		if err != nil {
+			log.Printf("Failed to load configuration from env var. %v", err)
+			return
+		}
+	}
 	o := getVerifierOptions()
 	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx)
 
