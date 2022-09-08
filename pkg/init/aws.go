@@ -14,6 +14,7 @@ type AWSInput struct {
 	SecretKey  string
 	Region     string
 	Bucket     string
+	Action     string
 	PublicKey  string
 	PrivateKey string
 	CloudTrail CloudTrail
@@ -46,6 +47,9 @@ func (i *AWSInput) ReceiveParameters() error {
 		return err
 	}
 	if err := inputStringParameter("enter default bucket: ", &i.Bucket, true); err != nil {
+		return err
+	}
+	if err := inputStringParameter("select post verification action: (1) for detect; (2) for block and detect; leave empty for no action to perform", &i.Action, true); err != nil {
 		return err
 	}
 	if err := inputStringParameter("is there existing trail in CloudTrail which you would like to use? (if no, please press enter): ", &i.CloudTrail.Name, true); err != nil {

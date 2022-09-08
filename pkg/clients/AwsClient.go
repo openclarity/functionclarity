@@ -3,6 +3,7 @@ package clients
 import (
 	"archive/zip"
 	"bytes"
+	b64 "encoding/base64"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/arn"
@@ -15,9 +16,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/google/uuid"
+	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/utils"
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
+	"gopkg.in/yaml.v3"
 	"io"
 	"net/http"
 	"os"
@@ -181,7 +184,7 @@ func (o *AwsClient) GetEcrToken() (*ecr.GetAuthorizationTokenOutput, error) {
 	return output, nil
 }
 
-func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string) error {
+func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, deploymentConfig i.AWSInput) error {
 	sess := o.getSession()
 	err := uploadFuncClarityCode(sess, keyPath)
 	if err != nil {
@@ -197,7 +200,7 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string) erro
 		return fmt.Errorf("function clarity already deployed, please delete stack before you dpeloy")
 	}
 
-	err, stackCalculatedTemplate := calculateStackTemplate(trailName, sess)
+	err, stackCalculatedTemplate := calculateStackTemplate(trailName, sess, deploymentConfig)
 	if err != nil {
 		return err
 	}
@@ -223,7 +226,7 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string) erro
 	return nil
 }
 
-func calculateStackTemplate(trailName string, sess *session.Session) (error, string) {
+func calculateStackTemplate(trailName string, sess *session.Session, config i.AWSInput) (error, string) {
 	templateFile := "utils/unified-template.template"
 	content, err := os.ReadFile(templateFile)
 	if err != nil {
@@ -232,6 +235,17 @@ func calculateStackTemplate(trailName string, sess *session.Session) (error, str
 	templateBody := string(content)
 	data := make(map[string]interface{}, 4)
 	data["bucketName"] = FunctionClarityBucketName
+	if config.Bucket != "" {
+		data["bucketName"] = config.Bucket
+	}
+
+	buf := &bytes.Buffer{}
+	err = yaml.NewEncoder(buf).Encode(config)
+	if err != nil {
+		return fmt.Errorf("failed to create template. %v", err), ""
+	}
+	encodedConfig := b64.StdEncoding.EncodeToString(buf.Bytes())
+	data["config"] = encodedConfig
 	if trailName == "" {
 		data["withTrail"] = "True"
 	} else {
@@ -249,7 +263,7 @@ func calculateStackTemplate(trailName string, sess *session.Session) (error, str
 		data["logGroupName"] = strings.Split(cloudWatchArn.Resource, ":")[1]
 	}
 	tmpl := template.Must(template.New("template.json").Parse(templateBody))
-	buf := &bytes.Buffer{}
+	buf = &bytes.Buffer{}
 	err = tmpl.Execute(buf, data)
 	if err != nil {
 		return err, ""

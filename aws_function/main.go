@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/openclarity/function-clarity/pkg/clients"
+	i "github.com/openclarity/function-clarity/pkg/init"
 	opts "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/openclarity/function-clarity/pkg/verify"
 	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
@@ -50,6 +51,7 @@ type DockerAuth struct {
 }
 
 var initDocker = true
+var config *i.AWSInput = nil
 
 func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLogsEvent) error {
 	if &cloudWatchEvent.AWSLogs == nil || &cloudWatchEvent.AWSLogs.Data == nil || cloudWatchEvent.AWSLogs.Data == "" {
@@ -88,6 +90,11 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 		}
 		initDocker = false
 	}
+	//if readConfig {
+	//	envConfig := os.Getenv("CONFIGURATION")
+	//	decodedConfig, err := base64.StdEncoding.DecodeString(envConfig)
+	//	if err
+	//}
 	o := getVerifierOptions()
 	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx)
 

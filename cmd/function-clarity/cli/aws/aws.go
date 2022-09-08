@@ -79,8 +79,13 @@ func AwsInit() *cobra.Command {
 			if err := input.ReceiveParameters(); err != nil {
 				return err
 			}
+			var configForDeployment i.AWSInput
+			configForDeployment.Bucket = input.Bucket
+			configForDeployment.Action = input.Action
+			configForDeployment.Region = input.Region
+			configForDeployment.IsKeyless = input.IsKeyless
 			awsClient := clients.NewAwsClientInit(input.AccessKey, input.SecretKey, input.Region)
-			err := awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey)
+			err := awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey, configForDeployment)
 			if err != nil {
 				return err
 			}
