@@ -263,7 +263,7 @@ func (o *AwsClient) GetConcurrencyLevel(funcIdentifier string) (*int64, error) {
 func (o *AwsClient) UnblockFunction(funcIdentifier *string) error {
 	err := o.TagFunction(*funcIdentifier, utils.FunctionVerifyResultTagKey, utils.FunctionSignedTagValue)
 	if err != nil {
-		return fmt.Errorf("failed to tag function with success result: %s. %v", funcIdentifier, err)
+		return fmt.Errorf("failed to tag function with success result: %s. %v", *funcIdentifier, err)
 	}
 	err, concurrencyLevel := o.GetConcurrencyLevelTag(*funcIdentifier, utils.FunctionClarityConcurrencyTagKey)
 	if err != nil {
@@ -301,7 +301,7 @@ func (o *AwsClient) convertToArnIfNeeded(funcIdentifier *string) error {
 	if !arn.IsARN(*funcIdentifier) {
 		result, err := o.GetFunction(*funcIdentifier)
 		if err != nil {
-			return fmt.Errorf("failed to get function by name: %s", funcIdentifier)
+			return fmt.Errorf("failed to get function by name: %s", *funcIdentifier)
 		}
 		*funcIdentifier = *result.Configuration.FunctionArn
 	}
