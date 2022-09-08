@@ -3,20 +3,29 @@ package aws
 import (
 	"flag"
 	"fmt"
+	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
+	opt "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/generate"
 	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"log"
 )
 
 func AwsSignImage() *cobra.Command {
-	o := &co.SignOptions{}
+	o := &opt.SignOptions{}
 	ro := &co.RootOptions{}
 
 	cmd := &cobra.Command{
 		Use:   "image",
 		Short: "sign and upload the image digest to aws",
 		Args:  cobra.ExactArgs(1),
+		PreRun: func(cmd *cobra.Command, args []string) {
+			if err := viper.BindPFlag("privatekey", cmd.Flags().Lookup("key")); err != nil {
+				log.Fatal(err)
+			}
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			switch o.Attachment {
 			case "sbom", "":
@@ -29,7 +38,7 @@ func AwsSignImage() *cobra.Command {
 				return err
 			}
 			ko := co.KeyOpts{
-				KeyRef:                   o.Key,
+				KeyRef:                   viper.GetString("privatekey"),
 				PassFunc:                 generate.GetPass,
 				Sk:                       o.SecurityKey.Use,
 				Slot:                     o.SecurityKey.Slot,
@@ -61,5 +70,11 @@ func AwsSignImage() *cobra.Command {
 	}
 	o.AddFlags(cmd)
 	ro.AddFlags(cmd)
+	initAwsSignImageFlags(cmd)
 	return cmd
+}
+
+func initAwsSignImageFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&options.Config, "config", "", "config file (default: $HOME/.fs)")
+	cmd.Flags().String("key", "", "private key")
 }
