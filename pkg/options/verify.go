@@ -18,9 +18,6 @@ func (o *VerifyOpts) AddFlags(cmd *cobra.Command) {
 	o.SignatureDigest.AddFlags(cmd)
 	o.AnnotationOptions.AddFlags(cmd)
 
-	cmd.Flags().StringVar(&o.Key, "key", "",
-		"path to the public key file, KMS URI or Kubernetes Secret")
-
 	cmd.Flags().BoolVar(&o.CheckClaims, "check-claims", true,
 		"whether to check the claims found")
 
