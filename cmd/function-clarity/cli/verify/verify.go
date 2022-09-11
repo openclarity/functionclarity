@@ -8,7 +8,6 @@ import (
 	opts "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/verify"
-	"github.com/spf13/viper"
 )
 
 func VerifyIdentity(identity string, o *opts.VerifyOpts, ctx context.Context, isKeyless bool) error {
@@ -18,7 +17,7 @@ func VerifyIdentity(identity string, o *opts.VerifyOpts, ctx context.Context, is
 	}
 
 	ko := options.KeyOpts{
-		KeyRef:     viper.GetString("publickey"),
+		KeyRef:     o.Key,
 		Sk:         o.SecurityKey.Use,
 		Slot:       o.SecurityKey.Slot,
 		RekorURL:   o.Rekor.URL,

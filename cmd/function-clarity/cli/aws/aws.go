@@ -26,7 +26,7 @@ func AwsSign() *cobra.Command {
 
 func AwsVerify() *cobra.Command {
 	o := &options.VerifyOpts{}
-	var functionIdentifier string
+	var lambdaRegion string
 	cmd := &cobra.Command{
 		Use:   "aws",
 		Short: "verify function identity",
@@ -49,12 +49,13 @@ func AwsVerify() *cobra.Command {
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			awsClient := clients.NewAwsClient(viper.GetString("accesskey"), viper.GetString("secretkey"), viper.GetString("bucket"), viper.GetString("region"))
+			o.Key = viper.GetString("publickey")
+			awsClient := clients.NewAwsClient(viper.GetString("accesskey"), viper.GetString("secretkey"), viper.GetString("bucket"), viper.GetString("region"), lambdaRegion)
 			return verify.Verify(awsClient, args[0], o, cmd.Context())
 		},
 	}
-	cmd.Flags().StringVar(&functionIdentifier, "function-identifier", "",
-		"function to verify")
+	cmd.Flags().StringVar(&lambdaRegion, "function-region", "", "aws region where the verified lambda runs")
+	cmd.MarkFlagRequired("function-region")
 	o.AddFlags(cmd)
 	initAwsVerifyFlags(cmd)
 	return cmd
@@ -79,8 +80,16 @@ func AwsInit() *cobra.Command {
 			if err := input.ReceiveParameters(); err != nil {
 				return err
 			}
+			if input.Bucket == "" {
+				input.Bucket = clients.FunctionClarityBucketName
+			}
+			var configForDeployment i.AWSInput
+			configForDeployment.Bucket = input.Bucket
+			configForDeployment.Action = input.Action
+			configForDeployment.Region = input.Region
+			configForDeployment.IsKeyless = input.IsKeyless
 			awsClient := clients.NewAwsClientInit(input.AccessKey, input.SecretKey, input.Region)
-			err := awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey)
+			err := awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey, configForDeployment)
 			if err != nil {
 				return err
 			}
