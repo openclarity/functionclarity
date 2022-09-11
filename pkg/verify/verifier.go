@@ -10,19 +10,42 @@ import (
 	v "github.com/sigstore/cosign/cmd/cosign/cli/verify"
 )
 
-func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context) error {
+func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context, action string) error {
 	packageType, err := client.ResolvePackageType(functionIdentifier)
 	if err != nil {
 		return fmt.Errorf("failed to resolve package type for function: %s. %v", functionIdentifier, err)
 	}
 	switch packageType {
 	case "Zip":
-		return verifyCode(client, functionIdentifier, o, ctx)
+		err = verifyCode(client, functionIdentifier, o, ctx)
 	case "Image":
-		return verifyImage(client, functionIdentifier, o, ctx)
+		err = verifyImage(client, functionIdentifier, o, ctx)
 	default:
 		return fmt.Errorf("unsupported package type: %s for function: %s. %v", packageType, functionIdentifier, err)
 	}
+	return HandleVerification(client, action, functionIdentifier, err != nil)
+}
+
+func HandleVerification(client clients.Client, action string, funcIdentifier string, failed bool) error {
+	switch action {
+	case "":
+		fmt.Printf("no action defined, nothing to do")
+		return nil
+	case "notify":
+		fmt.Printf("handle notify")
+		return nil
+	case "block":
+		{
+			err := client.HandleBlock(&funcIdentifier, failed)
+			if err != nil {
+				return err
+			}
+			return client.HandleDetect(&funcIdentifier, failed)
+		}
+	case "detect":
+		return client.HandleDetect(&funcIdentifier, failed)
+	}
+	return nil
 }
 
 func verifyImage(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context) error {

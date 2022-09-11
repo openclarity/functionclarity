@@ -23,9 +23,11 @@ import (
 	"github.com/vbauerster/mpb/v5/decor"
 	"gopkg.in/yaml.v3"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"text/template"
 )
@@ -161,7 +163,20 @@ func (o *AwsClient) GetFuncImageURI(funcIdentifier string) (string, error) {
 	return *result.Code.ImageUri, nil
 }
 
-func (o *AwsClient) TagFunction(funcIdentifier string, tag string, tagValue string) (string, error) {
+func (o *AwsClient) HandleDetect(funcIdentifier *string, failed bool) error {
+	if err := o.convertToArnIfNeeded(funcIdentifier); err != nil {
+		return err
+	}
+	var tagVerificationString string
+	if failed {
+		tagVerificationString = utils.FunctionNotSignedTagValue
+	} else {
+		tagVerificationString = utils.FunctionSignedTagValue
+	}
+	return o.tagFunction(*funcIdentifier, "Function clarity result", tagVerificationString)
+}
+
+func (o *AwsClient) tagFunction(funcIdentifier string, tag string, tagValue string) error {
 	sess := o.getSessionForLambda()
 	svc := lambda.New(sess)
 	input := &lambda.TagResourceInput{
@@ -170,11 +185,159 @@ func (o *AwsClient) TagFunction(funcIdentifier string, tag string, tagValue stri
 			tag: aws.String(tagValue),
 		},
 	}
-	result, err := svc.TagResource(input)
+	_, err := svc.TagResource(input)
 	if err != nil {
-		return "", err
+		return fmt.Errorf("failed to tag function. %v", err)
 	}
-	return result.GoString(), nil
+	return nil
+}
+
+func (o *AwsClient) HandleBlock(funcIdentifier *string, failed bool) error {
+	if err := o.convertToArnIfNeeded(funcIdentifier); err != nil {
+		return err
+	}
+	if failed {
+		return o.BlockFunction(funcIdentifier)
+	}
+	return o.UnblockFunction(funcIdentifier)
+}
+
+func (o *AwsClient) BlockFunction(funcIdentifier *string) error {
+	if err := o.tagFunction(*funcIdentifier, utils.FunctionVerifyResultTagKey, utils.FunctionNotSignedTagValue); err != nil {
+		return fmt.Errorf("failed to tag function with failed result. %v", err)
+	}
+	currentConcurrencyLevel, err := o.GetConcurrencyLevel(*funcIdentifier)
+	if err != nil {
+		return fmt.Errorf("failed to get current concurrency level of function. %v", err)
+	}
+	currentConcurrencyLevelString := ""
+	if currentConcurrencyLevel == nil {
+		currentConcurrencyLevelString = "nil"
+	} else {
+		currentConcurrencyLevelString = strconv.FormatInt(*currentConcurrencyLevel, 10)
+	}
+	if err = o.tagFunction(*funcIdentifier, utils.FunctionClarityConcurrencyTagKey, currentConcurrencyLevelString); err != nil {
+		return fmt.Errorf("failed to tag function with current concurrency level. %v", err)
+	}
+	var zeroConcurrencyLevel = int64(0)
+	if err = o.updateConcurrencyLevel(*funcIdentifier, &zeroConcurrencyLevel); err != nil {
+		return fmt.Errorf("failed to set concurrency level to 0. %v", err)
+	}
+	return nil
+}
+
+func (o *AwsClient) updateConcurrencyLevel(funcIdentifier string, concurrencyLevel *int64) error {
+	sess := o.getSession()
+	svc := lambda.New(sess)
+	input := &lambda.PutFunctionConcurrencyInput{
+		FunctionName:                 &funcIdentifier,
+		ReservedConcurrentExecutions: concurrencyLevel,
+	}
+	result, err := svc.PutFunctionConcurrency(input)
+	if *result.ReservedConcurrentExecutions != *concurrencyLevel {
+		return fmt.Errorf("failed to update function concurrency to %d. %v", *concurrencyLevel, err)
+	}
+	return nil
+}
+
+func (o *AwsClient) DeleteConcurrencyLevel(funcIdentifier string) error {
+	sess := o.getSession()
+	svc := lambda.New(sess)
+	input := &lambda.DeleteFunctionConcurrencyInput{
+		FunctionName: &funcIdentifier,
+	}
+	_, err := svc.DeleteFunctionConcurrency(input)
+	if err != nil {
+		return fmt.Errorf("failed to update function concurrency to 0. %v", err)
+	}
+	return nil
+}
+
+func (o *AwsClient) GetConcurrencyLevel(funcIdentifier string) (*int64, error) {
+	sess := o.getSession()
+	svc := lambda.New(sess)
+	input := &lambda.GetFunctionConcurrencyInput{
+		FunctionName: &funcIdentifier,
+	}
+	result, err := svc.GetFunctionConcurrency(input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch func concurrencly level. %v", err)
+	}
+	return result.ReservedConcurrentExecutions, nil
+}
+
+func (o *AwsClient) UnblockFunction(funcIdentifier *string) error {
+	if err := o.tagFunction(*funcIdentifier, utils.FunctionVerifyResultTagKey, utils.FunctionSignedTagValue); err != nil {
+		return fmt.Errorf("failed to tag function with success result: %s. %v", *funcIdentifier, err)
+	}
+	err, concurrencyLevel := o.GetConcurrencyLevelTag(*funcIdentifier, utils.FunctionClarityConcurrencyTagKey)
+	if err != nil {
+		return fmt.Errorf("failed to get function tag with prev concurrency level for func: %s. %v", *funcIdentifier, err)
+	}
+	if concurrencyLevel == nil {
+		if err = o.DeleteConcurrencyLevel(*funcIdentifier); err != nil {
+			return fmt.Errorf("failed to unblock function (set concurrency level to prev value): %s. %v", *funcIdentifier, err)
+		}
+	} else if *concurrencyLevel != -1 {
+		if err = o.updateConcurrencyLevel(*funcIdentifier, concurrencyLevel); err != nil {
+			return fmt.Errorf("failed to unblock function (set concurrency level to prev value): %s. %v", *funcIdentifier, err)
+		}
+	} else {
+		log.Printf("function not blocked by func clarity, not changing concurrency level")
+		return nil
+	}
+	concurrencyLevelTagName := utils.FunctionClarityConcurrencyTagKey
+	untagKeyArray := []*string{&concurrencyLevelTagName}
+	sess := o.getSession()
+	svc := lambda.New(sess)
+	untagFunctionInput := &lambda.UntagResourceInput{
+		Resource: funcIdentifier,
+		TagKeys:  untagKeyArray}
+	_, err = svc.UntagResource(untagFunctionInput)
+	if err != nil {
+		return fmt.Errorf("failed to untag func clarity concurrency level tag for func: %s. %v", *funcIdentifier, err)
+	}
+	return nil
+}
+
+func (o *AwsClient) convertToArnIfNeeded(funcIdentifier *string) error {
+	if !arn.IsARN(*funcIdentifier) {
+		sess := o.getSessionForLambda()
+		svc := lambda.New(sess)
+		input := &lambda.GetFunctionInput{
+			FunctionName: aws.String(*funcIdentifier),
+		}
+		result, err := svc.GetFunction(input)
+		if err != nil {
+			return fmt.Errorf("failed to get function by name: %s", *funcIdentifier)
+		}
+		*funcIdentifier = *result.Configuration.FunctionArn
+	}
+	return nil
+}
+
+func (o *AwsClient) GetConcurrencyLevelTag(funcIdentifier string, tag string) (error, *int64) {
+	sess := o.getSession()
+	svc := lambda.New(sess)
+	input := &lambda.ListTagsInput{
+		Resource: aws.String(funcIdentifier),
+	}
+	req, resp := svc.ListTagsRequest(input)
+	if err := req.Send(); err != nil {
+		return err, nil
+	}
+	concurrencyLevel := resp.Tags[tag]
+	var result *int64
+	if concurrencyLevel == nil {
+		log.Printf("function not blocked by function-clarity, nothing to do")
+		*result = -1
+		return nil, result
+	}
+	if *concurrencyLevel == "nil" {
+		return nil, nil
+	}
+	concurrencyLevelInt, err := strconv.ParseInt(*concurrencyLevel, 10, 64)
+	return err, &concurrencyLevelInt
 }
 
 func (o *AwsClient) GetEcrToken() (*ecr.GetAuthorizationTokenOutput, error) {
@@ -189,8 +352,7 @@ func (o *AwsClient) GetEcrToken() (*ecr.GetAuthorizationTokenOutput, error) {
 
 func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, deploymentConfig i.AWSInput) error {
 	sess := o.getSession()
-	err := uploadFuncClarityCode(sess, keyPath, deploymentConfig.Bucket)
-	if err != nil {
+	if err := uploadFuncClarityCode(sess, keyPath, deploymentConfig.Bucket); err != nil {
 		return err
 	}
 	svc := cloudformation.New(sess)
@@ -218,10 +380,9 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, depl
 		return err
 	}
 	fmt.Println("waiting for deployment to complete")
-	err = svc.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
+	if err = svc.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
 		StackName: &stackName,
-	})
-	if err != nil {
+	}); err != nil {
 		fmt.Println("Got an error waiting for stack to be created")
 		return err
 	}
@@ -255,8 +416,7 @@ func calculateStackTemplate(trailName string, sess *session.Session, config i.AW
 		if err != nil {
 			return err, ""
 		}
-		err = trailValid(trail)
-		if err != nil {
+		if err = trailValid(trail); err != nil {
 			return err, ""
 		}
 		cloudWatchArn, err := arn.Parse(*trail.Trail.CloudWatchLogsLogGroupArn)
@@ -265,8 +425,7 @@ func calculateStackTemplate(trailName string, sess *session.Session, config i.AW
 	}
 	tmpl := template.Must(template.New("template.json").Parse(templateBody))
 	buf := &bytes.Buffer{}
-	err = tmpl.Execute(buf, data)
-	if err != nil {
+	if err = tmpl.Execute(buf, data); err != nil {
 		return err, ""
 	}
 	stackCalculatedTemplate := buf.String()
