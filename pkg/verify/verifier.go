@@ -2,6 +2,7 @@ package verify
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/verify"
 	"github.com/openclarity/function-clarity/pkg/clients"
@@ -10,7 +11,7 @@ import (
 	v "github.com/sigstore/cosign/cmd/cosign/cli/verify"
 )
 
-func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context, action string) error {
+func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context, action string, topicArn string) error {
 	packageType, err := client.ResolvePackageType(functionIdentifier)
 	if err != nil {
 		return fmt.Errorf("failed to resolve package type for function: %s. %v", functionIdentifier, err)
@@ -23,29 +24,38 @@ func Verify(client clients.Client, functionIdentifier string, o *options.VerifyO
 	default:
 		return fmt.Errorf("unsupported package type: %s for function: %s. %v", packageType, functionIdentifier, err)
 	}
-	return HandleVerification(client, action, functionIdentifier, err != nil)
+	return HandleVerification(client, action, functionIdentifier, err, topicArn)
 }
 
-func HandleVerification(client clients.Client, action string, funcIdentifier string, failed bool) error {
+func HandleVerification(client clients.Client, action string, funcIdentifier string, err error, topicArn string) error {
+	if !errors.Is(err, VerifyError{}) {
+		return err
+	}
+	failed := err != nil
+
+	var e error
 	switch action {
 	case "":
 		fmt.Printf("no action defined, nothing to do")
-		return nil
-	case "notify":
-		fmt.Printf("handle notify")
-		return nil
+	case "detect":
+		e = client.HandleDetect(&funcIdentifier, failed)
 	case "block":
 		{
-			err := client.HandleBlock(&funcIdentifier, failed)
-			if err != nil {
-				return err
+			e = client.HandleBlock(&funcIdentifier, failed)
+			if e != nil {
+				break
 			}
-			return client.HandleDetect(&funcIdentifier, failed)
+			e = client.HandleDetect(&funcIdentifier, failed)
+			if e != nil {
+				break
+			}
 		}
-	case "detect":
-		return client.HandleDetect(&funcIdentifier, failed)
 	}
-	return nil
+
+	if failed && topicArn != "" {
+		return client.Notify("failed to verify function with id: "+funcIdentifier, topicArn)
+	}
+	return e
 }
 
 func verifyImage(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context) error {
@@ -88,7 +98,10 @@ func verifyImage(client clients.Client, functionIdentifier string, o *options.Ve
 		LocalImage:                   o.LocalImage,
 	}
 
-	return vc.Exec(ctx, []string{imageURI})
+	if err = vc.Exec(ctx, []string{imageURI}); err != nil {
+		return VerifyError{}
+	}
+	return nil
 }
 
 func verifyCode(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context) error {
@@ -110,7 +123,7 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 		return err
 	}
 	if err = verify.VerifyIdentity(functionIdentity, o, ctx, isKeyless); err != nil {
-		return err
+		return VerifyError{}
 	}
 	return nil
 }

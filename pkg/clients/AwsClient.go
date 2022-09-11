@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go/service/sns"
 	"github.com/google/uuid"
 	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/utils"
@@ -148,6 +149,21 @@ func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
 		return "", fmt.Errorf("failed to extract code for function: %s. %v", funcIdentifier, err)
 	}
 	return "/tmp/" + contentName, nil
+}
+
+func (o *AwsClient) Notify(msg string, topicARN string) error {
+	sess := o.getSession()
+	svc := sns.New(sess)
+	result, err := svc.Publish(&sns.PublishInput{
+		Message:  &msg,
+		TopicArn: &topicARN,
+	})
+	if err != nil {
+		return fmt.Errorf("error publishing the message: %s to topic: %s", msg, topicARN)
+	}
+
+	fmt.Println("Message ID: " + *result.MessageId)
+	return nil
 }
 
 func (o *AwsClient) GetFuncImageURI(funcIdentifier string) (string, error) {

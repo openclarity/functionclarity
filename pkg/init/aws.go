@@ -10,15 +10,16 @@ import (
 )
 
 type AWSInput struct {
-	AccessKey  string
-	SecretKey  string
-	Region     string
-	Bucket     string
-	Action     string
-	PublicKey  string
-	PrivateKey string
-	CloudTrail CloudTrail
-	IsKeyless  bool
+	AccessKey   string
+	SecretKey   string
+	Region      string
+	Bucket      string
+	Action      string
+	PublicKey   string
+	PrivateKey  string
+	CloudTrail  CloudTrail
+	IsKeyless   bool
+	SnsTopicArn string
 }
 
 type CloudTrail struct {
@@ -50,6 +51,9 @@ func (i *AWSInput) ReceiveParameters() error {
 		return err
 	}
 	if err := inputMultipleChoiceParameter("post verification action", &i.Action, map[string]string{"1": "detect", "2": "block"}, true); err != nil {
+		return err
+	}
+	if err := inputStringParameter("enter SNS arn if you would like to be notified when signature verification fails, otherwise press enter: ", &i.SnsTopicArn, true); err != nil {
 		return err
 	}
 	if err := inputStringParameter("is there existing trail in CloudTrail which you would like to use? (if no, please press enter): ", &i.CloudTrail.Name, true); err != nil {
