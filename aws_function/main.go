@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/openclarity/function-clarity/pkg/clients"
@@ -87,8 +88,6 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 		if err != nil {
 			return
 		}
-		res, _ := yaml.Marshal(config)
-		log.Printf(string(res))
 	}
 	awsClient := clients.NewAwsClient("", "", config.Bucket, config.Region, recordMessage.AwsRegion)
 	if initDocker {
@@ -122,13 +121,11 @@ func initConfig() error {
 	log.Printf("config: %s", envConfig)
 	decodedConfig, err := base64.StdEncoding.DecodeString(envConfig)
 	if err != nil {
-		log.Printf("Failed to load configuration from env var. %v", err)
-		return err
+		return fmt.Errorf("failed to load configuration from env var. %v", err)
 	}
 	err = yaml.Unmarshal(decodedConfig, &config)
 	if err != nil {
-		log.Printf("Failed to load configuration from env var. %v", err)
-		return err
+		return fmt.Errorf("failed to load configuration from env var. %v", err)
 	}
 	return nil
 }
