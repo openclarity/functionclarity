@@ -6,12 +6,15 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/openclarity/function-clarity/pkg/clients"
+	i "github.com/openclarity/function-clarity/pkg/init"
 	opts "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/openclarity/function-clarity/pkg/verify"
 	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
+	"gopkg.in/yaml.v3"
 	"io"
 	"log"
 	"os"
@@ -50,6 +53,7 @@ type DockerAuth struct {
 }
 
 var initDocker = true
+var config = i.AWSInput{}
 
 func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLogsEvent) error {
 	if &cloudWatchEvent.AWSLogs == nil || &cloudWatchEvent.AWSLogs.Data == nil || cloudWatchEvent.AWSLogs.Data == "" {
@@ -80,7 +84,13 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 }
 
 func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Context) {
-	awsClient := clients.NewAwsClient("", "", os.Getenv("FUNCTION_CLARITY_BUCKET"), recordMessage.AwsRegion)
+	if config == (i.AWSInput{}) {
+		err := initConfig()
+		if err != nil {
+			return
+		}
+	}
+	awsClient := clients.NewAwsClient("", "", config.Bucket, config.Region, recordMessage.AwsRegion)
 	if initDocker {
 		err := InitDocker(awsClient)
 		if err != nil {
@@ -89,14 +99,27 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 		}
 		initDocker = false
 	}
-	action := os.Getenv("FUNC_CLARITY_ACTION")
 	o := getVerifierOptions()
 	log.Printf("about to execute verification with post action: %s.", action)
-	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, action)
+	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx)
 
 	if err != nil {
 		log.Printf("Failed to handle lambda result: %s, %v", recordMessage.ResponseElements.FunctionArn, err)
 	}
+}
+
+func initConfig() error {
+	envConfig := os.Getenv("CONFIGURATION")
+	log.Printf("config: %s", envConfig)
+	decodedConfig, err := base64.StdEncoding.DecodeString(envConfig)
+	if err != nil {
+		return fmt.Errorf("failed to load configuration from env var. %v", err)
+	}
+	err = yaml.Unmarshal(decodedConfig, &config)
+	if err != nil {
+		return fmt.Errorf("failed to load configuration from env var. %v", err)
+	}
+	return nil
 }
 
 func InitDocker(awsClient *clients.AwsClient) error {
