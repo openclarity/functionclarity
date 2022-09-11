@@ -8,6 +8,7 @@ import (
 type VerifyOpts struct {
 	BundlePath string
 	co.VerifyOptions
+	PublicKey string
 }
 
 func (o *VerifyOpts) AddFlags(cmd *cobra.Command) {

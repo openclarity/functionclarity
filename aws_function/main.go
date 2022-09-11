@@ -52,7 +52,7 @@ type DockerAuth struct {
 }
 
 var initDocker = true
-var config *i.AWSInput = nil
+var config = i.AWSInput{}
 
 func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLogsEvent) error {
 	if &cloudWatchEvent.AWSLogs == nil || &cloudWatchEvent.AWSLogs.Data == nil || cloudWatchEvent.AWSLogs.Data == "" {
@@ -82,7 +82,15 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 }
 
 func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Context) {
-	awsClient := clients.NewAwsClient("", "", os.Getenv("FUNCTION_CLARITY_BUCKET"), recordMessage.AwsRegion)
+	if config == (i.AWSInput{}) {
+		err := initConfig()
+		if err != nil {
+			return
+		}
+		res, _ := yaml.Marshal(config)
+		log.Printf(string(res))
+	}
+	awsClient := clients.NewAwsClient("", "", config.Bucket, config.Region, recordMessage.AwsRegion)
 	if initDocker {
 		err := InitDocker(awsClient)
 		if err != nil {
@@ -91,19 +99,7 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 		}
 		initDocker = false
 	}
-	if config == nil {
-		envConfig := os.Getenv("CONFIGURATION")
-		decodedConfig, err := base64.StdEncoding.DecodeString(envConfig)
-		if err != nil {
-			log.Printf("Failed to load configuration from env var. %v", err)
-			return
-		}
-		err = yaml.Unmarshal(decodedConfig, config)
-		if err != nil {
-			log.Printf("Failed to load configuration from env var. %v", err)
-			return
-		}
-	}
+
 	o := getVerifierOptions()
 	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx)
 
@@ -119,6 +115,22 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 	if err != nil {
 		log.Printf("Failed to tag lambda: %s, %v", recordMessage.ResponseElements.FunctionArn, err)
 	}
+}
+
+func initConfig() error {
+	envConfig := os.Getenv("CONFIGURATION")
+	log.Printf("config: %s", envConfig)
+	decodedConfig, err := base64.StdEncoding.DecodeString(envConfig)
+	if err != nil {
+		log.Printf("Failed to load configuration from env var. %v", err)
+		return err
+	}
+	err = yaml.Unmarshal(decodedConfig, &config)
+	if err != nil {
+		log.Printf("Failed to load configuration from env var. %v", err)
+		return err
+	}
+	return nil
 }
 
 func InitDocker(awsClient *clients.AwsClient) error {
@@ -165,6 +177,7 @@ func InitDocker(awsClient *clients.AwsClient) error {
 func getVerifierOptions() *opts.VerifyOpts {
 	o := &opts.VerifyOpts{
 		BundlePath: "",
+		PublicKey:  "cosign.pub",
 		VerifyOptions: co.VerifyOptions{
 			Key:          "cosign.pub",
 			CheckClaims:  true,

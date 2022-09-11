@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/arn"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudformation"
@@ -32,18 +33,20 @@ import (
 const FunctionClarityBucketName = "functionclarity"
 
 type AwsClient struct {
-	accessKey string
-	secretKey string
-	s3        string
-	region    string
+	accessKey    string
+	secretKey    string
+	s3           string
+	region       string
+	lambdaRegion string
 }
 
-func NewAwsClient(accessKey string, secretKey string, s3 string, region string) *AwsClient {
+func NewAwsClient(accessKey string, secretKey string, s3 string, region string, lambdaRegion string) *AwsClient {
 	p := new(AwsClient)
 	p.accessKey = accessKey
 	p.secretKey = secretKey
 	p.s3 = s3
 	p.region = region
+	p.lambdaRegion = lambdaRegion
 	return p
 }
 
@@ -56,7 +59,7 @@ func NewAwsClientInit(accessKey string, secretKey string, region string) *AwsCli
 }
 
 func (o *AwsClient) ResolvePackageType(funcIdentifier string) (string, error) {
-	sess := o.getSession()
+	sess := o.getSessionForLambda()
 	svc := lambda.New(sess)
 	input := &lambda.GetFunctionInput{
 		FunctionName: aws.String(funcIdentifier),
@@ -125,7 +128,7 @@ func (o *AwsClient) Download(fileName string, outputType string) error {
 }
 
 func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
-	sess := o.getSession()
+	sess := o.getSessionForLambda()
 	svc := lambda.New(sess)
 	input := &lambda.GetFunctionInput{
 		FunctionName: aws.String(funcIdentifier),
@@ -146,7 +149,7 @@ func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
 }
 
 func (o *AwsClient) GetFuncImageURI(funcIdentifier string) (string, error) {
-	sess := o.getSession()
+	sess := o.getSessionForLambda()
 	svc := lambda.New(sess)
 	input := &lambda.GetFunctionInput{
 		FunctionName: aws.String(funcIdentifier),
@@ -159,7 +162,7 @@ func (o *AwsClient) GetFuncImageURI(funcIdentifier string) (string, error) {
 }
 
 func (o *AwsClient) TagFunction(funcIdentifier string, tag string, tagValue string) (string, error) {
-	sess := o.getSession()
+	sess := o.getSessionForLambda()
 	svc := lambda.New(sess)
 	input := &lambda.TagResourceInput{
 		Resource: aws.String(funcIdentifier),
@@ -186,7 +189,7 @@ func (o *AwsClient) GetEcrToken() (*ecr.GetAuthorizationTokenOutput, error) {
 
 func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, deploymentConfig i.AWSInput) error {
 	sess := o.getSession()
-	err := uploadFuncClarityCode(sess, keyPath)
+	err := uploadFuncClarityCode(sess, keyPath, deploymentConfig.Bucket)
 	if err != nil {
 		return err
 	}
@@ -225,7 +228,6 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, depl
 	fmt.Println("deployment finished successfully")
 	return nil
 }
-
 func calculateStackTemplate(trailName string, sess *session.Session, config i.AWSInput) (error, string) {
 	templateFile := "utils/unified-template.template"
 	content, err := os.ReadFile(templateFile)
@@ -239,12 +241,11 @@ func calculateStackTemplate(trailName string, sess *session.Session, config i.AW
 		data["bucketName"] = config.Bucket
 	}
 
-	buf := &bytes.Buffer{}
-	err = yaml.NewEncoder(buf).Encode(config)
+	serConfig, err := yaml.Marshal(config)
 	if err != nil {
 		return fmt.Errorf("failed to create template. %v", err), ""
 	}
-	encodedConfig := b64.StdEncoding.EncodeToString(buf.Bytes())
+	encodedConfig := b64.StdEncoding.EncodeToString(serConfig)
 	data["config"] = encodedConfig
 	if trailName == "" {
 		data["withTrail"] = "True"
@@ -263,7 +264,7 @@ func calculateStackTemplate(trailName string, sess *session.Session, config i.AW
 		data["logGroupName"] = strings.Split(cloudWatchArn.Resource, ":")[1]
 	}
 	tmpl := template.Must(template.New("template.json").Parse(templateBody))
-	buf = &bytes.Buffer{}
+	buf := &bytes.Buffer{}
 	err = tmpl.Execute(buf, data)
 	if err != nil {
 		return err, ""
@@ -292,14 +293,32 @@ func (o *AwsClient) getSession() *session.Session {
 	return result
 }
 
-func uploadFuncClarityCode(sess *session.Session, keyPath string) error {
-	s3svc := s3.New(sess)
+func (o *AwsClient) getSessionForLambda() *session.Session {
+	cfgs := &aws.Config{
+		Region: aws.String(o.lambdaRegion)}
+	if o.accessKey != "" && o.secretKey != "" {
+		cfgs = &aws.Config{
+			Region:      aws.String(o.lambdaRegion),
+			Credentials: credentials.NewStaticCredentials(o.accessKey, o.secretKey, ""),
+		}
+	}
+	result := session.Must(session.NewSession(cfgs))
+	return result
+}
 
+func uploadFuncClarityCode(sess *session.Session, keyPath string, bucket string) error {
+	s3svc := s3.New(sess)
 	_, err := s3svc.CreateBucket(&s3.CreateBucketInput{
-		Bucket: aws.String(FunctionClarityBucketName),
+		Bucket: aws.String(bucket),
 	})
 	if err != nil {
-		return nil
+		if awsErr, ok := err.(awserr.Error); ok {
+			if awsErr.Code() != "BucketAlreadyOwnedByYou" {
+				return err
+			}
+		} else {
+			return err
+		}
 	}
 	archive, err := os.Create("function-clarity.zip")
 	if err != nil {
