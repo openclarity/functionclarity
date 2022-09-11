@@ -35,10 +35,17 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 		fmt.Printf("handle notify")
 		return nil
 	case "block":
-		return client.HandleBlock(&funcIdentifier, failed)
-	default:
+		{
+			err := client.HandleBlock(&funcIdentifier, failed)
+			if err != nil {
+				return err
+			}
+			return client.HandleDetect(&funcIdentifier, failed)
+		}
+	case "detect":
 		return client.HandleDetect(&funcIdentifier, failed)
 	}
+	return nil
 }
 
 func verifyImage(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context) error {
