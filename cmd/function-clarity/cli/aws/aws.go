@@ -47,6 +47,9 @@ func AwsVerify() *cobra.Command {
 			if err := viper.BindPFlag("publickey", cmd.Flags().Lookup("key")); err != nil {
 				log.Fatal(err)
 			}
+			if err := viper.BindPFlag("action", cmd.Flags().Lookup("action")); err != nil {
+				log.Fatal(err)
+			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.Key = viper.GetString("publickey")
@@ -68,6 +71,7 @@ func initAwsVerifyFlags(cmd *cobra.Command) {
 	cmd.Flags().String("region", "", "aws region to perform the operation against")
 	cmd.Flags().String("bucket", "", "s3 bucket to work against")
 	cmd.Flags().String("key", "", "public key")
+	cmd.Flags().String("action", "", "action to perform upon validation result")
 }
 
 func AwsInit() *cobra.Command {

@@ -75,7 +75,7 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 		}
 		log.Printf("handling function name: %s, event name: %s, event source: %s, region: %s\n", recordMessage.ResponseElements.FunctionName, recordMessage.EventName, recordMessage.EventSource, recordMessage.AwsRegion)
 		if (strings.Contains(recordMessage.EventName, "CreateFunction") || strings.Contains(recordMessage.EventName, "UpdateFunctionCode")) &&
-			"FunctionClarityLambdaVerifier" != recordMessage.ResponseElements.FunctionName && "us-east-2" == recordMessage.AwsRegion {
+			"FunctionClarityLambdaVerifier" != recordMessage.ResponseElements.FunctionName {
 			handleFunctionEvent(recordMessage, err, context)
 		}
 	}

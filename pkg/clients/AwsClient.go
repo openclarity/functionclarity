@@ -164,8 +164,7 @@ func (o *AwsClient) GetFuncImageURI(funcIdentifier string) (string, error) {
 }
 
 func (o *AwsClient) HandleDetect(funcIdentifier *string, failed bool) error {
-	err := o.convertToArnIfNeeded(funcIdentifier)
-	if err != nil {
+	if err := o.convertToArnIfNeeded(funcIdentifier); err != nil {
 		return err
 	}
 	var tagVerificationString string
@@ -174,10 +173,10 @@ func (o *AwsClient) HandleDetect(funcIdentifier *string, failed bool) error {
 	} else {
 		tagVerificationString = utils.FunctionSignedTagValue
 	}
-	return o.TagFunction(*funcIdentifier, "Function clarity result", tagVerificationString)
+	return o.tagFunction(*funcIdentifier, "Function clarity result", tagVerificationString)
 }
 
-func (o *AwsClient) TagFunction(funcIdentifier string, tag string, tagValue string) error {
+func (o *AwsClient) tagFunction(funcIdentifier string, tag string, tagValue string) error {
 	sess := o.getSessionForLambda()
 	svc := lambda.New(sess)
 	input := &lambda.TagResourceInput{
@@ -194,8 +193,7 @@ func (o *AwsClient) TagFunction(funcIdentifier string, tag string, tagValue stri
 }
 
 func (o *AwsClient) HandleBlock(funcIdentifier *string, failed bool) error {
-	err := o.convertToArnIfNeeded(funcIdentifier)
-	if err != nil {
+	if err := o.convertToArnIfNeeded(funcIdentifier); err != nil {
 		return err
 	}
 	if failed {
@@ -205,8 +203,7 @@ func (o *AwsClient) HandleBlock(funcIdentifier *string, failed bool) error {
 }
 
 func (o *AwsClient) BlockFunction(funcIdentifier *string) error {
-	err := o.TagFunction(*funcIdentifier, utils.FunctionVerifyResultTagKey, utils.FunctionNotSignedTagValue)
-	if err != nil {
+	if err := o.tagFunction(*funcIdentifier, utils.FunctionVerifyResultTagKey, utils.FunctionNotSignedTagValue); err != nil {
 		return fmt.Errorf("failed to tag function with failed result. %v", err)
 	}
 	currentConcurrencyLevel, err := o.GetConcurrencyLevel(*funcIdentifier)
@@ -219,19 +216,17 @@ func (o *AwsClient) BlockFunction(funcIdentifier *string) error {
 	} else {
 		currentConcurrencyLevelString = strconv.FormatInt(*currentConcurrencyLevel, 10)
 	}
-	err = o.TagFunction(*funcIdentifier, utils.FunctionClarityConcurrencyTagKey, currentConcurrencyLevelString)
-	if err != nil {
+	if err = o.tagFunction(*funcIdentifier, utils.FunctionClarityConcurrencyTagKey, currentConcurrencyLevelString); err != nil {
 		return fmt.Errorf("failed to tag function with current concurrency level. %v", err)
 	}
 	var zeroConcurrencyLevel = int64(0)
-	err = o.UpdateConcurrencyLevel(*funcIdentifier, &zeroConcurrencyLevel)
-	if err != nil {
+	if err = o.updateConcurrencyLevel(*funcIdentifier, &zeroConcurrencyLevel); err != nil {
 		return fmt.Errorf("failed to set concurrency level to 0. %v", err)
 	}
 	return nil
 }
 
-func (o *AwsClient) UpdateConcurrencyLevel(funcIdentifier string, concurrencyLevel *int64) error {
+func (o *AwsClient) updateConcurrencyLevel(funcIdentifier string, concurrencyLevel *int64) error {
 	sess := o.getSession()
 	svc := lambda.New(sess)
 	input := &lambda.PutFunctionConcurrencyInput{
@@ -272,8 +267,7 @@ func (o *AwsClient) GetConcurrencyLevel(funcIdentifier string) (*int64, error) {
 }
 
 func (o *AwsClient) UnblockFunction(funcIdentifier *string) error {
-	err := o.TagFunction(*funcIdentifier, utils.FunctionVerifyResultTagKey, utils.FunctionSignedTagValue)
-	if err != nil {
+	if err := o.tagFunction(*funcIdentifier, utils.FunctionVerifyResultTagKey, utils.FunctionSignedTagValue); err != nil {
 		return fmt.Errorf("failed to tag function with success result: %s. %v", *funcIdentifier, err)
 	}
 	err, concurrencyLevel := o.GetConcurrencyLevelTag(*funcIdentifier, utils.FunctionClarityConcurrencyTagKey)
@@ -281,13 +275,11 @@ func (o *AwsClient) UnblockFunction(funcIdentifier *string) error {
 		return fmt.Errorf("failed to get function tag with prev concurrency level for func: %s. %v", *funcIdentifier, err)
 	}
 	if concurrencyLevel == nil {
-		err = o.DeleteConcurrencyLevel(*funcIdentifier)
-		if err != nil {
+		if err = o.DeleteConcurrencyLevel(*funcIdentifier); err != nil {
 			return fmt.Errorf("failed to unblock function (set concurrency level to prev value): %s. %v", *funcIdentifier, err)
 		}
 	} else if *concurrencyLevel != -1 {
-		err = o.UpdateConcurrencyLevel(*funcIdentifier, concurrencyLevel)
-		if err != nil {
+		if err = o.updateConcurrencyLevel(*funcIdentifier, concurrencyLevel); err != nil {
 			return fmt.Errorf("failed to unblock function (set concurrency level to prev value): %s. %v", *funcIdentifier, err)
 		}
 	} else {
@@ -331,8 +323,7 @@ func (o *AwsClient) GetConcurrencyLevelTag(funcIdentifier string, tag string) (e
 		Resource: aws.String(funcIdentifier),
 	}
 	req, resp := svc.ListTagsRequest(input)
-	err := req.Send()
-	if err != nil {
+	if err := req.Send(); err != nil {
 		return err, nil
 	}
 	concurrencyLevel := resp.Tags[tag]
@@ -361,8 +352,7 @@ func (o *AwsClient) GetEcrToken() (*ecr.GetAuthorizationTokenOutput, error) {
 
 func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, deploymentConfig i.AWSInput) error {
 	sess := o.getSession()
-	err := uploadFuncClarityCode(sess, keyPath, deploymentConfig.Bucket)
-	if err != nil {
+	if err := uploadFuncClarityCode(sess, keyPath, deploymentConfig.Bucket); err != nil {
 		return err
 	}
 	svc := cloudformation.New(sess)
@@ -390,10 +380,9 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, depl
 		return err
 	}
 	fmt.Println("waiting for deployment to complete")
-	err = svc.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
+	if err = svc.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
 		StackName: &stackName,
-	})
-	if err != nil {
+	}); err != nil {
 		fmt.Println("Got an error waiting for stack to be created")
 		return err
 	}
@@ -427,8 +416,7 @@ func calculateStackTemplate(trailName string, sess *session.Session, config i.AW
 		if err != nil {
 			return err, ""
 		}
-		err = trailValid(trail)
-		if err != nil {
+		if err = trailValid(trail); err != nil {
 			return err, ""
 		}
 		cloudWatchArn, err := arn.Parse(*trail.Trail.CloudWatchLogsLogGroupArn)
@@ -437,8 +425,7 @@ func calculateStackTemplate(trailName string, sess *session.Session, config i.AW
 	}
 	tmpl := template.Must(template.New("template.json").Parse(templateBody))
 	buf := &bytes.Buffer{}
-	err = tmpl.Execute(buf, data)
-	if err != nil {
+	if err = tmpl.Execute(buf, data); err != nil {
 		return err, ""
 	}
 	stackCalculatedTemplate := buf.String()
