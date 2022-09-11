@@ -17,7 +17,7 @@ func VerifyIdentity(identity string, o *opts.VerifyOpts, ctx context.Context, is
 	}
 
 	ko := options.KeyOpts{
-		KeyRef:     o.PublicKey,
+		KeyRef:     o.Key,
 		Sk:         o.SecurityKey.Use,
 		Slot:       o.SecurityKey.Slot,
 		RekorURL:   o.Rekor.URL,

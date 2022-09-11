@@ -123,6 +123,9 @@ func inputMultipleChoiceParameter(action string, p *string, m map[string]string,
 	fmt.Print(message)
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
 	input = strings.TrimSuffix(input, "\n")
 	if !em && input == "" {
 		return fmt.Errorf("this is a compulsory parameter")
@@ -139,5 +142,5 @@ func inputMultipleChoiceParameter(action string, p *string, m map[string]string,
 			*p = ""
 		}
 	}
-	return err
+	return nil
 }

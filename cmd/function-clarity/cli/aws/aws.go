@@ -49,7 +49,7 @@ func AwsVerify() *cobra.Command {
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			o.PublicKey = viper.GetString("publickey")
+			o.Key = viper.GetString("publickey")
 			awsClient := clients.NewAwsClient(viper.GetString("accesskey"), viper.GetString("secretkey"), viper.GetString("bucket"), viper.GetString("region"), lambdaRegion)
 			return verify.Verify(awsClient, args[0], o, cmd.Context())
 		},

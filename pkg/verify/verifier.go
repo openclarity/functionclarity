@@ -43,7 +43,7 @@ func verifyImage(client clients.Client, functionIdentifier string, o *options.Ve
 	vc := v.VerifyCommand{
 		RegistryOptions:              o.Registry,
 		CheckClaims:                  o.CheckClaims,
-		KeyRef:                       o.PublicKey,
+		KeyRef:                       o.Key,
 		CertRef:                      o.CertVerify.Cert,
 		CertEmail:                    o.CertVerify.CertEmail,
 		CertOidcIssuer:               o.CertVerify.CertOidcIssuer,
@@ -80,7 +80,7 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 	}
 
 	isKeyless := false
-	if !o.SecurityKey.Use && o.PublicKey == "" && o.BundlePath == "" && integrity.IsExperimentalEnv() {
+	if !o.SecurityKey.Use && o.Key == "" && o.BundlePath == "" && integrity.IsExperimentalEnv() {
 		isKeyless = true
 	}
 	if err = downloadSignatureAndCertificate(client, functionIdentifier, err, functionIdentity, isKeyless); err != nil {

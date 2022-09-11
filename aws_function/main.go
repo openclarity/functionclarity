@@ -177,7 +177,6 @@ func InitDocker(awsClient *clients.AwsClient) error {
 func getVerifierOptions() *opts.VerifyOpts {
 	o := &opts.VerifyOpts{
 		BundlePath: "",
-		PublicKey:  "cosign.pub",
 		VerifyOptions: co.VerifyOptions{
 			Key:          "cosign.pub",
 			CheckClaims:  true,
