@@ -100,8 +100,8 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 		initDocker = false
 	}
 	o := getVerifierOptions()
-	log.Printf("about to execute verification with post action: %s.", action)
-	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx)
+	log.Printf("about to execute verification with post action: %s.", config.Action)
+	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, config.Action)
 
 	if err != nil {
 		log.Printf("Failed to handle lambda result: %s, %v", recordMessage.ResponseElements.FunctionArn, err)

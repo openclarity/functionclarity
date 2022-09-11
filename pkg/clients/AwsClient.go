@@ -157,7 +157,10 @@ func (o *AwsClient) GetFuncImageURI(funcIdentifier string) (string, error) {
 		FunctionName: aws.String(funcIdentifier),
 	}
 	result, err := svc.GetFunction(input)
-	return result, err
+	if err != nil {
+		return "", fmt.Errorf("failed to download function: %s from region: %s, %v", funcIdentifier, o.region, err)
+	}
+	return *result.Code.ImageUri, nil
 }
 
 func (o *AwsClient) HandleDetect(funcIdentifier *string, failed bool) error {
@@ -174,7 +177,7 @@ func (o *AwsClient) HandleDetect(funcIdentifier *string, failed bool) error {
 	return o.TagFunction(*funcIdentifier, "Function clarity result", tagVerificationString)
 }
 
-func (o *AwsClient) TagFunction(funcIdentifier string, tag string, tagValue string) (string, error) {
+func (o *AwsClient) TagFunction(funcIdentifier string, tag string, tagValue string) error {
 	sess := o.getSessionForLambda()
 	svc := lambda.New(sess)
 	input := &lambda.TagResourceInput{
@@ -307,7 +310,12 @@ func (o *AwsClient) UnblockFunction(funcIdentifier *string) error {
 
 func (o *AwsClient) convertToArnIfNeeded(funcIdentifier *string) error {
 	if !arn.IsARN(*funcIdentifier) {
-		result, err := o.GetFunction(*funcIdentifier)
+		sess := o.getSessionForLambda()
+		svc := lambda.New(sess)
+		input := &lambda.GetFunctionInput{
+			FunctionName: aws.String(*funcIdentifier),
+		}
+		result, err := svc.GetFunction(input)
 		if err != nil {
 			return fmt.Errorf("failed to get function by name: %s", *funcIdentifier)
 		}
