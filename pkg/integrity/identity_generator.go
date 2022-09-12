@@ -21,12 +21,12 @@ func (o *Sha256) GenerateIdentity(path string) (string, error) {
 	err := filepath.WalkDir(path,
 		func(path string, d os.DirEntry, err error) error {
 			if err != nil {
-				return fmt.Errorf("%s", err.Error())
+				return err
 			}
 			if !d.IsDir() {
 				data, err := os.ReadFile(path)
 				if err != nil {
-					fmt.Println("File reading error", err)
+					return err
 				}
 				dataString := fmt.Sprintf("%x", data)
 				dataString = dataString + path[strings.Index(path, rootFolderName)+len(rootFolderName):]

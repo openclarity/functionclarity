@@ -1,6 +1,7 @@
 package options
 
 import (
+	"fmt"
 	"github.com/spf13/viper"
 	"log"
 	"os"
@@ -22,9 +23,9 @@ func CobraInit() {
 		viper.SetConfigType("yaml")
 	}
 	if err := viper.ReadInConfig(); err != nil {
-		log.Println("Error loading config file.", err)
+		fmt.Printf("Error loading config file: %s\n", err)
 	}
 	if viper.ConfigFileUsed() != "" {
-		log.Println("Using config file:", viper.ConfigFileUsed())
+		fmt.Printf("using config file: %s\n", viper.ConfigFileUsed())
 	}
 }

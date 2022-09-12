@@ -35,7 +35,7 @@ func VerifyIdentity(identity string, o *opts.VerifyOpts, ctx context.Context, is
 		sigRef, path, o.CertVerify.CertGithubWorkflowTrigger, o.CertVerify.CertGithubWorkflowSha,
 		o.CertVerify.CertGithubWorkflowName, o.CertVerify.CertGithubWorkflowRepository, o.CertVerify.CertGithubWorkflowRef,
 		o.CertVerify.EnforceSCT); err != nil {
-		return fmt.Errorf("verifying identity: %s, %w", identity, err)
+		return fmt.Errorf("verifying identity %s: %w", identity, err)
 	}
 	return nil
 }

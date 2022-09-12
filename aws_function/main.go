@@ -63,7 +63,7 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 	filterRecord, err := extractDataFromEvent(cloudWatchEvent)
 	if err != nil {
 		log.Printf("Failed to extract data from event: %v", err)
-		return err
+		return fmt.Errorf("failed to extract data from event: %w", err)
 	}
 	recordMessage := RecordMessage{}
 	logEvents := filterRecord.LogEvents
@@ -113,11 +113,11 @@ func initConfig() error {
 	log.Printf("config: %s", envConfig)
 	decodedConfig, err := base64.StdEncoding.DecodeString(envConfig)
 	if err != nil {
-		return fmt.Errorf("failed to load configuration from env var. %v", err)
+		return err
 	}
 	err = yaml.Unmarshal(decodedConfig, &config)
 	if err != nil {
-		return fmt.Errorf("failed to load configuration from env var. %v", err)
+		return err
 	}
 	return nil
 }

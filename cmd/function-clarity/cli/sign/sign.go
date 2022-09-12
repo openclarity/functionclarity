@@ -15,12 +15,12 @@ import (
 func SignIdentity(identity string, o *o.SignBlobOptions, ro *co.RootOptions, isKeyless bool) (string, error) {
 	path := "/tmp/" + uuid.New().String()
 	if err := integrity.SaveTextToFile(identity, path); err != nil {
-		return "", err
+		return "", fmt.Errorf("signing identity: %w", err)
 	}
 
 	oidcClientSecret, err := o.OIDC.ClientSecret()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("signing identity: %w", err)
 	}
 	ko := options.KeyOpts{
 		KeyRef:                   viper.GetString("privatekey"),
@@ -49,7 +49,7 @@ func SignIdentity(identity string, o *o.SignBlobOptions, ro *co.RootOptions, isK
 	sig, err := sign.SignBlobCmd(ro, ko, o.Registry, path, o.Base64Output, outputSignature, outputCertificate)
 
 	if err != nil {
-		return "", fmt.Errorf("signing identity: %s, %w", identity, err)
+		return "", fmt.Errorf("signing identity: %w", err)
 	}
 
 	return string(sig), nil
