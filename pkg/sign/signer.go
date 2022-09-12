@@ -13,10 +13,10 @@ import (
 func SignAndUploadCode(client clients.Client, codePath string, o *options.SignBlobOptions, ro *co.RootOptions) error {
 	hash := new(integrity.Sha256)
 	codeIdentity, err := hash.GenerateIdentity(codePath)
-	fmt.Printf("code identity: %s", codeIdentity)
 	if err != nil {
-		return fmt.Errorf("failed to create identity: %v", err)
+		return fmt.Errorf("failed to create identity: %w", err)
 	}
+	fmt.Printf("code identity: %s", codeIdentity)
 	isKeyless := false
 	privateKey := viper.GetString("privatekey")
 	if !o.SecurityKey.Use && privateKey == "" && integrity.IsExperimentalEnv() {
@@ -25,10 +25,10 @@ func SignAndUploadCode(client clients.Client, codePath string, o *options.SignBl
 
 	signedIdentity, err := sign.SignIdentity(codeIdentity, o, ro, isKeyless)
 	if err != nil {
-		return fmt.Errorf("failed to sign identity: %s with private key in path: %s", codeIdentity, privateKey)
+		return fmt.Errorf("failed to sign identity: %s with private key in path: %s: %w", codeIdentity, privateKey, err)
 	}
 	if err = client.Upload(signedIdentity, codeIdentity, isKeyless); err != nil {
-		return fmt.Errorf("failed to upload code signature")
+		return fmt.Errorf("failed to upload code signature: identity: %s, signature: %s to bucket: %s: %w", codeIdentity, signedIdentity, viper.GetString("bucket"), err)
 	}
 	fmt.Println("Code uploaded successfully")
 	return nil

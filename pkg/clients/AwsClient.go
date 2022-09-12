@@ -69,7 +69,7 @@ func (o *AwsClient) ResolvePackageType(funcIdentifier string) (string, error) {
 	}
 	result, err := svc.GetFunction(input)
 	if err != nil {
-		return "", fmt.Errorf("failed to download function: %s from region: %s, %v", funcIdentifier, o.region, err)
+		return "", err
 	}
 	return *result.Configuration.PackageType, nil
 }
@@ -85,14 +85,14 @@ func (o *AwsClient) Upload(signature string, identity string, isKeyless bool) er
 		Body:   strings.NewReader(signature),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to upload key: %s, value: %s to bucket: %s %v", identity, signature, o.s3, err)
+		return err
 	}
 
 	if isKeyless {
 		certificatePath := "/tmp/" + identity + ".crt.base64"
 		f, err := os.Open(certificatePath)
 		if err != nil {
-			return fmt.Errorf("failed to open file %q, %v", certificatePath, err)
+			return err
 		}
 
 		result, err := uploader.Upload(&s3manager.UploadInput{
@@ -101,7 +101,7 @@ func (o *AwsClient) Upload(signature string, identity string, isKeyless bool) er
 			Body:   f,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to upload key: %s, value: %s to bucket: %s %v", identity, certificatePath, o.s3, err)
+			return err
 		}
 		fmt.Printf("\ncertificate file uploaded to, %s\n", aws.StringValue(&result.Location))
 	}
@@ -115,7 +115,7 @@ func (o *AwsClient) Download(fileName string, outputType string) error {
 	outputFile := "/tmp/" + fileName + "." + outputType
 	f, err := os.Create(outputFile)
 	if err != nil {
-		return fmt.Errorf("failed to create file %q, %v", outputFile, err)
+		return err
 	}
 	defer f.Close()
 
@@ -125,7 +125,7 @@ func (o *AwsClient) Download(fileName string, outputType string) error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to download file: %s from bucket: %s, %v", fileName, o.s3, err)
+		return err
 	}
 	return nil
 }
@@ -138,15 +138,15 @@ func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
 	}
 	result, err := svc.GetFunction(input)
 	if err != nil {
-		return "", fmt.Errorf("failed to download function: %s from region: %s, %v", funcIdentifier, o.region, err)
+		return "", err
 	}
 	contentName := uuid.New().String()
 	zipFileName := contentName + ".zip"
 	if err := DownloadFile(contentName+".zip", result.Code.Location); err != nil {
-		return "", fmt.Errorf("failed to download function code for function: %s, from location: %s. %v", funcIdentifier, result.Code.String(), err)
+		return "", err
 	}
 	if err := ExtractZip("/tmp/"+zipFileName, "/tmp/"+contentName); err != nil {
-		return "", fmt.Errorf("failed to extract code for function: %s. %v", funcIdentifier, err)
+		return "", err
 	}
 	return "/tmp/" + contentName, nil
 }
@@ -174,7 +174,7 @@ func (o *AwsClient) GetFuncImageURI(funcIdentifier string) (string, error) {
 	}
 	result, err := svc.GetFunction(input)
 	if err != nil {
-		return "", fmt.Errorf("failed to download function: %s from region: %s, %v", funcIdentifier, o.region, err)
+		return "", err
 	}
 	return *result.Code.ImageUri, nil
 }
@@ -369,13 +369,13 @@ func (o *AwsClient) GetEcrToken() (*ecr.GetAuthorizationTokenOutput, error) {
 func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, deploymentConfig i.AWSInput) error {
 	sess := o.getSession()
 	if err := uploadFuncClarityCode(sess, keyPath, deploymentConfig.Bucket); err != nil {
-		return err
+		return fmt.Errorf("failed to upload function clarity code: %w", err)
 	}
 	svc := cloudformation.New(sess)
 	const funcClarityStackName = "function-clarity-stack"
 	stackExists, err := stackExists(funcClarityStackName, svc)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to check if stack exists: %w", err)
 	}
 	if stackExists {
 		return fmt.Errorf("function clarity already deployed, please delete stack before you dpeloy")
@@ -393,14 +393,13 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, depl
 	})
 	fmt.Println("deployment request sent to provider")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create stack: %w", err)
 	}
 	fmt.Println("waiting for deployment to complete")
 	if err = svc.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
 		StackName: &stackName,
 	}); err != nil {
-		fmt.Println("Got an error waiting for stack to be created")
-		return err
+		return fmt.Errorf("failed to create stack: %w", err)
 	}
 	fmt.Println("deployment finished successfully")
 	return nil

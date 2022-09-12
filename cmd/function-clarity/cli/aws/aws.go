@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
-	"log"
 	"os"
 )
 
@@ -31,28 +30,29 @@ func AwsVerify() *cobra.Command {
 		Use:   "aws",
 		Short: "verify function identity",
 		Args:  cobra.ExactArgs(1),
-		PreRun: func(cmd *cobra.Command, args []string) {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := viper.BindPFlag("accessKey", cmd.Flags().Lookup("aws-access-key")); err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("error binding accessKey: %w", err)
 			}
 			if err := viper.BindPFlag("secretKey", cmd.Flags().Lookup("aws-secret-key")); err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("error binding secretKey: %w", err)
 			}
 			if err := viper.BindPFlag("region", cmd.Flags().Lookup("region")); err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("error binding region: %w", err)
 			}
 			if err := viper.BindPFlag("bucket", cmd.Flags().Lookup("bucket")); err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("error binding bucket: %w", err)
 			}
 			if err := viper.BindPFlag("publickey", cmd.Flags().Lookup("key")); err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("error binding publickey: %w", err)
 			}
 			if err := viper.BindPFlag("action", cmd.Flags().Lookup("action")); err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("error binding action: %w", err)
 			}
 			if err := viper.BindPFlag("snsTopicArn", cmd.Flags().Lookup("sns-topic-arn")); err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("error binding snsTopicArn: %w", err)
 			}
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.Key = viper.GetString("publickey")
@@ -99,24 +99,24 @@ func AwsInit() *cobra.Command {
 			awsClient := clients.NewAwsClientInit(input.AccessKey, input.SecretKey, input.Region)
 			err := awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey, configForDeployment)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to deploy function clarity: %w", err)
 			}
 			d, err := yaml.Marshal(&input)
 			if err != nil {
-				log.Fatalf("error converting init configuration to YAML: %v", err)
+				return fmt.Errorf("init command fail: %w", err)
 			}
 
 			h, err := os.UserHomeDir()
 			if err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("init command fail: %w", err)
 			}
 			f, err := os.Create(h + "/.fc")
 			if err != nil {
-				return fmt.Errorf("failed to create configuration file: %v", err)
+				return fmt.Errorf("init command fail: %w", err)
 			}
 			defer f.Close()
 			if _, err = f.Write(d); err != nil {
-				return fmt.Errorf("failed to write configuration to file: %v", err)
+				return fmt.Errorf("init command fail: %w", err)
 			}
 			return nil
 		},

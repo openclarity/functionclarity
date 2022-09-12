@@ -10,7 +10,6 @@ import (
 	"github.com/sigstore/cosign/cmd/cosign/cli/sign"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
 )
 
 func AwsSignImage() *cobra.Command {
@@ -21,10 +20,11 @@ func AwsSignImage() *cobra.Command {
 		Use:   "image",
 		Short: "sign and upload the image digest to aws",
 		Args:  cobra.ExactArgs(1),
-		PreRun: func(cmd *cobra.Command, args []string) {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := viper.BindPFlag("privatekey", cmd.Flags().Lookup("key")); err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("error binding privatekey: %w", err)
 			}
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			switch o.Attachment {
