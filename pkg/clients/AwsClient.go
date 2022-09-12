@@ -561,7 +561,6 @@ func ExtractZip(zipPath string, dstToExtract string) error {
 			return fmt.Errorf("invalid file path")
 		}
 		if f.FileInfo().IsDir() {
-			fmt.Println("creating directory...")
 			os.MkdirAll(filePath, os.ModePerm)
 			continue
 		}
