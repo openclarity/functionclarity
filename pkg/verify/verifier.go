@@ -45,14 +45,14 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 		}
 	case "block":
 		{
-			e = client.HandleBlock(&funcIdentifier, failed)
-			if e != nil {
-				e = fmt.Errorf("handleVerification failed on function block: %w", e)
-				break
-			}
 			e = client.HandleDetect(&funcIdentifier, failed)
 			if e != nil {
 				e = fmt.Errorf("handleVerification failed on function indication: %w", e)
+				break
+			}
+			e = client.HandleBlock(&funcIdentifier, failed)
+			if e != nil {
+				e = fmt.Errorf("handleVerification failed on function block: %w", e)
 				break
 			}
 		}
