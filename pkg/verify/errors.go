@@ -7,5 +7,5 @@ type VerifyError struct {
 }
 
 func (e VerifyError) Error() string {
-	return fmt.Sprintf("verification error: %w", e.Err)
+	return fmt.Sprintf("verification error: %v", e.Err)
 }
