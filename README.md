@@ -4,4 +4,15 @@ FunctionClarity (AKA FC) is an infrastructure solution for serverless functions 
 
 ## how it works
 
-![Untitled Diagram(1) drawio](https://user-images.githubusercontent.com/109651023/189672155-8c614e89-59cb-4bb6-89f1-88d0c2476352.png)
+![Untitled Diagram(1) drawio (1)](https://user-images.githubusercontent.com/109651023/189673319-5c66fb32-98f5-430c-a01f-4823ab51fc98.png)
+
+* Deploy FC infrastructure (one time operation)
+* Run code/image signing on user's environment - at this phase the code/image signature is uploaded to the cloud.
+* deploy serverless function using the signed code/image
+* Verifier lambda is trigerred upon create function/update function code events
+  * fetch the verfied function code
+  * analayze the code image/zip
+  * check whether its signed by FC and act accordingly:
+    * detect - marks the function with the verfication results
+    * block - block the function from running in case its not verified
+    * notify - send notification to queue.
