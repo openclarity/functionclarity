@@ -8,4 +8,5 @@ type Client interface {
 	Download(fileName string, outputType string) error
 	HandleBlock(funcIdentifier *string, failed bool) error
 	HandleDetect(funcIdentifier *string, failed bool) error
+	Notify(msg string, snsArn string) error
 }

@@ -101,7 +101,7 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 	}
 	o := getVerifierOptions()
 	log.Printf("about to execute verification with post action: %s.", config.Action)
-	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, config.Action)
+	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, config.Action, config.SnsTopicArn)
 
 	if err != nil {
 		log.Printf("Failed to handle lambda result: %s, %v", recordMessage.ResponseElements.FunctionArn, err)

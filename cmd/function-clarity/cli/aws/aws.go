@@ -50,11 +50,14 @@ func AwsVerify() *cobra.Command {
 			if err := viper.BindPFlag("action", cmd.Flags().Lookup("action")); err != nil {
 				log.Fatal(err)
 			}
+			if err := viper.BindPFlag("snsTopicArn", cmd.Flags().Lookup("sns-topic-arn")); err != nil {
+				log.Fatal(err)
+			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.Key = viper.GetString("publickey")
 			awsClient := clients.NewAwsClient(viper.GetString("accesskey"), viper.GetString("secretkey"), viper.GetString("bucket"), viper.GetString("region"), lambdaRegion)
-			return verify.Verify(awsClient, args[0], o, cmd.Context(), viper.GetString("action"))
+			return verify.Verify(awsClient, args[0], o, cmd.Context(), viper.GetString("action"), viper.GetString("snsTopicArn"))
 		},
 	}
 	cmd.Flags().StringVar(&lambdaRegion, "function-region", "", "aws region where the verified lambda runs")
@@ -72,6 +75,7 @@ func initAwsVerifyFlags(cmd *cobra.Command) {
 	cmd.Flags().String("bucket", "", "s3 bucket to work against")
 	cmd.Flags().String("key", "", "public key")
 	cmd.Flags().String("action", "", "action to perform upon validation result")
+	cmd.Flags().String("sns-topic-arn", "", "SNS topic ARN for notifications")
 }
 
 func AwsInit() *cobra.Command {
