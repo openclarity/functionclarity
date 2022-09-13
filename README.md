@@ -100,9 +100,15 @@ FC supports many features, we will elaborate on the commands and its usage.
 
 
 ### Sign command detailed usage
-#### aws
 FC supports signing of code from local folder and images.
 When signing images, make sure you are logged in to the docker repository where your images deployed.
+---
+
+**NOTE**:
+In case a default config file exists (under ~/.fc) it will be used, if a custom config file flag is presented it will be used, if flags are presented that will take precedence.
+
+---
+#### aws
 For code signing use the command:
 ```shell
 function-clarity sign aws code <folder to sign> --flags
@@ -111,12 +117,6 @@ For image singing use the command:
 ```shell
 function-clarity sign aws image <image url> --flags
 ```
----
-
-**NOTE**:
-In case a default config file exists (under ~/.fc) it will be used, in case a custom config file is presented it will be used, if flags are presented that will take precedence.
-
----
 below is the optional flags that the command uses.
 | flag | Description |
 | --- | --- |
