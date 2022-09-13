@@ -35,7 +35,7 @@ The quick start will be conducted against aws account, we will show how to:
 
 ### Init and deploy FC
 The command prompts the user to enter information regarding the installation of FC.
-When the command finishes to run FC will be deployed to aws account and a configuration file will be created locally.
+When the command finishes to run FC will be deployed to aws account and a configuration file will be created locally under ~/.fc .
 ```shell
 ./function-clarity init aws
 enter Access Key: ********
@@ -79,5 +79,20 @@ You can also use the cli to peform manual verification of a function:
 using config file: /Users/shaiembon/.fc
 Verified OK
 ```
+
+## Advanced usage
+FC supports many features, we will elaborate on the commands and its usage.
+
+### Init command detailed usage
+#### aws
+| Input | Description |
+| --- | --- |
+| access key | aws access key |
+| secret key | aws secret key |
+| region | region to deploy FC |
+| default bucket | bucket to deploy signatures and FC verifier lambda code for the deployment |
+| post verification action | action to perform upon validation results (detect, block or leave empty for no action to perform) |
+| post verification action | action to perform upon validation results (detect, block or leave empty for no action to perform) |
+
 
 
