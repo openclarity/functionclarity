@@ -17,10 +17,10 @@ FunctionClarity (AKA FC) is an infrastructure solution for serverless functions 
     * block - block the function from running in case its not verified
     * notify - send notification to queue.
 
-## Getting started
-### Install Fuction Clarity
+## Install Fuction Clarity
 Fill installation instructions once the distribution is ready
-### Quick start
+## Quick start
+The quick start will be conducted against aws account
 We will show how to:
 * Init and deploy FC
 * Sign and upload code
@@ -28,3 +28,15 @@ We will show how to:
 * Check verfication
   * From the cloud account
   * From FC command line
+
+### Init and deploy FC
+The command prompts the user to enter information regarding the installation of FC.
+```shell
+./function-clarity init aws
+enter Access Key:
+enter Secret Key:
+enter region:
+enter default bucket (you can leave empty and a bucket with name functionclarity will be created):
+select post verification action : (1) for detect; (2) for block; leave empty for no post verification action to perform 
+is there existing trail in CloudTrail which you would like to use? (if no, please press enter): 
+```
