@@ -16,6 +16,8 @@ FunctionClarity (AKA FC) is an infrastructure solution for serverless functions 
     * block - block the function from running in case its not verified
     * notify - send notification to queue.
 
+> **_NOTE:_**  At the moment only aws cloud provider is supported, additional cloud providers are on the roadmap
+
 ## Install Fuction Clarity
 Fill installation instructions once the distribution is ready
 ## Quick start
