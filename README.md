@@ -69,6 +69,11 @@ If you completed "init and deployment" step a verfier function runs in your clou
 
 ![image](https://user-images.githubusercontent.com/109651023/189880644-bed91413-a81c-4b03-b6f8-00ebea6606a0.png)
 
-You can also use the cli to verify a function:
+You can also use the cli to peform manual verification of a function:
+```shell
+./function-clarity verify aws funcclarity-test-signed --function-region=us-east-2
+using config file: /Users/shaiembon/.fc
+Verified OK
+```
 
 
