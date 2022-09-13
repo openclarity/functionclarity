@@ -109,9 +109,14 @@ function-clarity sign aws code <folder to sign> --flags
 ```
 For image singing use the command:
 ```shell
-function-clarity sign aws image <image url>
+function-clarity sign aws image <image url> --flags
 ```
+---
+
+**NOTE**:
 In case a default config file exists (under ~/.fc) it will be used, in case a custom config file is presented it will be used, if flags are presented that will take precedence.
+
+---
 below is the optional flags that the command uses.
 | flag | Description |
 | --- | --- |
