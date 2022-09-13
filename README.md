@@ -99,4 +99,9 @@ FC supports many features, we will elaborate on the commands and its usage.
 | privte key for code signing | in case a public key path was entered, supply the corresponding private key path |
 
 
+### Sign command detailed usage
+#### aws
+FC supports signing of code from local folder and images.
+##### sign code
+
 
