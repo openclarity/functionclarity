@@ -50,3 +50,6 @@ Private key written to cosign.key
 Public key written to cosign.pub
 deployment finished successfully
 ```
+
+### Sign code
+The command below will sign folder with code and upload it to the user's cloud account
