@@ -65,7 +65,10 @@ Code uploaded successfully
 ### Deploy function or update function code
 Use aws cli to deploy lambda or update lambda code
 ### Verify function code
-If you completed init and deployment step a verfier function runs in your cloud account and handles CreateFunction/UpdateFunctionCode events, after several minutes your lambda function will be tagged with FC message that the function is verified:
+If you completed "init and deployment" step a verfier function runs in your cloud account and handles CreateFunction/UpdateFunctionCode events, after several minutes your lambda function will be tagged with FC message that the function is verified:
 
 ![image](https://user-images.githubusercontent.com/109651023/189880644-bed91413-a81c-4b03-b6f8-00ebea6606a0.png)
+
+You can also use the cli to verify a function:
+
 
