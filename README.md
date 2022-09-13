@@ -53,3 +53,12 @@ deployment finished successfully
 
 ### Sign code
 The command below will sign folder with code and upload it to the user's cloud account
+
+```shell
+./function-clarity sign aws code /sample-code-verified-folder
+
+using config file: /Users/shaiembon/.fc
+Enter password for private key:
+MEYCIQDskDWwLEURdALycGH/ntCRjA5G74yJ/qeSDzHTQSRY8gIhALE6Z5XW/iyjz++rzrdhzskPwfwW2gAMjK1H9lCXOGom
+Code uploaded successfully
+```
