@@ -20,8 +20,7 @@ FunctionClarity (AKA FC) is an infrastructure solution for serverless functions 
 ## Install Fuction Clarity
 Fill installation instructions once the distribution is ready
 ## Quick start
-The quick start will be conducted against aws account
-We will show how to:
+The quick start will be conducted against aws account, we will show how to:
 * Init and deploy FC
 * Sign and upload code
 * create aws function
