@@ -31,7 +31,7 @@ We will show how to:
 
 ### Init and deploy FC
 The command prompts the user to enter information regarding the installation of FC.
-When the command finishes to run FC will be deployed to aws account.
+When the command finishes to run FC will be deployed to aws account and a configuration file will be created locally.
 ```shell
 ./function-clarity init aws
 enter Access Key:
