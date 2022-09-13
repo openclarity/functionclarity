@@ -31,6 +31,7 @@ We will show how to:
 
 ### Init and deploy FC
 The command prompts the user to enter information regarding the installation of FC.
+When the command finishes to run FC will be deployed to aws account.
 ```shell
 ./function-clarity init aws
 enter Access Key:
@@ -39,4 +40,13 @@ enter region:
 enter default bucket (you can leave empty and a bucket with name functionclarity will be created):
 select post verification action : (1) for detect; (2) for block; leave empty for no post verification action to perform 
 is there existing trail in CloudTrail which you would like to use? (if no, please press enter): 
+do you want to work in keyless mode (y/n): n
+enter path to custom public key for code signing? (if you want us to generate key pair, please press enter): 
+Enter password for private key:
+Enter password for private key again:
+File cosign.key already exists. Overwrite (y/n)? y
+
+Private key written to cosign.key
+Public key written to cosign.pub
+deployment finished successfully
 ```
