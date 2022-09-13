@@ -90,9 +90,13 @@ FC supports many features, we will elaborate on the commands and its usage.
 | access key | aws access key |
 | secret key | aws secret key |
 | region | region to deploy FC |
-| default bucket | bucket to deploy signatures and FC verifier lambda code for the deployment |
+| default bucket | bucket to deploy code signatures and FC verifier lambda code for the deployment |
 | post verification action | action to perform upon validation results (detect, block or leave empty for no action to perform) |
-| post verification action | action to perform upon validation results (detect, block or leave empty for no action to perform) |
+| sns arn | in case you would like to notify to an sns queue in case function is not verified |
+| CloudTrail | cloud trail to use, can be empty and a new trail will be created |
+| keyless mode (y/n) | select whether you would like to work in keylesss mode |
+| public key for code signing | path to public key to use when verifing functions, can leave empty and a key-pair will be created |
+| privte key for code signing | in case a public key path was entered, supply the corresponding private key path |
 
 
 
