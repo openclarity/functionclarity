@@ -34,11 +34,11 @@ The command prompts the user to enter information regarding the installation of 
 When the command finishes to run FC will be deployed to aws account and a configuration file will be created locally.
 ```shell
 ./function-clarity init aws
-enter Access Key:
-enter Secret Key:
-enter region:
+enter Access Key: ********
+enter Secret Key: ********
+enter region: 
 enter default bucket (you can leave empty and a bucket with name functionclarity will be created):
-select post verification action : (1) for detect; (2) for block; leave empty for no post verification action to perform 
+select post verification action : (1) for detect; (2) for block; leave empty for no post verification action to perform: 1
 is there existing trail in CloudTrail which you would like to use? (if no, please press enter): 
 do you want to work in keyless mode (y/n): n
 enter path to custom public key for code signing? (if you want us to generate key pair, please press enter): 
@@ -62,3 +62,7 @@ Enter password for private key:
 MEYCIQDskDWwLEURdALycGH/ntCRjA5G74yJ/qeSDzHTQSRY8gIhALE6Z5XW/iyjz++rzrdhzskPwfwW2gAMjK1H9lCXOGom
 Code uploaded successfully
 ```
+### Deploy function or update function code
+Use aws cli to deploy lambda or update lambda code
+### Verify function code
+If you completed init and deployment step a verfier function runs in your cloud account and 
