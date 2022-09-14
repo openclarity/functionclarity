@@ -73,9 +73,9 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 			log.Printf("failed to extract message from event, skipping message. %s", logEvents[i].Message)
 			continue
 		}
-		log.Printf("handling function name: %s, event name: %s, event source: %s, region: %s\n", recordMessage.ResponseElements.FunctionName, recordMessage.EventName, recordMessage.EventSource, recordMessage.AwsRegion)
 		if (strings.Contains(recordMessage.EventName, "CreateFunction") || strings.Contains(recordMessage.EventName, "UpdateFunctionCode")) &&
-			"FunctionClarityLambdaVerifier" != recordMessage.ResponseElements.FunctionName {
+			"FunctionClarityLambdaVerifier" != recordMessage.ResponseElements.FunctionName && "" != recordMessage.ResponseElements.FunctionName {
+			log.Printf("handling function name: %s, event name: %s, event source: %s, region: %s\n", recordMessage.ResponseElements.FunctionName, recordMessage.EventName, recordMessage.EventSource, recordMessage.AwsRegion)
 			handleFunctionEvent(recordMessage, err, context)
 		}
 	}
@@ -90,14 +90,15 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 			return
 		}
 	}
-	awsClient := clients.NewAwsClient("", "", config.Bucket, recordMessage.AwsRegion, recordMessage.AwsRegion)
-	err = InitDocker(awsClient)
+	awsClientForDocker := clients.NewAwsClient("", "", config.Bucket, recordMessage.AwsRegion, recordMessage.AwsRegion)
+	err = InitDocker(awsClientForDocker)
 	if err != nil {
 		log.Printf("Failed to init docker. %v", err)
 		return
 	}
 	o := getVerifierOptions()
 	log.Printf("about to execute verification with post action: %s.", config.Action)
+	awsClient := clients.NewAwsClient("", "", config.Bucket, config.Region, recordMessage.AwsRegion)
 	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, config.Action, config.SnsTopicArn)
 
 	if err != nil {
