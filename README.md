@@ -82,6 +82,7 @@ Verified OK
 
 ## Advanced usage
 FC supports many features, we will elaborate on the commands and its usage.
+FC leverages [cosign](https://github.com/sigstore/cosign) for signing and verifing code, we support key-pair and key-less signing techniques.
 
 ### Init command detailed usage
 #### aws
@@ -129,6 +130,14 @@ below is the optional flags that the command uses.
 
 
 ### Verify command detailed usage
+
+---
+
+**NOTE**:
+In case a default config file exists (under ~/.fc) it will be used, if a custom config file flag is presented it will be used, if flags are presented that will take precedence.
+
+---
+
 #### aws
 Command for verification
 ```shell
