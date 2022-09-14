@@ -90,14 +90,11 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 			return
 		}
 	}
-	awsClient := clients.NewAwsClient("", "", config.Bucket, config.Region, recordMessage.AwsRegion)
-	if initDocker {
-		err := InitDocker(awsClient)
-		if err != nil {
-			log.Printf("Failed to init docker. %v", err)
-			return
-		}
-		initDocker = false
+	awsClient := clients.NewAwsClient("", "", config.Bucket, recordMessage.AwsRegion, recordMessage.AwsRegion)
+	err = InitDocker(awsClient)
+	if err != nil {
+		log.Printf("Failed to init docker. %v", err)
+		return
 	}
 	o := getVerifierOptions()
 	log.Printf("about to execute verification with post action: %s.", config.Action)
