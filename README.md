@@ -100,8 +100,9 @@ FC supports many features, we will elaborate on the commands and its usage.
 
 
 ### Sign command detailed usage
-FC supports signing of code from local folder and images.
+FC supports signing of code from local folders and images.
 When signing images, make sure you are logged in to the docker repository where your images deployed.
+
 ---
 
 **NOTE**:
@@ -111,21 +112,33 @@ In case a default config file exists (under ~/.fc) it will be used, if a custom 
 #### aws
 For code signing use the command:
 ```shell
-function-clarity sign aws code <folder to sign> --flags
+function-clarity sign aws code <folder to sign> --flags (optional if you have configuration file)
 ```
 For image singing use the command:
 ```shell
-function-clarity sign aws image <image url> --flags
+function-clarity sign aws image <image url> --flags (optional if you have configuration file)
 ```
 below is the optional flags that the command uses.
 | flag | Description |
 | --- | --- |
 | access key | aws access key |
 | secret key | aws secret key |
-| region | region to deploy signature |
-| bucket | bucket to deploy code signature |
+| region | region to deploy signature (relevant only for code signing) |
+| bucket | bucket to deploy code signature (relevant only for code signing)|
 | privatekey | key to sign code with |
 
 
+### Verify command detailed usage
+Command for verification
+```shell
+function-clarity verify aws <function name to verify> --function-region=<function region location> --flags (optional if you have configuration file)
+```
 
-
+below is the optional flags that the command uses.
+| flag | Description |
+| --- | --- |
+| access key | aws access key |
+| secret key | aws secret key |
+| region | region to load the signature from (relevant only for code signing) |
+| bucket | bucket to load signatures from (relevant only for code signing) |
+| key | public key for verification |
