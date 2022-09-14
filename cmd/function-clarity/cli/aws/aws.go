@@ -16,7 +16,7 @@ import (
 func AwsSign() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aws",
-		Short: "sign content from aws",
+		Short: "sign code/image and upload to aws",
 	}
 	cmd.AddCommand(AwsSignCode())
 	cmd.AddCommand(AwsSignImage())
@@ -81,7 +81,7 @@ func initAwsVerifyFlags(cmd *cobra.Command) {
 func AwsInit() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aws",
-		Short: "initialize configuration in aws",
+		Short: "initialize configuration and deploy to aws",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var input i.AWSInput

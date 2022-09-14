@@ -47,7 +47,7 @@ func (i *AWSInput) ReceiveParameters() error {
 	if err := inputStringParameter("enter region: ", &i.Region, false); err != nil {
 		return err
 	}
-	if err := inputStringParameter("enter default bucket: ", &i.Bucket, true); err != nil {
+	if err := inputStringParameter("enter default bucket (you can leave empty and a bucket with name functionclarity will be created): ", &i.Bucket, true); err != nil {
 		return err
 	}
 	if err := inputMultipleChoiceParameter("post verification action", &i.Action, map[string]string{"1": "detect", "2": "block"}, true); err != nil {
@@ -56,7 +56,7 @@ func (i *AWSInput) ReceiveParameters() error {
 	if err := inputStringParameter("enter SNS arn if you would like to be notified when signature verification fails, otherwise press enter: ", &i.SnsTopicArn, true); err != nil {
 		return err
 	}
-	if err := inputStringParameter("is there existing trail in CloudTrail which you would like to use? (if no, please press enter): ", &i.CloudTrail.Name, true); err != nil {
+	if err := inputStringParameter("is there existing trail in CloudTrail (in the region selected above) which you would like to use? (if no, please press enter): ", &i.CloudTrail.Name, true); err != nil {
 		return err
 	}
 	if err := inputYesNoParameter("do you want to work in keyless mode (y/n): ", &i.IsKeyless, false); err != nil {

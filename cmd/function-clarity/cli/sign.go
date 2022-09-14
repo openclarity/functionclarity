@@ -12,7 +12,7 @@ type SignOptions struct {
 func Sign() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sign",
-		Short: "sign and upload the code content",
+		Short: "sign image/folder and upload the signature to cloud provider",
 	}
 	cmd.AddCommand(aws.AwsSign())
 	return cmd
