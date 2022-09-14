@@ -16,7 +16,6 @@ func SignAndUploadCode(client clients.Client, codePath string, o *options.SignBl
 	if err != nil {
 		return fmt.Errorf("failed to create identity: %w", err)
 	}
-	fmt.Printf("code identity: %s", codeIdentity)
 	isKeyless := false
 	privateKey := viper.GetString("privatekey")
 	if !o.SecurityKey.Use && privateKey == "" && integrity.IsExperimentalEnv() {

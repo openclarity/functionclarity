@@ -550,7 +550,7 @@ func uploadFuncClarityCode(sess *session.Session, keyPath string, bucket string)
 	}
 	fmt.Println("Uploading function-clarity function code to s3 bucket, this may take a few minutes")
 	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(FunctionClarityBucketName),
+		Bucket: aws.String(bucket),
 		Key:    aws.String("function-clarity.zip"),
 		Body:   reader,
 	})

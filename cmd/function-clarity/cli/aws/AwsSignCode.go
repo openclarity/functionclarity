@@ -17,7 +17,7 @@ func AwsSignCode() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "code",
-		Short: "sign and upload the code content to aws",
+		Short: "sign code content and upload its signature to aws",
 		Args:  cobra.ExactArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if err := viper.BindPFlag("accessKey", cmd.Flags().Lookup("aws-access-key")); err != nil {
