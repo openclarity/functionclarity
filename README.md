@@ -129,6 +129,7 @@ below is the optional flags that the command uses.
 
 
 ### Verify command detailed usage
+#### aws
 Command for verification
 ```shell
 function-clarity verify aws <function name to verify> --function-region=<function region location> --flags (optional if you have configuration file)
