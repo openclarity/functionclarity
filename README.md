@@ -1,13 +1,13 @@
 ![image](https://user-images.githubusercontent.com/109651023/189649537-95638785-618f-4c74-93af-2cafedec2f07.png)
-FunctionClarity (AKA FC) is an infrastructure solution for serverless functions signing and verification. The solution is combined from cli tool and a cloud specific infrastructure for validation. The solution is suitable for ci/cd process where a code/image of serverless functions can be signed and uploaded before the function is created.
+FunctionClarity (AKA FC) is an infrastructure solution for serverless functions signing and verification. This solution is combined from a cli tool and a cloud specific infrastructure for validation. The solution is suitable for a CI/CD process where a code/image of serverless functions can be signed and uploaded before the function is created in the cloud repository.
 
-## how it works
+## How it works
 
 ![Untitled Diagram(1) drawio (1)](https://user-images.githubusercontent.com/109651023/189673319-5c66fb32-98f5-430c-a01f-4823ab51fc98.png)
 
-* Deploy FunctionClarity infrastructure (one time operation) which will result in function clarity eco system deployed in the users cloud account
-* Using the FunctionClarity cli, run code/image signing on user's environment - at this phase the code/image signature is uploaded to the cloud.
-* deploy serverless function using the signed code/image content from the previous step
+* Deploy FunctionClarity infrastructure (one time operation) which will result in FunctionClarity ecosystem deployed in the user's cloud account
+* Using the FunctionClarity cli, run code/image signing on user's environment - at this phase the code/image signature is uploaded to the cloud
+* Deploy the serverless function using the signed code/image content from the previous step
 * Verifier lambda is triggered upon create-function/update-function code events and performs the following:
   * Fetch the verified function code
   * Analyse the code image/zip
@@ -18,24 +18,25 @@ FunctionClarity (AKA FC) is an infrastructure solution for serverless functions 
 ---
 
 **NOTE**:
-At the moment only AWS cloud provider is supported, additional cloud providers are on the roadmap
+At the moment only AWS cloud provider is supported, additional cloud providers will be added over time
   
 ---
 
 ## Install FuctionClarity
-Fill installation instructions once the distribution is ready
+<TBD>
+
 ## Quick start
-The quick start will be conducted against AWS account, we will show how to:
-* Init and deploy FunctionClarity
-* Sign and upload code
-* create AWS function
-* Check verification
+We'll be using an AWS account, and show how to:
+* Initialize and deploy FunctionClarity
+* Sign and upload Serverless functions' code
+* create new AWS functions
+* Check function verification
   * From the cloud account
   * From FunctionClarity command line
 
-### Init and deploy FunctionClarity
+### Initialize and deploy FunctionClarity
 The command prompts the user to enter information regarding the installation of FunctionClarity.
-When the command finishes to run FunctionClarity will be deployed to AWS account and a configuration file will be created locally under ~/.fc, the default values for the sign/verify commands will be taken from the config file unless flags are supplied.
+When this command will finish to run, FunctionClarity will be deployed to your AWS account and a configuration file will be created locally under ~/.fc, the default values for the sign/verify commands will be taken from this config file unless flags are supplied.
 ```shell
 ./function-clarity init AWS
 enter Access Key: ********
@@ -56,12 +57,12 @@ deployment finished successfully
 ```
 
 ### Sign code
-The command below will sign folder with code and upload it to the user's cloud account
+The command below will sign a folder containing code and upload it to the user's cloud account
 
 ```shell
 ./function-clarity sign AWS code /sample-code-verified-folder
 
-using config file: /Users/shaiembon/.fc
+using config file: /Users/john/.fc
 Enter password for private key:
 MEYCIQDskDWwLEURdALycGH/ntCRjA5G74yJ/qeSDzHTQSRY8gIhALE6Z5XW/iyjz++rzrdhzskPwfwW2gAMjK1H9lCXOGom
 Code uploaded successfully
@@ -76,12 +77,12 @@ If you completed "init and deployment" step a verifier function runs in your clo
 You can also use the cli to perform manual verification of a function:
 ```shell
 ./function-clarity verify aws funcclarity-test-signed --function-region=us-east-2
-using config file: /Users/shaiembon/.fc
+using config file: /Users/john/.fc
 Verified OK
 ```
 
 ## Advanced usage
-FunctionClarity supports many features, we will elaborate on the commands and its usage.
+FunctionClarity includes several features, we will elaborate on the commands and its usage.
 FunctionClarity leverages [cosign](https://github.com/sigstore/cosign) for signing and verifying code, we support key-pair and keyless signing techniques.
 
 ### Init command detailed usage
