@@ -55,7 +55,17 @@
               "Statement": [
                 {
                   "Effect": "Allow",
-                  "Action": "*",
+                  "Action": [
+                  "s3:GetObject",
+                  "lambda:GetFunction",
+                  "lambda:TagResource",
+                  "lambda:UnTagResource",
+                  "logs:*",
+                  "kms:Get*",
+                  "ecr:GetAuthorizationToken",
+                  "ecr:BatchGetImage",
+                  "ecr:GetDownloadUrlForLayer"
+                  ],
                   "Resource": "*"
                 }
               ]
