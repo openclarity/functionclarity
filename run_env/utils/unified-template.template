@@ -56,7 +56,8 @@
                 {
                   "Effect": "Allow",
                   "Action": [
-                  "s3:GetObject",
+                  "s3:Get*",
+                  "s3:List*",
                   "lambda:GetFunction",
                   "lambda:TagResource",
                   "lambda:UnTagResource",
