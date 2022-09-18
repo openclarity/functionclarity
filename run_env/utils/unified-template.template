@@ -59,13 +59,17 @@
                   "s3:Get*",
                   "s3:List*",
                   "lambda:GetFunction",
+                  "lambda:PutFunctionConcurrency",
+                  "lambda:GetFunctionConcurrency",
+                  "lambda:DeleteFunctionConcurrency",
                   "lambda:TagResource",
                   "lambda:UnTagResource",
                   "logs:*",
                   "kms:Get*",
                   "ecr:GetAuthorizationToken",
                   "ecr:BatchGetImage",
-                  "ecr:GetDownloadUrlForLayer"
+                  "ecr:GetDownloadUrlForLayer",
+                  "sns:Publish"
                   ],
                   "Resource": "*"
                 }
