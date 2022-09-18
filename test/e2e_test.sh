@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+
+cd ../aws_function_pkg
+go build
+mv ./aws_function_pkg ../test/aws_function
+echo "aws_function binary copied to test folder"
+
+cd ../test/utils
+go build testing_lambda.go
+echo "testing lambda built successfully"
+
+cd ../..
+cp run_env/utils/unified-template.template test/utils/
+echo "stack template copied to test folder"
+
+echo "tests started"
+go test -v ./...

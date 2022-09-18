@@ -29,7 +29,11 @@ func (o *Sha256) GenerateIdentity(path string) (string, error) {
 					return err
 				}
 				dataString := fmt.Sprintf("%x", data)
-				dataString = dataString + path[strings.Index(path, rootFolderName)+len(rootFolderName):]
+				if rootFolderName == "" {
+					dataString = dataString + d.Name()
+				} else {
+					dataString = dataString + path[strings.Index(path, rootFolderName)+len(rootFolderName)+1:]
+				}
 				sha := sha256.Sum256([]byte(dataString))
 				identities = append(identities, fmt.Sprintf("%x", sha))
 			} else if rootFolderName == "" {
