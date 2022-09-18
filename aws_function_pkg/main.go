@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/openclarity/function-clarity/pkg/clients"
-	init "github.com/openclarity/function-clarity/pkg/init"
+	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/integrity"
 	opts "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/openclarity/function-clarity/pkg/verify"
@@ -44,7 +44,7 @@ type FilterRecord struct {
 	MessageType string   `json:"messageType"`
 }
 
-var config = init.AWSInput{}
+var config = i.AWSInput{}
 
 func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLogsEvent) error {
 	if &cloudWatchEvent.AWSLogs == nil || &cloudWatchEvent.AWSLogs.Data == nil || cloudWatchEvent.AWSLogs.Data == "" {
@@ -58,10 +58,10 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 	}
 	recordMessage := RecordMessage{}
 	logEvents := filterRecord.LogEvents
-	for i := range logEvents {
-		err = json.Unmarshal([]byte(logEvents[i].Message), &recordMessage)
+	for logEvent := range logEvents {
+		err = json.Unmarshal([]byte(logEvents[logEvent].Message), &recordMessage)
 		if err != nil {
-			log.Printf("failed to extract message from event, skipping message. %s", logEvents[i].Message)
+			log.Printf("failed to extract message from event, skipping message. %s", logEvents[logEvent].Message)
 			continue
 		}
 		if (strings.Contains(recordMessage.EventName, "CreateFunction") || strings.Contains(recordMessage.EventName, "UpdateFunctionCode")) &&
@@ -75,7 +75,7 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 }
 
 func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Context) {
-	if config == (init.AWSInput{}) {
+	if config == (i.AWSInput{}) {
 		err := initConfig()
 		if err != nil {
 			return
