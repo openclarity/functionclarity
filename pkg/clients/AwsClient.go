@@ -219,9 +219,6 @@ func (o *AwsClient) HandleBlock(funcIdentifier *string, failed bool) error {
 }
 
 func (o *AwsClient) BlockFunction(funcIdentifier *string) error {
-	if err := o.tagFunction(*funcIdentifier, utils.FunctionVerifyResultTagKey, utils.FunctionNotSignedTagValue); err != nil {
-		return fmt.Errorf("failed to tag function with failed result. %v", err)
-	}
 	currentConcurrencyLevel, err := o.GetConcurrencyLevel(*funcIdentifier)
 	if err != nil {
 		return fmt.Errorf("failed to get current concurrency level of function. %v", err)
