@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-
+echo "starting..."
 cd ../aws_function_pkg
 go build
 mv ./aws_function_pkg ../test/aws_function
