@@ -17,12 +17,10 @@ import (
 	"github.com/openclarity/function-clarity/pkg/sign"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
 	s "github.com/sigstore/cosign/cmd/cosign/cli/sign"
-	"github.com/sigstore/cosign/pkg/cosign"
 	"github.com/spf13/viper"
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -352,36 +350,6 @@ func createCodeZip(t *testing.T) error {
 	}
 	zipWriter.Close()
 	return nil
-}
-
-func generateKeypair(t *testing.T, td string) (*cosign.KeysBytes, string, string) {
-	t.Helper()
-
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(td); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		os.Chdir(wd)
-	}()
-	keys, err := cosign.GenerateKeyPair(passFunc)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	privKeyPath := filepath.Join(td, "cosign.key")
-	if err := os.WriteFile(privKeyPath, keys.PrivateBytes, 0600); err != nil {
-		t.Fatal(err)
-	}
-
-	pubKeyPath := filepath.Join(td, "cosign.pub")
-	if err := os.WriteFile(pubKeyPath, keys.PublicBytes, 0600); err != nil {
-		t.Fatal(err)
-	}
-	return keys, privKeyPath, pubKeyPath
 }
 
 func mockStdin(t *testing.T, dummyInput string) (funcDefer func(), err error) {
