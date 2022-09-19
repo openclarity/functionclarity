@@ -87,10 +87,10 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 		log.Printf("Failed to init docker. %v", err)
 		return
 	}
-	o := getVerifierOptions()
+	o := getVerifierOptions(config.IsKeyless, config.PublicKey)
 	log.Printf("about to execute verification with post action: %s.", config.Action)
 	awsClient := clients.NewAwsClient("", "", config.Bucket, config.Region, recordMessage.AwsRegion)
-	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, config.Action, config.SnsTopicArn)
+	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, config.Action, config.SnsTopicArn, config.Region)
 
 	if err != nil {
 		log.Printf("Failed to handle lambda result: %s, %v", recordMessage.ResponseElements.FunctionArn, err)
@@ -111,11 +111,17 @@ func initConfig() error {
 	return nil
 }
 
-func getVerifierOptions() *opts.VerifyOpts {
+func getVerifierOptions(isKeyless bool, publicKey string) *opts.VerifyOpts {
+	key := "cosign.pub"
+	if isKeyless && publicKey == "" {
+		key = ""
+		os.Setenv(integrity.ExperimentalEnv, "1")
+	}
+
 	o := &opts.VerifyOpts{
 		BundlePath: "",
 		VerifyOptions: co.VerifyOptions{
-			Key:          "cosign.pub",
+			Key:          key,
 			CheckClaims:  true,
 			Attachment:   "",
 			Output:       "json",

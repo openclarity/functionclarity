@@ -509,18 +509,20 @@ func uploadFuncClarityCode(sess *session.Session, keyPath string, bucket string)
 		return err
 	}
 
-	publicKey, err := os.Open(keyPath)
-	if err != nil {
-		return err
-	}
-	defer publicKey.Close()
+	if keyPath != "" {
+		publicKey, err := os.Open(keyPath)
+		if err != nil {
+			return err
+		}
+		defer publicKey.Close()
 
-	w2, err := zipWriter.Create("cosign.pub")
-	if err != nil {
-		return err
-	}
-	if _, err := io.Copy(w2, publicKey); err != nil {
-		return err
+		w2, err := zipWriter.Create("cosign.pub")
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(w2, publicKey); err != nil {
+			return err
+		}
 	}
 	zipWriter.Close()
 	uploader := s3manager.NewUploader(sess)
