@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/verify"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	"github.com/openclarity/function-clarity/pkg/integrity"
@@ -11,7 +12,7 @@ import (
 	v "github.com/sigstore/cosign/cmd/cosign/cli/verify"
 )
 
-func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context, action string, topicArn string) error {
+func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context, action string, topicArn string, region string) error {
 	packageType, err := client.ResolvePackageType(functionIdentifier)
 	if err != nil {
 		return fmt.Errorf("failed to resolve package type for function: %s: %w", functionIdentifier, err)
@@ -24,10 +25,10 @@ func Verify(client clients.Client, functionIdentifier string, o *options.VerifyO
 	default:
 		return fmt.Errorf("unsupported package type: %s for function: %s", packageType, functionIdentifier)
 	}
-	return HandleVerification(client, action, functionIdentifier, err, topicArn)
+	return HandleVerification(client, action, functionIdentifier, err, topicArn, region)
 }
 
-func HandleVerification(client clients.Client, action string, funcIdentifier string, err error, topicArn string) error {
+func HandleVerification(client clients.Client, action string, funcIdentifier string, err error, topicArn string, region string) error {
 	if err != nil && !errors.Is(err, VerifyError{}) {
 		return err
 	}
@@ -58,7 +59,13 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 	}
 
 	if failed && topicArn != "" {
-		return client.Notify("failed to verify function with id: "+funcIdentifier, topicArn)
+		msg := fmt.Sprintf("Function Clarity Alert: Failed to to verify lambda %s on region %s.", funcIdentifier, region)
+		if action == "block" {
+			msg = msg + " function blocked from running."
+		} else if action == "detect" {
+			msg = msg + " function marked with function clarity tag."
+		}
+		e = client.Notify(msg, topicArn)
 	}
 	return e
 }
@@ -125,7 +132,7 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 		isKeyless = true
 	}
 	if err = downloadSignatureAndCertificate(client, functionIdentifier, err, functionIdentity, isKeyless); err != nil {
-		return fmt.Errorf("verify code: %w", err)
+		return err
 	}
 	if err = verify.VerifyIdentity(functionIdentity, o, ctx, isKeyless); err != nil {
 		return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
@@ -135,11 +142,23 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 
 func downloadSignatureAndCertificate(client clients.Client, functionIdentifier string, err error, functionIdentity string, isKeyless bool) error {
 	if err = client.Download(functionIdentity, "sig"); err != nil {
-		return fmt.Errorf("failed to get signed identity for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)
+		if awsErr, ok := err.(awserr.Error); ok {
+			if awsErr.Code() == "NoSuchKey" {
+				return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
+			}
+		} else {
+			return fmt.Errorf("verify code: failed to get signed identity for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)
+		}
 	}
 	if isKeyless {
 		if err = client.Download(functionIdentity, "crt.base64"); err != nil {
-			return fmt.Errorf("failed to get certificate for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)
+			if awsErr, ok := err.(awserr.Error); ok {
+				if awsErr.Code() == "NoSuchKey" {
+					return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
+				}
+			} else {
+				return fmt.Errorf("verify code: failed to get certificate for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)
+			}
 		}
 	}
 	return nil
