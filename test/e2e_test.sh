@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 echo "starting..."
 cd ../aws_function_pkg
 go build
