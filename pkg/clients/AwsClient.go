@@ -20,8 +20,6 @@ import (
 	"github.com/google/uuid"
 	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/utils"
-	"github.com/vbauerster/mpb/v5"
-	"github.com/vbauerster/mpb/v5/decor"
 	"gopkg.in/yaml.v3"
 	"io"
 	"log"
@@ -527,20 +525,20 @@ func uploadFuncClarityCode(sess *session.Session, keyPath string, bucket string)
 	zipWriter.Close()
 	uploader := s3manager.NewUploader(sess)
 	// Upload the file to S3.
-	p := mpb.New()
+	//p := mpb.New()
 	file, err := os.Open("function-clarity.zip")
-	fileInfo, err := file.Stat()
-	reader := &utils.ProgressBarReader{
-		Fp:      file,
-		Size:    fileInfo.Size(),
-		SignMap: map[int64]struct{}{},
-		Bar: p.AddBar(fileInfo.Size(),
-			mpb.PrependDecorators(
-				decor.Name("uploading..."),
-				decor.Percentage(decor.WCSyncSpace),
-			),
-		),
-	}
+	//fileInfo, err := file.Stat()
+	//reader := &utils.ProgressBarReader{
+	//	Fp:      file,
+	//	Size:    fileInfo.Size(),
+	//	SignMap: map[int64]struct{}{},
+	//	Bar: p.AddBar(fileInfo.Size(),
+	//		mpb.PrependDecorators(
+	//			decor.Name("uploading..."),
+	//			decor.Percentage(decor.WCSyncSpace),
+	//		),
+	//	),
+	//}
 
 	if err != nil {
 		return err
@@ -549,7 +547,7 @@ func uploadFuncClarityCode(sess *session.Session, keyPath string, bucket string)
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String("function-clarity.zip"),
-		Body:   reader,
+		Body:   file,
 	})
 	if err != nil {
 		return err

@@ -9,13 +9,12 @@ import (
 	"github.com/openclarity/function-clarity/pkg/integrity"
 	"github.com/openclarity/function-clarity/pkg/options"
 	v "github.com/sigstore/cosign/cmd/cosign/cli/verify"
-	"github.com/spf13/viper"
 )
 
 func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context, action string, topicArn string) error {
 	packageType, err := client.ResolvePackageType(functionIdentifier)
 	if err != nil {
-		return fmt.Errorf("failed to resolve package type for function: %s in region: %s: %w", functionIdentifier, viper.GetString("region"), err)
+		return fmt.Errorf("failed to resolve package type for function: %s: %w", functionIdentifier, err)
 	}
 	switch packageType {
 	case "Zip":
@@ -29,7 +28,7 @@ func Verify(client clients.Client, functionIdentifier string, o *options.VerifyO
 }
 
 func HandleVerification(client clients.Client, action string, funcIdentifier string, err error, topicArn string) error {
-	if !errors.Is(err, VerifyError{}) {
+	if err != nil && !errors.Is(err, VerifyError{}) {
 		return err
 	}
 	failed := err != nil
@@ -136,11 +135,11 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 
 func downloadSignatureAndCertificate(client clients.Client, functionIdentifier string, err error, functionIdentity string, isKeyless bool) error {
 	if err = client.Download(functionIdentity, "sig"); err != nil {
-		return fmt.Errorf("failed to get signed identity for function: %s: %w", functionIdentifier, err)
+		return fmt.Errorf("failed to get signed identity for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)
 	}
 	if isKeyless {
 		if err = client.Download(functionIdentity, "crt.base64"); err != nil {
-			return fmt.Errorf("failed to get certificate for function: %s: %w", functionIdentifier, err)
+			return fmt.Errorf("failed to get certificate for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)
 		}
 	}
 	return nil

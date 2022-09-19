@@ -96,6 +96,7 @@ func AwsInit() *cobra.Command {
 			configForDeployment.Action = input.Action
 			configForDeployment.Region = input.Region
 			configForDeployment.IsKeyless = input.IsKeyless
+			configForDeployment.SnsTopicArn = input.SnsTopicArn
 			awsClient := clients.NewAwsClientInit(input.AccessKey, input.SecretKey, input.Region)
 			err := awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey, configForDeployment)
 			if err != nil {

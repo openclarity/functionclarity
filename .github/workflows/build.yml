@@ -22,4 +22,10 @@ jobs:
       run: go build -v ./...
 
     - name: Test
-      run: go test -v ./...
+      env:
+        ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        BUCKET: ${{ secrets.BUCKET }}
+        REGION: ${{ secrets.REGION }}
+        FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
+      run: test/e2e_test.sh
