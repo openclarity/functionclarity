@@ -1,3 +1,18 @@
+// Copyright © 2022 Cisco Systems, Inc. and its affiliates.
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package clients
 
 import (
@@ -5,6 +20,15 @@ import (
 	"bytes"
 	b64 "encoding/base64"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"text/template"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -20,15 +44,7 @@ import (
 	"github.com/google/uuid"
 	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/utils"
-	"gopkg.in/yaml.v3"
-	"io"
-	"log"
-	"net/http"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"text/template"
+	y "gopkg.in/yaml.v3"
 )
 
 const FunctionClarityBucketName = "functionclarity"
@@ -230,7 +246,7 @@ func (o *AwsClient) BlockFunction(funcIdentifier *string) error {
 	if err = o.tagFunction(*funcIdentifier, utils.FunctionClarityConcurrencyTagKey, currentConcurrencyLevelString); err != nil {
 		return fmt.Errorf("failed to tag function with current concurrency level. %v", err)
 	}
-	var zeroConcurrencyLevel = int64(0)
+	zeroConcurrencyLevel := int64(0)
 	if err = o.updateConcurrencyLevel(*funcIdentifier, &zeroConcurrencyLevel); err != nil {
 		return fmt.Errorf("failed to set concurrency level to 0. %v", err)
 	}
@@ -303,7 +319,8 @@ func (o *AwsClient) UnblockFunction(funcIdentifier *string) error {
 	svc := lambda.New(sess)
 	untagFunctionInput := &lambda.UntagResourceInput{
 		Resource: funcIdentifier,
-		TagKeys:  untagKeyArray}
+		TagKeys:  untagKeyArray,
+	}
 	_, err = svc.UntagResource(untagFunctionInput)
 	if err != nil {
 		return fmt.Errorf("failed to untag func clarity concurrency level tag for func: %s. %v", *funcIdentifier, err)
@@ -399,6 +416,7 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, depl
 	fmt.Println("deployment finished successfully")
 	return nil
 }
+
 func calculateStackTemplate(trailName string, sess *session.Session, config i.AWSInput) (error, string) {
 	templateFile := "utils/unified-template.template"
 	content, err := os.ReadFile(templateFile)
@@ -412,7 +430,7 @@ func calculateStackTemplate(trailName string, sess *session.Session, config i.AW
 		data["bucketName"] = config.Bucket
 	}
 
-	serConfig, err := yaml.Marshal(config)
+	serConfig, err := y.Marshal(config)
 	if err != nil {
 		return fmt.Errorf("failed to create template. %v", err), ""
 	}
@@ -451,7 +469,8 @@ func trailValid(trail *cloudtrail.GetTrailOutput) error {
 
 func (o *AwsClient) getSession() *session.Session {
 	cfgs := &aws.Config{
-		Region: aws.String(o.region)}
+		Region: aws.String(o.region),
+	}
 	if o.accessKey != "" && o.secretKey != "" {
 		cfgs = &aws.Config{
 			Region:      aws.String(o.region),
@@ -464,7 +483,8 @@ func (o *AwsClient) getSession() *session.Session {
 
 func (o *AwsClient) getSessionForLambda() *session.Session {
 	cfgs := &aws.Config{
-		Region: aws.String(o.lambdaRegion)}
+		Region: aws.String(o.lambdaRegion),
+	}
 	if o.accessKey != "" && o.secretKey != "" {
 		cfgs = &aws.Config{
 			Region:      aws.String(o.lambdaRegion),
@@ -527,7 +547,7 @@ func uploadFuncClarityCode(sess *session.Session, keyPath string, bucket string)
 	zipWriter.Close()
 	uploader := s3manager.NewUploader(sess)
 	// Upload the file to S3.
-	//p := mpb.New()
+	// p := mpb.New()
 	file, err := os.Open("function-clarity.zip")
 	//fileInfo, err := file.Stat()
 	//reader := &utils.ProgressBarReader{
@@ -541,7 +561,6 @@ func uploadFuncClarityCode(sess *session.Session, keyPath string, bucket string)
 	//		),
 	//	),
 	//}
-
 	if err != nil {
 		return err
 	}
@@ -559,7 +578,6 @@ func uploadFuncClarityCode(sess *session.Session, keyPath string, bucket string)
 }
 
 func ExtractZip(zipPath string, dstToExtract string) error {
-
 	archive, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return fmt.Errorf("failed to open archive file : %s. %v", zipPath, err)
@@ -606,20 +624,17 @@ func stackExists(stackNameOrID string, cf *cloudformation.CloudFormation) (bool,
 		StackName: aws.String(stackNameOrID),
 	}
 	_, err := cf.DescribeStacks(describeStacksInput)
-
 	if err != nil {
 		// If the stack doesn't exist, then no worries
 		if strings.Contains(err.Error(), "does not exist") {
 			return false, nil
 		}
 		return false, err
-
 	}
 	return true, nil
 }
 
 func DownloadFile(fileName string, url *string) error {
-
 	// Get the data
 	resp, err := http.Get(*url)
 	if err != nil {

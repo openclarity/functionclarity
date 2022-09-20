@@ -1,3 +1,18 @@
+// Copyright © 2022 Cisco Systems, Inc. and its affiliates.
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package options
 
 import (
@@ -10,46 +25,46 @@ type SignOptions struct {
 }
 
 func (o *SignOptions) AddFlags(cmd *cobra.Command) {
-	o.Rekor.AddFlags(cmd)
-	o.Fulcio.AddFlags(cmd)
-	o.OIDC.AddFlags(cmd)
-	o.SecurityKey.AddFlags(cmd)
-	o.AnnotationOptions.AddFlags(cmd)
-	o.Registry.AddFlags(cmd)
+	o.SignOptions.Rekor.AddFlags(cmd)
+	o.SignOptions.Fulcio.AddFlags(cmd)
+	o.SignOptions.OIDC.AddFlags(cmd)
+	o.SignOptions.SecurityKey.AddFlags(cmd)
+	o.SignOptions.AnnotationOptions.AddFlags(cmd)
+	o.SignOptions.Registry.AddFlags(cmd)
 
-	cmd.Flags().StringVar(&o.Cert, "certificate", "",
+	cmd.Flags().StringVar(&o.SignOptions.Cert, "certificate", "",
 		"path to the X.509 certificate in PEM format to include in the OCI Signature")
 
-	cmd.Flags().StringVar(&o.CertChain, "certificate-chain", "",
+	cmd.Flags().StringVar(&o.SignOptions.CertChain, "certificate-chain", "",
 		"path to a list of CA X.509 certificates in PEM format which will be needed "+
 			"when building the certificate chain for the signing certificate. "+
 			"Must start with the parent intermediate CA certificate of the "+
 			"signing certificate and end with the root certificate. Included in the OCI Signature")
 
-	cmd.Flags().BoolVar(&o.Upload, "upload", true,
+	cmd.Flags().BoolVar(&o.SignOptions.Upload, "upload", true,
 		"whether to upload the signature")
 
-	cmd.Flags().StringVar(&o.OutputSignature, "output-signature", "",
+	cmd.Flags().StringVar(&o.SignOptions.OutputSignature, "output-signature", "",
 		"write the signature to FILE")
 
-	cmd.Flags().StringVar(&o.OutputCertificate, "output-certificate", "",
+	cmd.Flags().StringVar(&o.SignOptions.OutputCertificate, "output-certificate", "",
 		"write the certificate to FILE")
 
-	cmd.Flags().StringVar(&o.PayloadPath, "payload", "",
+	cmd.Flags().StringVar(&o.SignOptions.PayloadPath, "payload", "",
 		"path to a payload file to use rather than generating one")
 
-	cmd.Flags().BoolVarP(&o.Force, "force", "f", false,
+	cmd.Flags().BoolVarP(&o.SignOptions.Force, "force", "f", false,
 		"skip warnings and confirmations")
 
-	cmd.Flags().BoolVarP(&o.Recursive, "recursive", "r", false,
+	cmd.Flags().BoolVarP(&o.SignOptions.Recursive, "recursive", "r", false,
 		"if a multi-arch image is specified, additionally sign each discrete image")
 
-	cmd.Flags().StringVar(&o.Attachment, "attachment", "",
+	cmd.Flags().StringVar(&o.SignOptions.Attachment, "attachment", "",
 		"related image attachment to sign (sbom), default none")
 
-	cmd.Flags().BoolVarP(&o.SkipConfirmation, "yes", "y", false,
+	cmd.Flags().BoolVarP(&o.SignOptions.SkipConfirmation, "yes", "y", false,
 		"skip confirmation prompts for non-destructive operations")
 
-	cmd.Flags().BoolVar(&o.NoTlogUpload, "no-tlog-upload", false,
+	cmd.Flags().BoolVar(&o.SignOptions.NoTlogUpload, "no-tlog-upload", false,
 		"whether to not upload the transparency log")
 }

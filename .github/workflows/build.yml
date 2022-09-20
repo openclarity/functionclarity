@@ -11,7 +11,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3
 
     - name: Set up Go
       uses: actions/setup-go@v3
@@ -20,6 +21,14 @@ jobs:
 
     - name: Build
       run: go build -v ./...
+
+    - name: Check licenses
+      env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: make license-check
+
+    - name: Run verification
+      run: make check
 
     - name: Test
       env:
