@@ -365,11 +365,10 @@ func (o *AwsClient) GetConcurrencyLevelTag(funcIdentifier string, tag string) (e
 		return err, nil
 	}
 	concurrencyLevel := resp.Tags[tag]
-	var result *int64
 	if concurrencyLevel == nil {
 		log.Printf("function not blocked by function-clarity, nothing to do")
-		*result = -1
-		return nil, result
+		noConcurrency := int64(-1)
+		return nil, &noConcurrency
 	}
 	if *concurrencyLevel == "nil" {
 		return nil, nil
