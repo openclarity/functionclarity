@@ -49,6 +49,12 @@ func AwsVerify() *cobra.Command {
 			if err := viper.BindPFlag("action", cmd.Flags().Lookup("action")); err != nil {
 				return fmt.Errorf("error binding action: %w", err)
 			}
+			if err := viper.BindPFlag("includedfunctagkeys", cmd.Flags().Lookup("included-func-tags")); err != nil {
+				return fmt.Errorf("error binding action: %w", err)
+			}
+			if err := viper.BindPFlag("includedfuncregions", cmd.Flags().Lookup("included-func-regions")); err != nil {
+				return fmt.Errorf("error binding action: %w", err)
+			}
 			if err := viper.BindPFlag("snsTopicArn", cmd.Flags().Lookup("sns-topic-arn")); err != nil {
 				return fmt.Errorf("error binding snsTopicArn: %w", err)
 			}
@@ -57,7 +63,8 @@ func AwsVerify() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.Key = viper.GetString("publickey")
 			awsClient := clients.NewAwsClient(viper.GetString("accesskey"), viper.GetString("secretkey"), viper.GetString("bucket"), viper.GetString("region"), lambdaRegion)
-			return verify.Verify(awsClient, args[0], o, cmd.Context(), viper.GetString("action"), viper.GetString("snsTopicArn"), viper.GetString("region"))
+			return verify.Verify(awsClient, args[0], o, cmd.Context(), viper.GetString("action"), viper.GetString("snsTopicArn"), viper.GetString("region"),
+				viper.GetStringSlice("includedfunctagkeys"), viper.GetStringSlice("includedfuncregions"))
 		},
 	}
 	cmd.Flags().StringVar(&lambdaRegion, "function-region", "", "aws region where the verified lambda runs")
@@ -75,6 +82,8 @@ func initAwsVerifyFlags(cmd *cobra.Command) {
 	cmd.Flags().String("bucket", "", "s3 bucket to work against")
 	cmd.Flags().String("key", "", "public key")
 	cmd.Flags().String("action", "", "action to perform upon validation result")
+	cmd.Flags().StringSlice("included-func-tags", []string{}, "function tags to include when verifying")
+	cmd.Flags().StringSlice("included-func-regions", []string{}, "function regions to include when verifying")
 	cmd.Flags().String("sns-topic-arn", "", "SNS topic ARN for notifications")
 }
 
@@ -97,6 +106,8 @@ func AwsInit() *cobra.Command {
 			configForDeployment.Region = input.Region
 			configForDeployment.IsKeyless = input.IsKeyless
 			configForDeployment.SnsTopicArn = input.SnsTopicArn
+			configForDeployment.IncludedFuncTagKeys = input.IncludedFuncTagKeys
+			configForDeployment.IncludedFuncRegions = input.IncludedFuncRegions
 			awsClient := clients.NewAwsClientInit(input.AccessKey, input.SecretKey, input.Region)
 			err := awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey, configForDeployment)
 			if err != nil {

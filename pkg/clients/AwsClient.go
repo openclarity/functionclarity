@@ -149,6 +149,33 @@ func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
 	return "/tmp/" + contentName, nil
 }
 
+func (o *AwsClient) IsFuncInRegions(regions []string) bool {
+	for _, value := range regions {
+		if o.lambdaRegion == value {
+			return true
+		}
+	}
+	return false
+}
+func (o *AwsClient) FuncContainsTags(funcIdentifier string, tagKes []string) (bool, error) {
+	sess := o.getSession()
+	svc := lambda.New(sess)
+	o.convertToArnIfNeeded(&funcIdentifier)
+	input := &lambda.ListTagsInput{
+		Resource: aws.String(funcIdentifier),
+	}
+	req, resp := svc.ListTagsRequest(input)
+	if err := req.Send(); err != nil {
+		return false, err
+	}
+	for _, tag := range tagKes {
+		if resp.Tags[tag] != nil {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (o *AwsClient) Notify(msg string, topicARN string) error {
 	sess := o.getSession()
 	svc := sns.New(sess)

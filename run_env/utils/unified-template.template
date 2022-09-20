@@ -64,6 +64,7 @@
                   "lambda:DeleteFunctionConcurrency",
                   "lambda:TagResource",
                   "lambda:UnTagResource",
+                  "lambda:ListTags",
                   "logs:*",
                   "kms:Get*",
                   "ecr:GetAuthorizationToken",

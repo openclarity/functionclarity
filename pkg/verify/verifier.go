@@ -12,7 +12,27 @@ import (
 	v "github.com/sigstore/cosign/cmd/cosign/cli/verify"
 )
 
-func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context, action string, topicArn string, region string) error {
+func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context,
+	action string, topicArn string, region string, tagKeysFilter []string, filteredRegions []string) error {
+
+	if filteredRegions != nil && (len(filteredRegions) > 0) {
+		funcInRegions := client.IsFuncInRegions(filteredRegions)
+		if !funcInRegions {
+			fmt.Printf("function: %s not in regions list: %s, skipping validation", functionIdentifier, filteredRegions)
+			return nil
+		}
+	}
+
+	if tagKeysFilter != nil && (len(tagKeysFilter) > 0) {
+		funcContainsTag, err := client.FuncContainsTags(functionIdentifier, tagKeysFilter)
+		if err != nil {
+			return fmt.Errorf("check function tags: failed to check tags of function: %s: %w", functionIdentifier, err)
+		}
+		if !funcContainsTag {
+			fmt.Printf("function: %s doesn't contain tag in the list: %s, skipping validation", functionIdentifier, tagKeysFilter)
+			return nil
+		}
+	}
 	packageType, err := client.ResolvePackageType(functionIdentifier)
 	if err != nil {
 		return fmt.Errorf("failed to resolve package type for function: %s: %w", functionIdentifier, err)
