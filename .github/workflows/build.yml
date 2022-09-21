@@ -11,21 +11,30 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.19
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
 
-    - name: Build
-      run: go build -v ./...
+      - name: Build
+        run: go build -v ./...
 
-    - name: Test
-      env:
-        ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
-        SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        BUCKET: ${{ secrets.BUCKET }}
-        REGION: ${{ secrets.REGION }}
-        FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
-      run: test/e2e_test.sh
+      - name: Check licenses
+        #      env:
+        #      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make license-check
+
+      - name: Run verification
+        run: make check
+
+      - name: Test
+        env:
+          ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          BUCKET: ${{ secrets.BUCKET }}
+          REGION: ${{ secrets.REGION }}
+          FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
+        run: test/e2e_test.sh
