@@ -84,7 +84,7 @@ func setup() {
 	if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
 		log.Fatal(err)
 	}
-	//time.Sleep(3 * time.Minute)
+	time.Sleep(2 * time.Minute)
 }
 
 func shutdown() {
