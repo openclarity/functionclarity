@@ -36,6 +36,12 @@ jobs:
           asset_name: "aws_function"
           ldflags: -X "main.appVersion=${{ env.APP_VERSION }}" -X "main.buildTime=${{ env.BUILD_TIME }}" -X main.gitCommit=${{ github.sha }} -X main.gitRef=${{ github.ref }}
 
+      - name: Upload math result for job 2
+        uses: actions/upload-artifact@v3
+        with:
+         name: aws_function
+         path: ./aws_function_pkg/$BUILD_ARTIFACTS_FOLDER/aws_function
+
   release-cli:
     name: Release CLI
     needs: release-aws-lambda
@@ -54,10 +60,10 @@ jobs:
       - name: Download math result for job 2
         uses: actions/download-artifact@v3
         with:
-          name: aws_function.tar.gz
+          name: aws_function
       - name: Print the final result
         shell: bash
-        run: la -l
+        run: pwd
       - uses: actions/checkout@v2
       - name: Set APP_VERSION env
         run: echo APP_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
