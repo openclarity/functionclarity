@@ -35,12 +35,13 @@ jobs:
           overwrite: TRUE
           asset_name: "aws_function"
           ldflags: -X "main.appVersion=${{ env.APP_VERSION }}" -X "main.buildTime=${{ env.BUILD_TIME }}" -X main.gitCommit=${{ github.sha }} -X main.gitRef=${{ github.ref }}
+          post_command: export AAA=$BUILD_ARTIFACTS_FOLDER
 
       - name: Upload math result for job 2
         uses: actions/upload-artifact@v3
         with:
          name: aws_function
-         path: ./aws_function_pkg/$BUILD_ARTIFACTS_FOLDER/aws_function
+         path: ./aws_function_pkg/$AAA/aws_function
 
   release-cli:
     name: Release CLI
