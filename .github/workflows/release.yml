@@ -19,12 +19,23 @@ jobs:
         name: Set up Go
         uses: actions/setup-go@v3
       -
-        name: Run GoReleaser
+        name: cli
         uses: goreleaser/goreleaser-action@v3
         with:
           # either 'goreleaser' (default) or 'goreleaser-pro'
           distribution: goreleaser
           version: latest
           args: release --rm-dist
+          workdir: ./cmd/function-clarity
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: lambda
+        uses: goreleaser/goreleaser-action@v3
+        with:
+          # either 'goreleaser' (default) or 'goreleaser-pro'
+          distribution: goreleaser
+          version: latest
+          args: release --rm-dist
+          workdir: ./aws_function_pkg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
