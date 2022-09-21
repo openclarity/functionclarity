@@ -44,7 +44,7 @@ type FilterRecord struct {
 	MessageType string   `json:"messageType"`
 }
 
-var config = i.AWSInput{}
+var config *i.AWSInput = nil
 
 func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLogsEvent) error {
 	if &cloudWatchEvent.AWSLogs == nil || &cloudWatchEvent.AWSLogs.Data == nil || cloudWatchEvent.AWSLogs.Data == "" {
@@ -58,31 +58,35 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 	}
 	recordMessage := RecordMessage{}
 	logEvents := filterRecord.LogEvents
+	if config == nil {
+		err := initConfig()
+		if err != nil {
+			return err
+		}
+	}
 	for logEvent := range logEvents {
 		err = json.Unmarshal([]byte(logEvents[logEvent].Message), &recordMessage)
 		if err != nil {
 			log.Printf("failed to extract message from event, skipping message. %s", logEvents[logEvent].Message)
 			continue
 		}
-		if (strings.Contains(recordMessage.EventName, "CreateFunction") || strings.Contains(recordMessage.EventName, "UpdateFunctionCode")) &&
-			"FunctionClarityLambdaVerifier" != recordMessage.ResponseElements.FunctionName && "" != recordMessage.ResponseElements.FunctionName {
+		if shouldHandleEvent(recordMessage) {
 			log.Printf("handling function name: %s, event name: %s, event source: %s, region: %s\n", recordMessage.ResponseElements.FunctionName, recordMessage.EventName, recordMessage.EventSource, recordMessage.AwsRegion)
-			handleFunctionEvent(recordMessage, err, context)
+			handleFunctionEvent(recordMessage, config.IncludedFuncTagKeys, config.IncludedFuncRegions, context)
 		}
 	}
 
 	return nil
 }
 
-func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Context) {
-	if config == (i.AWSInput{}) {
-		err := initConfig()
-		if err != nil {
-			return
-		}
-	}
+func shouldHandleEvent(recordMessage RecordMessage) bool {
+	return (strings.Contains(recordMessage.EventName, "CreateFunction") || strings.Contains(recordMessage.EventName, "UpdateFunctionCode")) &&
+		"FunctionClarityLambdaVerifier" != recordMessage.ResponseElements.FunctionName && "" != recordMessage.ResponseElements.FunctionName
+}
+
+func handleFunctionEvent(recordMessage RecordMessage, tagKeysFilter []string, regionsFilter []string, ctx context.Context) {
 	awsClientForDocker := clients.NewAwsClient("", "", config.Bucket, recordMessage.AwsRegion, recordMessage.AwsRegion)
-	err = integrity.InitDocker(awsClientForDocker)
+	err := integrity.InitDocker(awsClientForDocker)
 	if err != nil {
 		log.Printf("Failed to init docker. %v", err)
 		return
@@ -90,7 +94,7 @@ func handleFunctionEvent(recordMessage RecordMessage, err error, ctx context.Con
 	o := getVerifierOptions(config.IsKeyless, config.PublicKey)
 	log.Printf("about to execute verification with post action: %s.", config.Action)
 	awsClient := clients.NewAwsClient("", "", config.Bucket, config.Region, recordMessage.AwsRegion)
-	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, config.Action, config.SnsTopicArn, config.Region)
+	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, config.Action, config.SnsTopicArn, config.Region, tagKeysFilter, regionsFilter)
 
 	if err != nil {
 		log.Printf("Failed to handle lambda result: %s, %v", recordMessage.ResponseElements.FunctionArn, err)

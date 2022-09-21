@@ -16,7 +16,7 @@
             "CONFIGURATION": "{{.config}}"
           }
         },
-        "FunctionName": "FunctionClarityFunctionVerifier",
+        "FunctionName": "FunctionClarityLambdaVerifier",
         "Handler": "function-clarity",
         "PackageType": "Zip",
         "MemorySize": 1024,
@@ -64,6 +64,7 @@
                   "lambda:DeleteFunctionConcurrency",
                   "lambda:TagResource",
                   "lambda:UnTagResource",
+                  "lambda:ListTags",
                   "logs:*",
                   "kms:Get*",
                   "ecr:GetAuthorizationToken",
@@ -92,7 +93,7 @@
       "Type": "AWS::Lambda::Permission",
       {{if .withTrail -}}"DependsOn": "FunctionClarityLogGroup",{{- else}} "DependsOn": "FunctionClarityLambdaVerifier",{{- end}}
       "Properties" : {
-        "FunctionName": "FunctionClarityFunctionVerifier",
+        "FunctionName": "FunctionClarityLambdaVerifier",
         "Action" : "lambda:InvokeFunction",
         "Principal": { "Fn::Sub": "logs.${AWS::Region}.amazonaws.com"},
         "SourceArn": {{if .withTrail -}}

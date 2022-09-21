@@ -10,16 +10,18 @@ import (
 )
 
 type AWSInput struct {
-	AccessKey   string
-	SecretKey   string
-	Region      string
-	Bucket      string
-	Action      string
-	PublicKey   string
-	PrivateKey  string
-	CloudTrail  CloudTrail
-	IsKeyless   bool
-	SnsTopicArn string
+	AccessKey           string
+	SecretKey           string
+	Region              string
+	Bucket              string
+	Action              string
+	PublicKey           string
+	PrivateKey          string
+	CloudTrail          CloudTrail
+	IsKeyless           bool
+	SnsTopicArn         string
+	IncludedFuncTagKeys []string
+	IncludedFuncRegions []string
 }
 
 type CloudTrail struct {
@@ -48,6 +50,12 @@ func (i *AWSInput) ReceiveParameters() error {
 		return err
 	}
 	if err := inputStringParameter("enter default bucket (you can leave empty and a bucket with name functionclarity will be created): ", &i.Bucket, true); err != nil {
+		return err
+	}
+	if err := inputStringArrayParameter("enter tag keys of functions to include in the verification (leave empty to include all): ", &i.IncludedFuncTagKeys, true); err != nil {
+		return err
+	}
+	if err := inputStringArrayParameter("enter the function regions to include in the verification, i.e: us-east-1,us-west-1 (leave empty to include all): ", &i.IncludedFuncRegions, true); err != nil {
 		return err
 	}
 	if err := inputMultipleChoiceParameter("post verification action", &i.Action, map[string]string{"1": "detect", "2": "block"}, true); err != nil {
@@ -96,6 +104,22 @@ func inputStringParameter(q string, p *string, em bool) error {
 		return fmt.Errorf("this is a compulsory parameter")
 	}
 	*p = strings.TrimSuffix(input, "\n")
+	return err
+}
+
+func inputStringArrayParameter(q string, p *[]string, em bool) error {
+	fmt.Print(q)
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
+	input = strings.TrimSuffix(input, "\n")
+	input = strings.TrimSpace(input)
+	if !em && input == "" {
+		return fmt.Errorf("this is a compulsory parameter")
+	}
+	*p = strings.Split(input, ",")
+	for index := range *p {
+		(*p)[index] = strings.TrimSpace((*p)[index])
+	}
 	return err
 }
 
