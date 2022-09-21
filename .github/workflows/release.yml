@@ -1,4 +1,4 @@
-name: Release
+name: Release Go Binaries
 
 on:
   push:
@@ -6,42 +6,38 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+"
 
 env:
-  GO_VERSION: 1.19
+  CLI_PATH: ./cmd/function-clarity/
+  LAMBDA_PATH: ./aws_function_pkg/
 
 jobs:
-  goreleaser:
+  releases-matrix:
+    name: Release Matrix
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: ["386", amd64]
+        exclude:
+          # windows/386 and darwin/386 seems useless
+          - goarch: "386"
+            goos: windows
+          - goarch: "386"
+            goos: darwin
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v2
+
+      - name: Set APP_VERSION env
+        run: echo APP_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
+      - name: Set BUILD_TIME env
+        run: echo BUILD_TIME=$(date) >> ${GITHUB_ENV}
+      - name: Environment Printer
+        uses: managedkaos/print-env@v1.0
+
+      - uses: wangyoucao577/go-release-action@v1.16
         with:
-          fetch-depth: 0
-      -
-        name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: ${{ env.GO_VERSION }}
-      -
-        name: cli
-        uses: goreleaser/goreleaser-action@v3
-        with:
-          # either 'goreleaser' (default) or 'goreleaser-pro'
-          distribution: goreleaser
-          version: latest
-          args: release --rm-dist
-          workdir: ./cmd/function-clarity
-          go-version: ${{ env.GO_VERSION }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: lambda
-        uses: goreleaser/goreleaser-action@v3
-        with:
-          # either 'goreleaser' (default) or 'goreleaser-pro'
-          distribution: goreleaser
-          version: latest
-          args: release --rm-dist
-          workdir: ./aws_function_pkg
-          go-version: ${{ env.GO_VERSION }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: ${{ matrix.goarch }}
+          project_path: "${{ env.CMD_PATH }}"
+          build_flags: -v
+          ldflags: -X "main.appVersion=${{ env.APP_VERSION }}" -X "main.buildTime=${{ env.BUILD_TIME }}" -X main.gitCommit=${{ github.sha }} -X main.gitRef=${{ github.ref }}
