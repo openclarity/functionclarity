@@ -33,9 +33,12 @@ jobs:
           project_path: "${{ env.LAMBDA_PATH }}"
           build_flags: -v
           overwrite: TRUE
+          asset_name: "aws_function"
           ldflags: -X "main.appVersion=${{ env.APP_VERSION }}" -X "main.buildTime=${{ env.BUILD_TIME }}" -X main.gitCommit=${{ github.sha }} -X main.gitRef=${{ github.ref }}
+
   release-cli:
     name: Release CLI
+    needs: release-aws-lambda
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -48,8 +51,14 @@ jobs:
           - goarch: "386"
             goos: darwin
     steps:
+      - name: Download math result for job 2
+        uses: actions/download-artifact@v3
+        with:
+          name: aws_function.tar.gz
+      - name: Print the final result
+        shell: bash
+        run: la -l
       - uses: actions/checkout@v2
-
       - name: Set APP_VERSION env
         run: echo APP_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
       - name: Set BUILD_TIME env
