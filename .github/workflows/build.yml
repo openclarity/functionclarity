@@ -23,8 +23,8 @@ jobs:
         run: go build -v ./...
 
       - name: Check licenses
-        #      env:
-        #      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.LICENSE_TOKEN }}
         run: make license-check
 
       - name: Run verification
