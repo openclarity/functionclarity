@@ -6,6 +6,9 @@ on:
   push:
     branches: [ "main" ]
 
+env:
+  GO_VERSION: 1.19
+
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
@@ -18,6 +21,8 @@ jobs:
       -
         name: Set up Go
         uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VERSION }}
       -
         name: cli
         uses: goreleaser/goreleaser-action@v3
@@ -27,6 +32,7 @@ jobs:
           version: latest
           args: release --rm-dist
           workdir: ./cmd/function-clarity
+          go-version: ${{ env.GO_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: lambda
@@ -37,5 +43,6 @@ jobs:
           version: latest
           args: release --rm-dist
           workdir: ./aws_function_pkg
+          go-version: ${{ env.GO_VERSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
