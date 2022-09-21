@@ -20,10 +20,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type SignOptions struct {
-	key string
-}
-
 func Sign() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sign",
