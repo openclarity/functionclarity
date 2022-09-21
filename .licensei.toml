@@ -4,9 +4,20 @@ approved = [
     "bsd-3-clause",
     "bsd-2-clause",
     "mpl-2.0",
+    "isc"
 ]
 ignored = [
-
+    "go.mongodb.org/mongo-driver", # Apache 2.0 - https://github.com/mongodb/mongo-go-driver/blob/master/LICENSE
+    "gopkg.in/square/go-jose.v2", # Apache 2.0 - https://github.com/square/go-jose/blob/v2.6.0/LICENSE
+    "github.com/gogo/protobuf", # BSD-3-Clause - https://pkg.go.dev/github.com/gogo/protobuf?tab=licenses
+    "google.golang.org/protobuf", # BSD-3-Clause - https://pkg.go.dev/google.golang.org/protobuf?tab=licenses
+    "sigs.k8s.io/yaml", # MIT - https://github.com/kubernetes-sigs/yaml/blob/master/LICENSE
+    "github.com/vbauerster/mpb/v5", # The Unlicense - https://github.com/vbauerster/mpb/blob/master/UNLICENSE
+    "cuelang.org/go", # Apache 2.0 - https://github.com/cue-lang/cue/blob/master/LICENSE
+    "github.com/xeipuuv/gojsonpointer",  # Apache 2.0 - https://github.com/xeipuuv/gojsonpointer/blob/master/LICENSE-APACHE-2.0.txt
+    "github.com/xeipuuv/gojsonreference",  # Apache 2.0 - https://github.com/xeipuuv/gojsonreference/blob/master/LICENSE-APACHE-2.0.txt
+    "github.com/rcrowley/go-metrics", # BSD-3-Clause - https://github.com/rcrowley/go-metrics/blob/master/LICENSE
+    "github.com/ghodss/yaml", # MIT -https://github.com/ghodss/yaml/blob/master/LICENSE
 ]
 
 [header]

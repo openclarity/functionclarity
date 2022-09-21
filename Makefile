@@ -13,8 +13,8 @@ bin/licensei-${LICENSEI_VERSION}:
 
 .PHONY: license-check
 license-check: bin/licensei ## Run license check
+	./bin/licensei check
 	./bin/licensei header
-	#./bin/licensei check
 
 
 bin/golangci-lint: bin/golangci-lint-${GOLANGCI_VERSION}
@@ -33,10 +33,11 @@ lint: bin/golangci-lint ## Run linter
 .PHONY: test
 test: ## Run Unit Tests
 	@(cd cmd && go test ./...)
+	@(cd pkg && go test ./...)
 
 
 .PHONY: check
-check: lint #test
+check: lint test
 
 
 .PHONY: fix

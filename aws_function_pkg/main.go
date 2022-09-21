@@ -62,10 +62,6 @@ type FilterRecord struct {
 var config *i.AWSInput = nil
 
 func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLogsEvent) error {
-	if &cloudWatchEvent.AWSLogs == nil || &cloudWatchEvent.AWSLogs.Data == nil || cloudWatchEvent.AWSLogs.Data == "" {
-		log.Printf("Event is empty, nothing to do")
-		return nil
-	}
 	filterRecord, err := extractDataFromEvent(cloudWatchEvent)
 	if err != nil {
 		log.Printf("Failed to extract data from event: %v", err)

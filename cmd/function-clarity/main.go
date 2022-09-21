@@ -20,5 +20,5 @@ import (
 )
 
 func main() {
-	cli.New().Execute()
+	cli.New().Execute() //nolint:errcheck
 }

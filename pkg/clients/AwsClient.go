@@ -175,7 +175,10 @@ func (o *AwsClient) IsFuncInRegions(regions []string) bool {
 func (o *AwsClient) FuncContainsTags(funcIdentifier string, tagKes []string) (bool, error) {
 	sess := o.getSession()
 	svc := lambda.New(sess)
-	o.convertToArnIfNeeded(&funcIdentifier)
+	err := o.convertToArnIfNeeded(&funcIdentifier)
+	if err != nil {
+		return false, err
+	}
 	input := &lambda.ListTagsInput{
 		Resource: aws.String(funcIdentifier),
 	}
@@ -471,6 +474,9 @@ func calculateStackTemplate(trailName string, sess *session.Session, config i.AW
 			return err, ""
 		}
 		cloudWatchArn, err := arn.Parse(*trail.Trail.CloudWatchLogsLogGroupArn)
+		if err != nil {
+			return err, ""
+		}
 		data["logGroupArn"] = *trail.Trail.CloudWatchLogsLogGroupArn
 		data["logGroupName"] = strings.Split(cloudWatchArn.Resource, ":")[1]
 	}
@@ -614,7 +620,9 @@ func ExtractZip(zipPath string, dstToExtract string) error {
 			return fmt.Errorf("invalid file path")
 		}
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(filePath, os.ModePerm)
+			if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
+				return fmt.Errorf("failed to create directory for path: %s. %v", filePath, err)
+			}
 			continue
 		}
 

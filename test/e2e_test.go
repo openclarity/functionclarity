@@ -88,7 +88,9 @@ func setup() {
 	formationSess = cloudformation.New(sess)
 	s3Sess = s3.New(sess)
 
-	integrity.InitDocker(awsClient)
+	if err := integrity.InitDocker(awsClient); err != nil {
+		log.Fatal(err)
+	}
 
 	var configForDeployment i.AWSInput
 	configForDeployment.Bucket = bucket
@@ -116,7 +118,7 @@ func TestCodeSignAndVerify(t *testing.T) {
 	defer funcDefer()
 
 	sbo := o.SignBlobOptions{
-		options.SignBlobOptions{
+		SignBlobOptions: options.SignBlobOptions{
 			Base64Output: true,
 			Registry:     options.RegistryOptions{},
 		},

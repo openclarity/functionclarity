@@ -44,7 +44,7 @@ type CloudTrail struct {
 }
 
 func (i *AWSInput) digestParameters() error {
-	if i.PublicKey == "" && i.IsKeyless == false {
+	if i.PublicKey == "" && !i.IsKeyless {
 		if err := generate.GenerateKeyPairCmd(context.Background(), "", []string{}); err != nil {
 			return err
 		}

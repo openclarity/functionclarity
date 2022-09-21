@@ -13,5 +13,6 @@ cd ../..
 cp ./run_env/utils/unified-template.template ./test/utils/
 echo "stack template copied to test folder"
 
-echo "tests started"
+echo "e2e tests started"
+cd ./test
 go test -timeout 30m -v ./...

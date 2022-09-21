@@ -70,5 +70,8 @@ func InitDocker(awsClient *clients.AwsClient) error {
 	}
 
 	err = os.WriteFile(dockerConfigDir+"/config.json", dockerConfigJson, 0600)
+	if err != nil {
+		return err
+	}
 	return nil
 }

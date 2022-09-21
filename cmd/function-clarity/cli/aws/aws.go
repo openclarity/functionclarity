@@ -98,7 +98,7 @@ func AwsVerify() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&lambdaRegion, "function-region", "", "aws region where the verified lambda runs")
-	cmd.MarkFlagRequired("function-region")
+	cmd.MarkFlagRequired("function-region") //nolint:errcheck
 	o.AddFlags(cmd)
 	initAwsVerifyFlags(cmd)
 	return cmd

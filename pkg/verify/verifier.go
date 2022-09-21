@@ -166,7 +166,7 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 	if !o.SecurityKey.Use && o.Key == "" && o.BundlePath == "" && integrity.IsExperimentalEnv() {
 		isKeyless = true
 	}
-	if err = downloadSignatureAndCertificate(client, functionIdentifier, err, functionIdentity, isKeyless); err != nil {
+	if err = downloadSignatureAndCertificate(client, functionIdentifier, functionIdentity, isKeyless); err != nil {
 		return err
 	}
 	if err = verify.VerifyIdentity(functionIdentity, o, ctx, isKeyless); err != nil {
@@ -175,8 +175,8 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 	return nil
 }
 
-func downloadSignatureAndCertificate(client clients.Client, functionIdentifier string, err error, functionIdentity string, isKeyless bool) error {
-	if err = client.Download(functionIdentity, "sig"); err != nil {
+func downloadSignatureAndCertificate(client clients.Client, functionIdentifier string, functionIdentity string, isKeyless bool) error {
+	if err := client.Download(functionIdentity, "sig"); err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
 			if awsErr.Code() == "NoSuchKey" {
 				return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
@@ -186,7 +186,7 @@ func downloadSignatureAndCertificate(client clients.Client, functionIdentifier s
 		}
 	}
 	if isKeyless {
-		if err = client.Download(functionIdentity, "crt.base64"); err != nil {
+		if err := client.Download(functionIdentity, "crt.base64"); err != nil {
 			if awsErr, ok := err.(awserr.Error); ok {
 				if awsErr.Code() == "NoSuchKey" {
 					return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
