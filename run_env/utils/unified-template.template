@@ -1,0 +1,245 @@
+{
+  "Description": "This stack grants permission through a IAM Role to provide comprehensive serverless security to the AWS Account.",
+  "Resources": {
+    "FunctionClarityLambdaVerifier": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": "{{.bucketName}}",
+          "S3Key": "function-clarity.zip"
+        },
+        "Description": "Function clarity function",
+        "Environment": {
+          "Variables": {
+            "FUNCTION_CLARITY_BUCKET": "{{.bucketName}}",
+            "HOME": "/tmp",
+            "CONFIGURATION": "{{.config}}"
+          }
+        },
+        "FunctionName": "FunctionClarityLambdaVerifier",
+        "Handler": "function-clarity",
+        "PackageType": "Zip",
+        "MemorySize": 1024,
+        "ReservedConcurrentExecutions": 5,
+        "Role": {
+          "Fn::GetAtt": [
+            "FunctionClarityLambdaRole",
+            "Arn"
+          ]
+        },
+        "Runtime": "go1.x",
+        "Timeout" : 60
+      }
+    },
+    "FunctionClarityLambdaRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "FunctionClarityLambdaPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                  "s3:Get*",
+                  "s3:List*",
+                  "lambda:GetFunction",
+                  "lambda:PutFunctionConcurrency",
+                  "lambda:GetFunctionConcurrency",
+                  "lambda:DeleteFunctionConcurrency",
+                  "lambda:TagResource",
+                  "lambda:UnTagResource",
+                  "lambda:ListTags",
+                  "logs:*",
+                  "kms:Get*",
+                  "ecr:GetAuthorizationToken",
+                  "ecr:BatchGetImage",
+                  "ecr:GetDownloadUrlForLayer",
+                  "sns:Publish"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {{if .withTrail -}}
+    "FunctionClarityLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "DependsOn": "FunctionClarityLambdaVerifier",
+      "Properties": {
+        "LogGroupName": "FunctionClarityMonitoringLogGroup",
+        "RetentionInDays": 1
+      }
+    },{{- end}}
+    "FunctionClarityLogGroupLambdaPermissions": {
+      "Type": "AWS::Lambda::Permission",
+      {{if .withTrail -}}"DependsOn": "FunctionClarityLogGroup",{{- else}} "DependsOn": "FunctionClarityLambdaVerifier",{{- end}}
+      "Properties" : {
+        "FunctionName": "FunctionClarityLambdaVerifier",
+        "Action" : "lambda:InvokeFunction",
+        "Principal": { "Fn::Sub": "logs.${AWS::Region}.amazonaws.com"},
+        "SourceArn": {{if .withTrail -}}
+        {
+          "Fn::GetAtt": [
+            "FunctionClarityLogGroup",
+            "Arn"
+          ]
+        } {{- else }} "{{.logGroupArn}}"
+        {{- end}}
+      }
+    },
+    "FunctionClarityLogGroupFilter": {
+      "Type": "AWS::Logs::SubscriptionFilter",
+      "DependsOn": "FunctionClarityLogGroupLambdaPermissions",
+      "Properties": {
+        "DestinationArn": {
+          "Fn::GetAtt": [
+            "FunctionClarityLambdaVerifier",
+            "Arn"
+          ]
+        },
+        "FilterPattern": "{ $.eventSource=lambda.amazonaws.com && ( $.eventName=CreateFunction* || $.eventName=UpdateFunctionCode* )}",
+        "LogGroupName": {{if .withTrail -}} "FunctionClarityMonitoringLogGroup" {{- else }} "{{.logGroupName}}" {{- end}}
+      }
+    }{{if .withTrail -}},
+    "FunctionClarityTrailBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "ExpirationInDays": 1,
+              "Status": "Enabled"
+            }
+          ]
+        }
+      }
+    },
+    "FunctionClarityTrailBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "FunctionClarityTrailBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "cloudtrail.amazonaws.com"
+              },
+              "Action": "s3:GetBucket*",
+              "Resource": {
+                "Fn::Sub": "arn:aws:s3:::${FunctionClarityTrailBucket}"
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "cloudtrail.amazonaws.com"
+              },
+              "Action": "s3:PutObject",
+              "Resource": {
+                "Fn::Sub": "arn:aws:s3:::${FunctionClarityTrailBucket}/AWSLogs/${AWS::AccountId}/*"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "FunctionClarityCloudTrailToCloudWatchLogsRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "cloudtrail.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "FunctionClarity-cloudtrail-to-cloudwatchlogs-policy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents",
+                    "logs:CreateLogStream"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:FunctionClarityMonitoringLogGroup:log-stream:*"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "FunctionClarityCloudTrail": {
+      "Type": "AWS::CloudTrail::Trail",
+      "DependsOn": [
+        "FunctionClarityTrailBucketPolicy"
+      ],
+      "Properties": {
+        "IsLogging": true,
+        "IsMultiRegionTrail": true,
+        "IncludeGlobalServiceEvents": true,
+        "CloudWatchLogsLogGroupArn": {
+          "Fn::GetAtt": [
+            "FunctionClarityLogGroup",
+            "Arn"
+          ]
+        },
+        "CloudWatchLogsRoleArn": {
+          "Fn::GetAtt": [
+            "FunctionClarityCloudTrailToCloudWatchLogsRole",
+            "Arn"
+          ]
+        },
+        "S3BucketName": {
+          "Ref": "FunctionClarityTrailBucket"
+        },
+        "TrailName": "FunctionClarityTrail",
+        "EventSelectors": [
+          {
+            "ReadWriteType": "WriteOnly"
+          }
+        ]
+      }
+    }
+    {{- end}}
+  }
+}
