@@ -26,5 +26,6 @@ func Deploy() *cobra.Command {
 		Short: "Deploy function clarity to cloud provider",
 	}
 	cmd.AddCommand(aws.AwsDeploy())
+
 	return cmd
 }
