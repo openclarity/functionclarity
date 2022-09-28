@@ -1,3 +1,18 @@
+// Copyright © 2022 Cisco Systems, Inc. and its affiliates.
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package test
 
 import (
@@ -73,7 +88,9 @@ func setup() {
 	formationSess = cloudformation.New(sess)
 	s3Sess = s3.New(sess)
 
-	integrity.InitDocker(awsClient)
+	if err := integrity.InitDocker(awsClient); err != nil {
+		log.Fatal(err)
+	}
 
 	var configForDeployment i.AWSInput
 	configForDeployment.Bucket = bucket
@@ -101,7 +118,7 @@ func TestCodeSignAndVerify(t *testing.T) {
 	defer funcDefer()
 
 	sbo := o.SignBlobOptions{
-		options.SignBlobOptions{
+		SignBlobOptions: options.SignBlobOptions{
 			Base64Output: true,
 			Registry:     options.RegistryOptions{},
 		},

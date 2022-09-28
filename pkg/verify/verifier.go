@@ -1,3 +1,18 @@
+// Copyright © 2022 Cisco Systems, Inc. and its affiliates.
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package verify
 
 import (
@@ -151,7 +166,7 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 	if !o.SecurityKey.Use && o.Key == "" && o.BundlePath == "" && integrity.IsExperimentalEnv() {
 		isKeyless = true
 	}
-	if err = downloadSignatureAndCertificate(client, functionIdentifier, err, functionIdentity, isKeyless); err != nil {
+	if err = downloadSignatureAndCertificate(client, functionIdentifier, functionIdentity, isKeyless); err != nil {
 		return err
 	}
 	if err = verify.VerifyIdentity(functionIdentity, o, ctx, isKeyless); err != nil {
@@ -160,8 +175,8 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 	return nil
 }
 
-func downloadSignatureAndCertificate(client clients.Client, functionIdentifier string, err error, functionIdentity string, isKeyless bool) error {
-	if err = client.Download(functionIdentity, "sig"); err != nil {
+func downloadSignatureAndCertificate(client clients.Client, functionIdentifier string, functionIdentity string, isKeyless bool) error {
+	if err := client.Download(functionIdentity, "sig"); err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
 			if awsErr.Code() == "NoSuchKey" {
 				return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
@@ -171,7 +186,7 @@ func downloadSignatureAndCertificate(client clients.Client, functionIdentifier s
 		}
 	}
 	if isKeyless {
-		if err = client.Download(functionIdentity, "crt.base64"); err != nil {
+		if err := client.Download(functionIdentity, "crt.base64"); err != nil {
 			if awsErr, ok := err.(awserr.Error); ok {
 				if awsErr.Code() == "NoSuchKey" {
 					return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}

@@ -1,3 +1,18 @@
+// Copyright © 2022 Cisco Systems, Inc. and its affiliates.
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package clients
 
 import (
@@ -160,7 +175,10 @@ func (o *AwsClient) IsFuncInRegions(regions []string) bool {
 func (o *AwsClient) FuncContainsTags(funcIdentifier string, tagKes []string) (bool, error) {
 	sess := o.getSession()
 	svc := lambda.New(sess)
-	o.convertToArnIfNeeded(&funcIdentifier)
+	err := o.convertToArnIfNeeded(&funcIdentifier)
+	if err != nil {
+		return false, err
+	}
 	input := &lambda.ListTagsInput{
 		Resource: aws.String(funcIdentifier),
 	}
@@ -456,6 +474,9 @@ func calculateStackTemplate(trailName string, sess *session.Session, config i.AW
 			return err, ""
 		}
 		cloudWatchArn, err := arn.Parse(*trail.Trail.CloudWatchLogsLogGroupArn)
+		if err != nil {
+			return err, ""
+		}
 		data["logGroupArn"] = *trail.Trail.CloudWatchLogsLogGroupArn
 		data["logGroupName"] = strings.Split(cloudWatchArn.Resource, ":")[1]
 	}
@@ -599,7 +620,9 @@ func ExtractZip(zipPath string, dstToExtract string) error {
 			return fmt.Errorf("invalid file path")
 		}
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(filePath, os.ModePerm)
+			if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
+				return fmt.Errorf("failed to create directory for path: %s. %v", filePath, err)
+			}
 			continue
 		}
 
