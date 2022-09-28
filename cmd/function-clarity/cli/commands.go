@@ -18,6 +18,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(cli.GenerateKeyPair())
 	cmd.AddCommand(cli.ImportKeyPair())
 	cmd.AddCommand(Init())
+	cmd.AddCommand(Deploy())
 	cobra.OnInitialize(options.CobraInit)
 	return cmd
 }

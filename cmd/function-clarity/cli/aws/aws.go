@@ -108,10 +108,16 @@ func AwsInit() *cobra.Command {
 			configForDeployment.SnsTopicArn = input.SnsTopicArn
 			configForDeployment.IncludedFuncTagKeys = input.IncludedFuncTagKeys
 			configForDeployment.IncludedFuncRegions = input.IncludedFuncRegions
-			awsClient := clients.NewAwsClientInit(input.AccessKey, input.SecretKey, input.Region)
-			err := awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey, configForDeployment)
+			onlyCreateConfig, err := cmd.Flags().GetBool("only-create-config")
 			if err != nil {
-				return fmt.Errorf("failed to deploy function clarity: %w", err)
+				return err
+			}
+			if !onlyCreateConfig {
+				awsClient := clients.NewAwsClientInit(input.AccessKey, input.SecretKey, input.Region)
+				err = awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey, configForDeployment)
+				if err != nil {
+					return fmt.Errorf("failed to deploy function clarity: %w", err)
+				}
 			}
 			d, err := yaml.Marshal(&input)
 			if err != nil {
@@ -129,6 +135,32 @@ func AwsInit() *cobra.Command {
 			defer f.Close()
 			if _, err = f.Write(d); err != nil {
 				return fmt.Errorf("init command fail: %w", err)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().Bool("only-create-config", false, "determine whether to only create config file without deployment")
+	return cmd
+}
+
+func AwsDeploy() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "aws",
+		Short: "deploy to aws",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var configForDeployment i.AWSInput
+			configForDeployment.Bucket = viper.GetString("bucket")
+			configForDeployment.Action = viper.GetString("action")
+			configForDeployment.Region = viper.GetString("region")
+			configForDeployment.IsKeyless = viper.GetBool("iskeyless")
+			configForDeployment.SnsTopicArn = viper.GetString("snsTopicArn")
+			configForDeployment.IncludedFuncTagKeys = viper.GetStringSlice("includedfunctagkeys")
+			configForDeployment.IncludedFuncRegions = viper.GetStringSlice("includedfuncregions")
+			awsClient := clients.NewAwsClientInit(viper.GetString("accesskey"), viper.GetString("secretkey"), viper.GetString("region"))
+			err := awsClient.DeployFunctionClarity(viper.GetString("cloudtrail.name"), viper.GetString("publickey"), configForDeployment)
+			if err != nil {
+				return fmt.Errorf("failed to deploy function clarity: %w", err)
 			}
 			return nil
 		},
