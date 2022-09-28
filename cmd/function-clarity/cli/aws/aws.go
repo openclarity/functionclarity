@@ -146,7 +146,8 @@ func AwsInit() *cobra.Command {
 func AwsDeploy() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aws",
-		Short: "deploy to aws",
+		Short: "deploy to aws using config file",
+		Long:  "deploy to aws, this command relies on a configuration file to exist under ~/.fc, to create a config file run the command: 'init aws --only-create-config'",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var configForDeployment i.AWSInput
