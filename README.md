@@ -22,8 +22,10 @@ At the moment only AWS cloud provider is supported, additional cloud providers w
   
 ---
 
-## Install FuctionClarity
-<TBD>
+## Install FunctionClarity
+Go to [function clarity latest release](https://github.com/openclarity/functionclarity/releases/latest):
+* Create a folder, download and extract functionclarity file that matches your os.
+* Download aws_function.tar.gz and extract it inside the folder from the previous step
 
 ## Quick start
 We'll be using an AWS account, and show how to:
@@ -37,6 +39,7 @@ We'll be using an AWS account, and show how to:
 ### Initialize and deploy FunctionClarity
 The command prompts the user to enter information regarding the installation of FunctionClarity.
 When this command will finish to run, FunctionClarity will be deployed to your AWS account and a configuration file will be created locally under ~/.fc, the default values for the sign/verify commands will be taken from this config file unless flags are supplied.
+This command must run from inside a folder that contains
 ```shell
 ./function-clarity init AWS
 enter Access Key: ********
@@ -55,6 +58,13 @@ Private key written to cosign.key
 Public key written to cosign.pub
 deployment finished successfully
 ```
+
+---
+
+**NOTE**:
+When executing init command make sure you run it from the installation folder
+
+---
 
 ### Sign code
 The command below will sign a folder containing code and upload it to the user's cloud account
@@ -114,20 +124,21 @@ In case a default config file exists (under ~/.fc) it will be used, if a custom 
 #### AWS
 For code signing use the command:
 ```shell
-function-clarity sign aws code <folder to sign> --flags (optional if you have configuration file)
+function-clarity sign aws code <file/folder to sign> --flags (optional if you have configuration file)
 ```
 For image singing use the command:
 ```shell
 function-clarity sign aws image <image url> --flags (optional if you have configuration file)
 ```
-below is the optional flags that the command uses.
-| flag | Description |
-| --- | --- |
-| access key | AWS access key |
-| secret key | AWS secret key |
-| region | region to deploy signature (relevant only for code signing) |
-| bucket | bucket to deploy code signature (relevant only for code signing)|
-| privatekey | key to sign code with |
+below is the optional flags that the command uses:
+
+| flag       | Description                                                      |
+|------------|------------------------------------------------------------------|
+| access key | AWS access key                                                   |
+| secret key | AWS secret key                                                   |
+| region     | region to deploy signature (relevant only for code signing)      |
+| bucket     | bucket to deploy code signature (relevant only for code signing) |
+| privatekey | key to sign code with                                            |
 
 
 ### Verify command detailed usage
@@ -145,11 +156,12 @@ Command for verification
 function-clarity verify aws <function name to verify> --function-region=<function region location> --flags (optional if you have configuration file)
 ```
 
-below is the optional flags that the command uses.
-| flag | Description |
-| --- | --- |
-| access key | AWS access key |
-| secret key | AWS secret key |
-| region | region to load the signature from (relevant only for code signing) |
-| bucket | bucket to load signatures from (relevant only for code signing) |
-| key | public key for verification |
+below is the optional flags that the command uses:
+
+| flag       | Description                                                        |
+|------------|--------------------------------------------------------------------|
+| access key | AWS access key                                                     |
+| secret key | AWS secret key                                                     |
+| region     | region to load the signature from (relevant only for code signing) |
+| bucket     | bucket to load signatures from (relevant only for code signing)    |
+| key        | public key for verification                                        |
