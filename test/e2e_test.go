@@ -105,8 +105,9 @@ func setup() {
 }
 
 func shutdown() {
-	deleteS3()
+	deleteS3TrailBucketContent()
 	deleteStack()
+	deleteS3Bucket(bucket)
 }
 
 func TestCodeSignAndVerify(t *testing.T) {
@@ -228,7 +229,7 @@ func getEnvVar(key string, name string) string {
 	return v
 }
 
-func deleteS3() {
+func deleteS3TrailBucketContent() {
 	result, err := s3Sess.ListBuckets(&s3.ListBucketsInput{})
 	if err != nil {
 		fmt.Println("Got an error retrieving buckets:")
@@ -246,12 +247,28 @@ func deleteS3() {
 					Bucket: bucket.Name,
 				})
 
-				err := s3manager.NewBatchDeleteWithClient(s3Sess).Delete(aws.BackgroundContext(), iter)
-				if err != nil {
-					log.Fatal("delete all objects in bucket failed")
+				if err := s3manager.NewBatchDeleteWithClient(s3Sess).Delete(aws.BackgroundContext(), iter); err != nil {
+					log.Fatalf("delete all objects in bucket: %s failed", *bucket.Name)
 				}
 			}
 		}
+	}
+}
+
+func deleteS3Bucket(name string) {
+	if _, err := s3Sess.HeadBucket(&s3.HeadBucketInput{Bucket: aws.String(name)}); err != nil {
+		return
+	}
+
+	iter := s3manager.NewDeleteListIterator(s3Sess, &s3.ListObjectsInput{
+		Bucket: aws.String(name),
+	})
+	if err := s3manager.NewBatchDeleteWithClient(s3Sess).Delete(aws.BackgroundContext(), iter); err != nil {
+		log.Fatalf("delete all objects in bucket: %s failed", name)
+	}
+
+	if _, err := s3Sess.DeleteBucket(&s3.DeleteBucketInput{Bucket: aws.String(name)}); err != nil {
+		log.Fatalf("delete bucket: %s failed", name)
 	}
 }
 
