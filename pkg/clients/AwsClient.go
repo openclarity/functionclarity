@@ -173,7 +173,7 @@ func (o *AwsClient) IsFuncInRegions(regions []string) bool {
 	return false
 }
 func (o *AwsClient) FuncContainsTags(funcIdentifier string, tagKes []string) (bool, error) {
-	sess := o.getSession()
+	sess := o.getSessionForLambda()
 	svc := lambda.New(sess)
 	err := o.convertToArnIfNeeded(&funcIdentifier)
 	if err != nil {
@@ -443,6 +443,22 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, depl
 	fmt.Println("deployment finished successfully")
 	return nil
 }
+
+func (o *AwsClient) FillNotificationDetails(notification *Notification, functionIdentifier string) error {
+	if err := o.convertToArnIfNeeded(&functionIdentifier); err != nil {
+		return fmt.Errorf("failed to fill notification details: %w", err)
+	}
+	funcArn, err := arn.Parse(functionIdentifier)
+	if err != nil {
+		return fmt.Errorf("failed to fill notification details: %w", err)
+	}
+	notification.AccountId = funcArn.AccountID
+	notification.FunctionIdentifier = funcArn.String()
+	notification.FunctionName = funcArn.Resource
+	notification.Region = o.lambdaRegion
+	return nil
+}
+
 func calculateStackTemplate(trailName string, sess *session.Session, config i.AWSInput) (error, string) {
 	templateFile := "utils/unified-template.template"
 	content, err := os.ReadFile(templateFile)
