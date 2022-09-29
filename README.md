@@ -1,7 +1,7 @@
 ![image](https://user-images.githubusercontent.com/109651023/189649537-95638785-618f-4c74-93af-2cafedec2f07.png)
-FunctionClarity (AKA FC) is an infrastructure solution for serverless functions signing and verification. This solution is combined from a cli tool and a cloud specific infrastructure for validation. The solution is suitable for a CI/CD process where a code/image of serverless functions can be signed and uploaded before the function is created in the cloud repository.
+FunctionClarity (a.k.a FC) is a code integrity solution for serverless functions, allowing users to sign and verify the function's code integrity prior to its execution in cloud accounts. The solution consist of a cli tool complemented by a cloud specific infrastructure to perform the signature validation. The solution is designed to be used in the CI/CD process of the function's creation prior to its upload to the cloud repository complemented by a (serverless) validation infrastructure to be used in the cloud accouts.
 
-## How it works
+## How does it works
 
 ![Untitled Diagram(1) drawio (1)](https://user-images.githubusercontent.com/109651023/189673319-5c66fb32-98f5-430c-a01f-4823ab51fc98.png)
 
