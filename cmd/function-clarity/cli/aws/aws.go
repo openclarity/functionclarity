@@ -154,7 +154,7 @@ func AwsInit() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().Bool("only-create-config", false, "determine whether to only create config file without deployment")
+	cmd.Flags().Bool("only-create-config", false, "determine whether to only create config file without deploying")
 	return cmd
 }
 

@@ -97,19 +97,32 @@ FunctionClarity leverages [cosign](https://github.com/sigstore/cosign) for signi
 
 ### Init command detailed usage
 #### AWS
-| Input | Description |
-| --- | --- |
-| access key | AWS access key |
-| secret key | AWS secret key |
-| region | region to deploy FunctionClarity |
-| default bucket | bucket to deploy code signatures and FunctionClarity verifier lambda code for the deployment |
-| post verification action | action to perform upon validation results (detect, block or leave empty for no action to perform) |
-| sns arn | in case you would like to notify to an sns queue in case function is not verified |
-| CloudTrail | cloud trail to use, can be empty and a new trail will be created |
-| keyless mode (y/n) | select whether you would like to work in keyless mode |
+```shell
+function-clarity init aws
+```
+| Input                       | Description                                                                                        |
+|-----------------------------|----------------------------------------------------------------------------------------------------|
+| access key                  | AWS access key                                                                                     |
+| secret key                  | AWS secret key                                                                                     |
+| region                      | region to deploy FunctionClarity                                                                   |
+| default bucket              | bucket to deploy code signatures and FunctionClarity verifier lambda code for the deployment       |
+| post verification action    | action to perform upon validation results (detect, block or leave empty for no action to perform)  |
+| sns arn                     | in case you would like to notify to an sns queue in case function is not verified                  |
+| CloudTrail                  | cloud trail to use, can be empty and a new trail will be created                                   |
+| keyless mode (y/n)          | select whether you would like to work in keyless mode                                              |
 | public key for code signing | path to public key to use when verifying functions, can leave empty and a key-pair will be created |
-| privte key for code signing | in case a public key path was entered, supply the corresponding private key path |
+| privte key for code signing | in case a public key path was entered, supply the corresponding private key path                   |
 
+| Flag               | Description                                                             |
+|--------------------|-------------------------------------------------------------------------|
+| only-create-config | determine whether to only create config file without actually deploying |
+
+### Deploy command detailed usage
+deploy command will do the same as init command does, but it uses the config file, so the user doesn't
+need to supply parameters interactively using the command line
+```shell
+function-clarity deploy aws
+```
 
 ### Sign command detailed usage
 FunctionClarity supports signing of code from local folders and images.
