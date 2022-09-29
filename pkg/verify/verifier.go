@@ -17,6 +17,7 @@ package verify
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -94,13 +95,17 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 	}
 
 	if failed && topicArn != "" {
-		msg := fmt.Sprintf("Function Clarity Alert: Failed to to verify lambda %s on region %s.", funcIdentifier, region)
-		if action == "block" {
-			msg = msg + " function blocked from running."
-		} else if action == "detect" {
-			msg = msg + " function marked with function clarity tag."
+		notification := clients.Notification{}
+		err = client.FillNotificationDetails(&notification, funcIdentifier)
+		if err != nil {
+			return err
 		}
-		e = client.Notify(msg, topicArn)
+		notification.Action = action
+		msg, err := json.Marshal(notification)
+		if err != nil {
+			return err
+		}
+		e = client.Notify(string(msg), topicArn)
 	}
 	return e
 }

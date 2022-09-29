@@ -15,6 +15,14 @@
 
 package clients
 
+type Notification struct {
+	AccountId          string
+	FunctionName       string
+	FunctionIdentifier string
+	Action             string
+	Region             string
+}
+
 type Client interface {
 	ResolvePackageType(funcIdentifier string) (string, error)
 	GetFuncCode(funcIdentifier string) (string, error)
@@ -26,4 +34,5 @@ type Client interface {
 	HandleBlock(funcIdentifier *string, failed bool) error
 	HandleDetect(funcIdentifier *string, failed bool) error
 	Notify(msg string, snsArn string) error
+	FillNotificationDetails(notification *Notification, functionIdentifier string) error
 }
