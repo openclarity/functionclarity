@@ -40,8 +40,12 @@ jobs:
             let id_token = await coredemo.getIDToken()   
             coredemo.setOutput('id_token', id_token)
             console.log(id_token)
+      - name: asddase
+        id: step_one2
+        run: |
+          echo "::set-output name=test::hello"
       - name: Set the value
         id: step_one
         run: |
-          echo "id_token=${{ steps.idtoken.outputs.id_token }}" >> $GITHUB_ENV
-          echo "dsaadasdasdadssd :  ${{ id_token }}"
+          echo "id_token=${{ steps.idtoken.outputs.test }}" >> $GITHUB_ENV
+          echo "dsaadasdasdadssd :  ${{ test }}"
