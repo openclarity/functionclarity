@@ -46,4 +46,4 @@ jobs:
       - name: Set the value
         id: step_one
         run: |
-          echo "dsaadasdasdadssd :  ${{ steps.idtoken.outputs.test }}"
+          echo "dsaadasdasdadssd :  ${{ steps.step_one2.outputs.test }}"
