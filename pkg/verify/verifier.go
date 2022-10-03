@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/awserr"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/verify"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	"github.com/openclarity/function-clarity/pkg/integrity"
@@ -182,23 +182,19 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 
 func downloadSignatureAndCertificate(client clients.Client, functionIdentifier string, functionIdentity string, isKeyless bool) error {
 	if err := client.Download(functionIdentity, "sig"); err != nil {
-		if awsErr, ok := err.(awserr.Error); ok {
-			if awsErr.Code() == "NoSuchKey" {
-				return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
-			}
-		} else {
-			return fmt.Errorf("verify code: failed to get signed identity for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)
+		var nsk *s3types.NoSuchKey
+		if errors.As(err, &nsk) {
+			return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
 		}
+		return fmt.Errorf("verify code: failed to get signed identity for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)
 	}
 	if isKeyless {
 		if err := client.Download(functionIdentity, "crt.base64"); err != nil {
-			if awsErr, ok := err.(awserr.Error); ok {
-				if awsErr.Code() == "NoSuchKey" {
-					return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
-				}
-			} else {
-				return fmt.Errorf("verify code: failed to get certificate for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)
+			var nsk *s3types.NoSuchKey
+			if errors.As(err, &nsk) {
+				return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
 			}
+			return fmt.Errorf("verify code: failed to get certificate for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)
 		}
 	}
 	return nil

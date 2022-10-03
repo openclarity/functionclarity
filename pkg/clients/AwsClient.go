@@ -18,20 +18,23 @@ package clients
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	b64 "encoding/base64"
+	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/arn"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/cloudformation"
-	"github.com/aws/aws-sdk-go/service/cloudtrail"
-	"github.com/aws/aws-sdk-go/service/ecr"
-	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/aws/aws-sdk-go/service/sns"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
+	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
+	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/google/uuid"
 	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/utils"
@@ -44,6 +47,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 )
 
 const FunctionClarityBucketName = "functionclarity"
@@ -76,24 +80,24 @@ func NewAwsClientInit(accessKey string, secretKey string, region string) *AwsCli
 }
 
 func (o *AwsClient) ResolvePackageType(funcIdentifier string) (string, error) {
-	sess := o.getSessionForLambda()
-	svc := lambda.New(sess)
+	cfg := o.getConfigForLambda()
+	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.GetFunctionInput{
 		FunctionName: aws.String(funcIdentifier),
 	}
-	result, err := svc.GetFunction(input)
+	result, err := lambdaClient.GetFunction(context.TODO(), input)
 	if err != nil {
 		return "", err
 	}
-	return *result.Configuration.PackageType, nil
+	return string(result.Configuration.PackageType), nil
 }
 
 func (o *AwsClient) Upload(signature string, identity string, isKeyless bool) error {
-	sess := o.getSession()
+	cfg := o.getConfig()
 
-	uploader := s3manager.NewUploader(sess)
+	uploader := manager.NewUploader(s3.NewFromConfig(*cfg))
 	// Upload the file to S3.
-	_, err := uploader.Upload(&s3manager.UploadInput{
+	_, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(o.s3),
 		Key:    aws.String(identity + ".sig"),
 		Body:   strings.NewReader(signature),
@@ -109,7 +113,7 @@ func (o *AwsClient) Upload(signature string, identity string, isKeyless bool) er
 			return err
 		}
 
-		result, err := uploader.Upload(&s3manager.UploadInput{
+		result, err := uploader.Upload(context.TODO(), &s3.PutObjectInput{
 			Bucket: aws.String(o.s3),
 			Key:    aws.String(identity + ".crt.base64"),
 			Body:   f,
@@ -117,14 +121,14 @@ func (o *AwsClient) Upload(signature string, identity string, isKeyless bool) er
 		if err != nil {
 			return err
 		}
-		fmt.Printf("\ncertificate file uploaded to, %s\n", aws.StringValue(&result.Location))
+		fmt.Printf("\ncertificate file uploaded to, %s\n", aws.ToString(&result.Location))
 	}
 	return nil
 }
 
 func (o *AwsClient) Download(fileName string, outputType string) error {
-	sess := o.getSession()
-	downloader := s3manager.NewDownloader(sess)
+	cfg := o.getConfig()
+	downloader := manager.NewDownloader(s3.NewFromConfig(*cfg))
 
 	outputFile := "/tmp/" + fileName + "." + outputType
 	f, err := os.Create(outputFile)
@@ -133,7 +137,7 @@ func (o *AwsClient) Download(fileName string, outputType string) error {
 	}
 	defer f.Close()
 
-	_, err = downloader.Download(f, &s3.GetObjectInput{
+	_, err = downloader.Download(context.TODO(), f, &s3.GetObjectInput{
 		Bucket: aws.String(o.s3),
 		Key:    aws.String(fileName + "." + outputType),
 	})
@@ -145,12 +149,12 @@ func (o *AwsClient) Download(fileName string, outputType string) error {
 }
 
 func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
-	sess := o.getSessionForLambda()
-	svc := lambda.New(sess)
+	cfg := o.getConfigForLambda()
+	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.GetFunctionInput{
 		FunctionName: aws.String(funcIdentifier),
 	}
-	result, err := svc.GetFunction(input)
+	result, err := lambdaClient.GetFunction(context.TODO(), input)
 	if err != nil {
 		return "", err
 	}
@@ -174,8 +178,8 @@ func (o *AwsClient) IsFuncInRegions(regions []string) bool {
 	return false
 }
 func (o *AwsClient) FuncContainsTags(funcIdentifier string, tagKes []string) (bool, error) {
-	sess := o.getSessionForLambda()
-	svc := lambda.New(sess)
+	cfg := o.getConfigForLambda()
+	lambdaClient := lambda.NewFromConfig(*cfg)
 	err := o.convertToArnIfNeeded(&funcIdentifier)
 	if err != nil {
 		return false, err
@@ -183,12 +187,12 @@ func (o *AwsClient) FuncContainsTags(funcIdentifier string, tagKes []string) (bo
 	input := &lambda.ListTagsInput{
 		Resource: aws.String(funcIdentifier),
 	}
-	req, resp := svc.ListTagsRequest(input)
-	if err := req.Send(); err != nil {
+	resp, err := lambdaClient.ListTags(context.TODO(), input)
+	if err != nil {
 		return false, err
 	}
 	for _, tag := range tagKes {
-		if resp.Tags[tag] != nil {
+		if _, exist := resp.Tags[tag]; exist {
 			return true, nil
 		}
 	}
@@ -196,9 +200,9 @@ func (o *AwsClient) FuncContainsTags(funcIdentifier string, tagKes []string) (bo
 }
 
 func (o *AwsClient) Notify(msg string, topicARN string) error {
-	sess := o.getSession()
-	svc := sns.New(sess)
-	result, err := svc.Publish(&sns.PublishInput{
+	cfg := o.getConfig()
+	snsClient := sns.NewFromConfig(*cfg)
+	result, err := snsClient.Publish(context.TODO(), &sns.PublishInput{
 		Message:  &msg,
 		TopicArn: &topicARN,
 	})
@@ -211,12 +215,12 @@ func (o *AwsClient) Notify(msg string, topicARN string) error {
 }
 
 func (o *AwsClient) GetFuncImageURI(funcIdentifier string) (string, error) {
-	sess := o.getSessionForLambda()
-	svc := lambda.New(sess)
+	cfg := o.getConfigForLambda()
+	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.GetFunctionInput{
 		FunctionName: aws.String(funcIdentifier),
 	}
-	result, err := svc.GetFunction(input)
+	result, err := lambdaClient.GetFunction(context.TODO(), input)
 	if err != nil {
 		return "", err
 	}
@@ -237,15 +241,15 @@ func (o *AwsClient) HandleDetect(funcIdentifier *string, failed bool) error {
 }
 
 func (o *AwsClient) tagFunction(funcIdentifier string, tag string, tagValue string) error {
-	sess := o.getSessionForLambda()
-	svc := lambda.New(sess)
+	cfg := o.getConfigForLambda()
+	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.TagResourceInput{
 		Resource: aws.String(funcIdentifier),
-		Tags: map[string]*string{
-			tag: aws.String(tagValue),
+		Tags: map[string]string{
+			tag: tagValue,
 		},
 	}
-	_, err := svc.TagResource(input)
+	_, err := lambdaClient.TagResource(context.TODO(), input)
 	if err != nil {
 		return fmt.Errorf("failed to tag function. %v", err)
 	}
@@ -271,26 +275,26 @@ func (o *AwsClient) BlockFunction(funcIdentifier *string) error {
 	if currentConcurrencyLevel == nil {
 		currentConcurrencyLevelString = "nil"
 	} else {
-		currentConcurrencyLevelString = strconv.FormatInt(*currentConcurrencyLevel, 10)
+		currentConcurrencyLevelString = strconv.FormatInt(int64(*currentConcurrencyLevel), 10)
 	}
 	if err = o.tagFunction(*funcIdentifier, utils.FunctionClarityConcurrencyTagKey, currentConcurrencyLevelString); err != nil {
 		return fmt.Errorf("failed to tag function with current concurrency level. %v", err)
 	}
-	var zeroConcurrencyLevel = int64(0)
+	var zeroConcurrencyLevel = int32(0)
 	if err = o.updateConcurrencyLevel(*funcIdentifier, &zeroConcurrencyLevel); err != nil {
 		return fmt.Errorf("failed to set concurrency level to 0. %v", err)
 	}
 	return nil
 }
 
-func (o *AwsClient) updateConcurrencyLevel(funcIdentifier string, concurrencyLevel *int64) error {
-	sess := o.getSession()
-	svc := lambda.New(sess)
+func (o *AwsClient) updateConcurrencyLevel(funcIdentifier string, concurrencyLevel *int32) error {
+	cfg := o.getConfig()
+	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.PutFunctionConcurrencyInput{
 		FunctionName:                 &funcIdentifier,
 		ReservedConcurrentExecutions: concurrencyLevel,
 	}
-	result, err := svc.PutFunctionConcurrency(input)
+	result, err := lambdaClient.PutFunctionConcurrency(context.TODO(), input)
 	if *result.ReservedConcurrentExecutions != *concurrencyLevel {
 		return fmt.Errorf("failed to update function concurrency to %d. %v", *concurrencyLevel, err)
 	}
@@ -298,25 +302,25 @@ func (o *AwsClient) updateConcurrencyLevel(funcIdentifier string, concurrencyLev
 }
 
 func (o *AwsClient) DeleteConcurrencyLevel(funcIdentifier string) error {
-	sess := o.getSession()
-	svc := lambda.New(sess)
+	cfg := o.getConfig()
+	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.DeleteFunctionConcurrencyInput{
 		FunctionName: &funcIdentifier,
 	}
-	_, err := svc.DeleteFunctionConcurrency(input)
+	_, err := lambdaClient.DeleteFunctionConcurrency(context.TODO(), input)
 	if err != nil {
 		return fmt.Errorf("failed to update function concurrency to 0. %v", err)
 	}
 	return nil
 }
 
-func (o *AwsClient) GetConcurrencyLevel(funcIdentifier string) (*int64, error) {
-	sess := o.getSession()
-	svc := lambda.New(sess)
+func (o *AwsClient) GetConcurrencyLevel(funcIdentifier string) (*int32, error) {
+	cfg := o.getConfigForLambda()
+	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.GetFunctionConcurrencyInput{
 		FunctionName: &funcIdentifier,
 	}
-	result, err := svc.GetFunctionConcurrency(input)
+	result, err := lambdaClient.GetFunctionConcurrency(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch func concurrencly level. %v", err)
 	}
@@ -344,13 +348,13 @@ func (o *AwsClient) UnblockFunction(funcIdentifier *string) error {
 		return nil
 	}
 	concurrencyLevelTagName := utils.FunctionClarityConcurrencyTagKey
-	untagKeyArray := []*string{&concurrencyLevelTagName}
-	sess := o.getSession()
-	svc := lambda.New(sess)
+	untagKeyArray := []string{concurrencyLevelTagName}
+	cfg := o.getConfig()
+	lambdaClient := lambda.NewFromConfig(*cfg)
 	untagFunctionInput := &lambda.UntagResourceInput{
 		Resource: funcIdentifier,
 		TagKeys:  untagKeyArray}
-	_, err = svc.UntagResource(untagFunctionInput)
+	_, err = lambdaClient.UntagResource(context.TODO(), untagFunctionInput)
 	if err != nil {
 		return fmt.Errorf("failed to untag func clarity concurrency level tag for func: %s. %v", *funcIdentifier, err)
 	}
@@ -359,12 +363,12 @@ func (o *AwsClient) UnblockFunction(funcIdentifier *string) error {
 
 func (o *AwsClient) convertToArnIfNeeded(funcIdentifier *string) error {
 	if !arn.IsARN(*funcIdentifier) {
-		sess := o.getSessionForLambda()
-		svc := lambda.New(sess)
+		cfg := o.getConfigForLambda()
+		lambdaClient := lambda.NewFromConfig(*cfg)
 		input := &lambda.GetFunctionInput{
 			FunctionName: aws.String(*funcIdentifier),
 		}
-		result, err := svc.GetFunction(input)
+		result, err := lambdaClient.GetFunction(context.TODO(), input)
 		if err != nil {
 			return fmt.Errorf("failed to get function by name: %s", *funcIdentifier)
 		}
@@ -373,33 +377,34 @@ func (o *AwsClient) convertToArnIfNeeded(funcIdentifier *string) error {
 	return nil
 }
 
-func (o *AwsClient) GetConcurrencyLevelTag(funcIdentifier string, tag string) (error, *int64) {
-	sess := o.getSessionForLambda()
-	svc := lambda.New(sess)
+func (o *AwsClient) GetConcurrencyLevelTag(funcIdentifier string, tag string) (error, *int32) {
+	cfg := o.getConfig()
+	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.ListTagsInput{
 		Resource: aws.String(funcIdentifier),
 	}
-	req, resp := svc.ListTagsRequest(input)
-	if err := req.Send(); err != nil {
+	resp, err := lambdaClient.ListTags(context.TODO(), input)
+	if err != nil {
 		return err, nil
 	}
-	concurrencyLevel := resp.Tags[tag]
-	if concurrencyLevel == nil {
+	concurrencyLevel, exist := resp.Tags[tag]
+	if !exist {
 		log.Printf("function not blocked by function-clarity, nothing to do")
-		noConcurrency := int64(-1)
+		noConcurrency := int32(-1)
 		return nil, &noConcurrency
 	}
-	if *concurrencyLevel == "nil" {
+	if concurrencyLevel == "nil" {
 		return nil, nil
 	}
-	concurrencyLevelInt, err := strconv.ParseInt(*concurrencyLevel, 10, 64)
-	return err, &concurrencyLevelInt
+	concurrencyLevelInt, err := strconv.ParseInt(concurrencyLevel, 10, 32)
+	concurrencyLevelInt32 := int32(concurrencyLevelInt)
+	return err, &concurrencyLevelInt32
 }
 
 func (o *AwsClient) GetEcrToken() (*ecr.GetAuthorizationTokenOutput, error) {
-	sess := o.getSession()
-	ecrClient := ecr.New(sess)
-	output, err := ecrClient.GetAuthorizationToken(&ecr.GetAuthorizationTokenInput{})
+	cfg := o.getConfig()
+	ecrClient := ecr.NewFromConfig(*cfg)
+	output, err := ecrClient.GetAuthorizationToken(context.TODO(), &ecr.GetAuthorizationTokenInput{})
 	if err != nil {
 		return nil, err
 	}
@@ -407,13 +412,13 @@ func (o *AwsClient) GetEcrToken() (*ecr.GetAuthorizationTokenOutput, error) {
 }
 
 func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, deploymentConfig i.AWSInput) error {
-	sess := o.getSession()
-	if err := uploadFuncClarityCode(sess, keyPath, deploymentConfig.Bucket); err != nil {
+	cfg := o.getConfig()
+	if err := uploadFuncClarityCode(cfg, keyPath, deploymentConfig.Bucket); err != nil {
 		return fmt.Errorf("failed to upload function clarity code: %w", err)
 	}
-	svc := cloudformation.New(sess)
+	cloudformationClient := cloudformation.NewFromConfig(*cfg)
 	const funcClarityStackName = "function-clarity-stack"
-	stackExists, err := stackExists(funcClarityStackName, svc)
+	stackExists, err := stackExists(funcClarityStackName, cloudformationClient)
 	if err != nil {
 		return fmt.Errorf("failed to check if stack exists: %w", err)
 	}
@@ -421,26 +426,46 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, depl
 		return fmt.Errorf("function clarity already deployed, please delete stack before you dpeloy")
 	}
 
-	err, stackCalculatedTemplate := calculateStackTemplate(trailName, sess, deploymentConfig)
+	err, stackCalculatedTemplate := calculateStackTemplate(trailName, cfg, deploymentConfig)
 	if err != nil {
 		return err
 	}
 	stackName := funcClarityStackName
-	_, err = svc.CreateStack(&cloudformation.CreateStackInput{
+	_, err = cloudformationClient.CreateStack(context.TODO(), &cloudformation.CreateStackInput{
 		TemplateBody: &stackCalculatedTemplate,
 		StackName:    &stackName,
-		Capabilities: []*string{aws.String(cloudformation.CapabilityCapabilityIam)},
+		Capabilities: []types.Capability{types.CapabilityCapabilityIam},
 	})
 	fmt.Println("deployment request sent to provider")
 	if err != nil {
 		return fmt.Errorf("failed to create stack: %w", err)
 	}
 	fmt.Println("waiting for deployment to complete")
-	if err = svc.WaitUntilStackCreateComplete(&cloudformation.DescribeStacksInput{
-		StackName: &stackName,
-	}); err != nil {
-		return fmt.Errorf("failed to create stack: %w", err)
+
+	var timeout bool
+	timer := time.NewTimer(5 * time.Minute)
+	go func() {
+		<-timer.C
+		timeout = true
+	}()
+	defer func() {
+		timer.Stop()
+	}()
+
+	for {
+		stacks, err := cloudformationClient.DescribeStacks(context.TODO(), &cloudformation.DescribeStacksInput{StackName: aws.String(stackName)})
+		if err != nil {
+			return fmt.Errorf("failed to create stack: %w", err)
+		}
+		if len(stacks.Stacks) == 1 && stacks.Stacks[0].StackStatus == types.StackStatusCreateComplete {
+			break
+		}
+		if timeout {
+			return fmt.Errorf("timout on waiting for stack to create")
+		}
+		time.Sleep(30 * time.Second)
 	}
+
 	fmt.Println("deployment finished successfully")
 	return nil
 }
@@ -508,7 +533,7 @@ func (o *AwsClient) FillNotificationDetails(notification *Notification, function
 	return nil
 }
 
-func calculateStackTemplate(trailName string, sess *session.Session, config i.AWSInput) (error, string) {
+func calculateStackTemplate(trailName string, cfg *aws.Config, config i.AWSInput) (error, string) {
 	templateFile := "utils/unified-template.template"
 	content, err := os.ReadFile(templateFile)
 	if err != nil {
@@ -530,8 +555,8 @@ func calculateStackTemplate(trailName string, sess *session.Session, config i.AW
 	if trailName == "" {
 		data["withTrail"] = "True"
 	} else {
-		svt := cloudtrail.New(sess)
-		trail, err := svt.GetTrail(&cloudtrail.GetTrailInput{Name: &trailName})
+		svt := cloudtrail.NewFromConfig(*cfg)
+		trail, err := svt.GetTrail(context.TODO(), &cloudtrail.GetTrailInput{Name: &trailName})
 		if err != nil {
 			return err, ""
 		}
@@ -561,45 +586,43 @@ func trailValid(trail *cloudtrail.GetTrailOutput) error {
 	return nil
 }
 
-func (o *AwsClient) getSession() *session.Session {
-	cfgs := &aws.Config{
-		Region: aws.String(o.region)}
+func (o *AwsClient) getConfig() *aws.Config {
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(o.region))
 	if o.accessKey != "" && o.secretKey != "" {
-		cfgs = &aws.Config{
-			Region:      aws.String(o.region),
-			Credentials: credentials.NewStaticCredentials(o.accessKey, o.secretKey, ""),
-		}
+		cfg, err = config.LoadDefaultConfig(context.TODO(),
+			config.WithRegion(o.region),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(o.accessKey, o.secretKey, "")))
 	}
-	result := session.Must(session.NewSession(cfgs))
-	return result
-}
-
-func (o *AwsClient) getSessionForLambda() *session.Session {
-	cfgs := &aws.Config{
-		Region: aws.String(o.lambdaRegion)}
-	if o.accessKey != "" && o.secretKey != "" {
-		cfgs = &aws.Config{
-			Region:      aws.String(o.lambdaRegion),
-			Credentials: credentials.NewStaticCredentials(o.accessKey, o.secretKey, ""),
-		}
-	}
-	result := session.Must(session.NewSession(cfgs))
-	return result
-}
-
-func uploadFuncClarityCode(sess *session.Session, keyPath string, bucket string) error {
-	s3svc := s3.New(sess)
-	_, err := s3svc.CreateBucket(&s3.CreateBucketInput{
-		Bucket: aws.String(bucket),
-	})
 	if err != nil {
-		if awsErr, ok := err.(awserr.Error); ok {
-			if awsErr.Code() != "BucketAlreadyOwnedByYou" {
-				return err
-			}
-		} else {
-			return err
-		}
+		panic(fmt.Sprintf("failed loading config, %v", err))
+	}
+	return &cfg
+}
+
+func (o *AwsClient) getConfigForLambda() *aws.Config {
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(o.lambdaRegion))
+	if o.accessKey != "" && o.secretKey != "" {
+		cfg, err = config.LoadDefaultConfig(context.TODO(),
+			config.WithRegion(o.lambdaRegion),
+			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(o.accessKey, o.secretKey, "")))
+	}
+	if err != nil {
+		panic(fmt.Sprintf("failed loading config, %v", err))
+	}
+	return &cfg
+}
+
+func uploadFuncClarityCode(cfg *aws.Config, keyPath string, bucket string) error {
+	s3Client := s3.NewFromConfig(*cfg)
+	_, err := s3Client.CreateBucket(context.TODO(), &s3.CreateBucketInput{
+		Bucket:                    aws.String(bucket),
+		CreateBucketConfiguration: &s3types.CreateBucketConfiguration{LocationConstraint: s3types.BucketLocationConstraint(cfg.Region)},
+	})
+	var bne *s3types.BucketAlreadyOwnedByYou
+	if err != nil && !errors.As(err, &bne) {
+		return err
 	}
 	archive, err := os.Create("function-clarity.zip")
 	if err != nil {
@@ -637,7 +660,7 @@ func uploadFuncClarityCode(sess *session.Session, keyPath string, bucket string)
 		}
 	}
 	zipWriter.Close()
-	uploader := s3manager.NewUploader(sess)
+	uploader := manager.NewUploader(s3.NewFromConfig(*cfg))
 	// Upload the file to S3.
 	//p := mpb.New()
 	file, err := os.Open("function-clarity.zip")
@@ -658,7 +681,7 @@ func uploadFuncClarityCode(sess *session.Session, keyPath string, bucket string)
 		return err
 	}
 	fmt.Println("Uploading function-clarity function code to s3 bucket, this may take a few minutes")
-	_, err = uploader.Upload(&s3manager.UploadInput{
+	_, err = uploader.Upload(context.TODO(), &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String("function-clarity.zip"),
 		Body:   file,
@@ -715,11 +738,11 @@ func ExtractZip(zipPath string, dstToExtract string) error {
 	return nil
 }
 
-func stackExists(stackNameOrID string, cf *cloudformation.CloudFormation) (bool, error) {
+func stackExists(stackNameOrID string, cfClient *cloudformation.Client) (bool, error) {
 	describeStacksInput := &cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackNameOrID),
 	}
-	_, err := cf.DescribeStacks(describeStacksInput)
+	_, err := cfClient.DescribeStacks(context.TODO(), describeStacksInput)
 
 	if err != nil {
 		// If the stack doesn't exist, then no worries
