@@ -44,7 +44,7 @@ jobs:
         run: |
           echo "::set-output name=test::hello"
       - name: Set the value
-        id: step_one
+        id: step_one111312312
         run: |
           echo "dsaadasdasdadssd :  ${{ steps.step_one1.outputs.id_token }}"
           echo "aaaaaaaaaaaaaa=${{ steps.step_one1.outputs.id_token }}" >> $GITHUB_ENV
