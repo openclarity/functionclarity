@@ -47,3 +47,5 @@ jobs:
         id: step_one
         run: |
           echo "dsaadasdasdadssd :  ${{ steps.step_one1.outputs.id_token }}"
+          echo "aaaaaaaaaaaaaa=${{ steps.step_one1.outputs.id_token }}" >> $GITHUB_ENV
+          echo "dsaadasdasdadssd :  ${{ env.aaaaaaaaaaaaaa }}"
