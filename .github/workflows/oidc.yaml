@@ -1,0 +1,22 @@
+name: oidc
+
+on:
+  push:
+    branches: [ "oidc_test" ]
+
+
+jobs:
+  job:
+    environment: Production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install OIDC Client from Core Package
+        run: npm install @actions/core@1.6.0 @actions/http-client
+      - name: Get Id Token
+        uses: actions/github-script@v6
+        id: idtoken
+        with:
+          script: |
+            const coredemo = require('@actions/core')
+            let id_token = await coredemo.getIDToken()   
+            coredemo.setOutput('id_token', id_token)
