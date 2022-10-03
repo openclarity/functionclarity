@@ -6,6 +6,8 @@ on:
 
 
 jobs:
+  permissions:
+    id-token: write
 
   build:
     runs-on: ubuntu-latest
