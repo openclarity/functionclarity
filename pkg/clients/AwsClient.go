@@ -535,7 +535,7 @@ func (o *AwsClient) FillNotificationDetails(notification *Notification, function
 }
 
 func calculateStackTemplate(trailName string, cfg *aws.Config, config i.AWSInput) (error, string) {
-	templateFile := "utils/unified-template.template"
+	templateFile := "unified-template.template"
 	content, err := os.ReadFile(templateFile)
 	if err != nil {
 		return err, ""
@@ -617,10 +617,18 @@ func (o *AwsClient) getConfigForLambda() *aws.Config {
 
 func uploadFuncClarityCode(cfg *aws.Config, keyPath string, bucket string) error {
 	s3Client := s3.NewFromConfig(*cfg)
-	_, err := s3Client.CreateBucket(context.TODO(), &s3.CreateBucketInput{
-		Bucket:                    aws.String(bucket),
-		CreateBucketConfiguration: &s3types.CreateBucketConfiguration{LocationConstraint: s3types.BucketLocationConstraint(cfg.Region)},
-	})
+	var err error
+	if cfg.Region != "us-east-1" {
+		_, err = s3Client.CreateBucket(context.TODO(), &s3.CreateBucketInput{
+			Bucket:                    aws.String(bucket),
+			CreateBucketConfiguration: &s3types.CreateBucketConfiguration{LocationConstraint: s3types.BucketLocationConstraint(cfg.Region)},
+		})
+	} else {
+		_, err = s3Client.CreateBucket(context.TODO(), &s3.CreateBucketInput{
+			Bucket: aws.String(bucket),
+		})
+	}
+
 	var bne *s3types.BucketAlreadyOwnedByYou
 	if err != nil && !errors.As(err, &bne) {
 		return err
