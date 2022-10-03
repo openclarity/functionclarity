@@ -39,18 +39,12 @@ jobs:
             let id_token = await coredemo.getIDToken()   
             coredemo.setOutput('id_token', id_token)
             console.log(id_token)
-      - name: asddase
-        id: step_one2
-        run: |
-          echo "::set-output name=test::hello"
-      - name: Set the value
-        id: step_one111312312
-        run: |
-          echo "dsaadasdasdadssd :  ${{ steps.step_one1.outputs.id_token }}"
-          echo "aaaaaaaaaaaaaa=${{ steps.step_one1.outputs.id_token }}" >> $GITHUB_ENV
-      - name: Set the value
-        id: step_one
+      - name: Test
         env:
-          abvxzvzc: ${{ steps.step_one1.outputs.id_token }}
-        run: |
-          echo "dsaadasdasdadssd :  ${{ env.abvxzvzc }}"
+          ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          BUCKET: ${{ secrets.BUCKET }}
+          REGION: ${{ secrets.REGION }}
+          FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
+          jwt_token: ${{ steps.step_one1.outputs.id_token }}
+        run: test/e2e_test.sh
