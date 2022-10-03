@@ -32,6 +32,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdaTypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
@@ -471,17 +472,17 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, depl
 }
 
 func (o *AwsClient) UpdateVerifierFucConfig(action *string, includedFuncTagKeys *[]string, includedFuncRegions *[]string, topic *string) error {
-	sess := o.getSession()
-	svc := lambda.New(sess)
+	cfg := o.getConfig()
+	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.GetFunctionConfigurationInput{
 		FunctionName: aws.String(FunctionClarityLambdaVerierName),
 	}
-	functionConfiguration, err := svc.GetFunctionConfiguration(input)
+	functionConfiguration, err := lambdaClient.GetFunctionConfiguration(context.TODO(), input)
 	if err != nil {
 		return fmt.Errorf("failed to update configuration: %w", err)
 	}
 	funcConfigEnvEncoded := functionConfiguration.Environment.Variables[ConfigEnvVariableName]
-	funcConfigEnvDecoded, err := b64.StdEncoding.DecodeString(*funcConfigEnvEncoded)
+	funcConfigEnvDecoded, err := b64.StdEncoding.DecodeString(funcConfigEnvEncoded)
 	if err != nil {
 		return fmt.Errorf("failed to update configuration: %w", err)
 	}
@@ -502,16 +503,16 @@ func (o *AwsClient) UpdateVerifierFucConfig(action *string, includedFuncTagKeys 
 	if topic != nil {
 		config.SnsTopicArn = *topic
 	}
-	var environment = lambda.Environment{}
+	var environment = lambdaTypes.Environment{}
 	configMarshal, err := yaml.Marshal(config)
 	if err != nil {
 		return fmt.Errorf("failed to update configuration: %w", err)
 	}
 	configEncoded := b64.StdEncoding.EncodeToString(configMarshal)
 	environment.Variables = functionConfiguration.Environment.Variables
-	environment.Variables[ConfigEnvVariableName] = &configEncoded
+	environment.Variables[ConfigEnvVariableName] = configEncoded
 	updateFunctionEnvInput := lambda.UpdateFunctionConfigurationInput{FunctionName: aws.String(FunctionClarityLambdaVerierName), Environment: &environment}
-	_, err = svc.UpdateFunctionConfiguration(&updateFunctionEnvInput)
+	_, err = lambdaClient.UpdateFunctionConfiguration(context.TODO(), &updateFunctionEnvInput)
 	if err != nil {
 		return fmt.Errorf("failed to update configuration: %w", err)
 	}
