@@ -113,13 +113,14 @@ func shutdown() {
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	fmt.Println("testing123")
 	fmt.Println(getEnvVar("jwt_token", "token ID"))
+	jwt := getEnvVar("jwt_token", "token ID")
 
 	sbo := o.SignBlobOptions{
 		SignBlobOptions: options.SignBlobOptions{
 			Base64Output:     true,
 			Registry:         options.RegistryOptions{},
 			SkipConfirmation: true,
-			Fulcio:           options.FulcioOptions{URL: options.DefaultFulcioURL, IdentityToken: os.Getenv("jwt_token")},
+			Fulcio:           options.FulcioOptions{URL: options.DefaultFulcioURL, IdentityToken: jwt},
 			Rekor:            options.RekorOptions{URL: options.DefaultRekorURL},
 		},
 	}
