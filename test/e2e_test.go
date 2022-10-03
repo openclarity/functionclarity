@@ -17,14 +17,17 @@ package test
 
 import (
 	"archive/zip"
+	"context"
+	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/cloudformation"
-	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/smithy-go"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/integrity"
@@ -53,9 +56,9 @@ const (
 )
 
 var awsClient *clients.AwsClient
-var lambdaSess *lambda.Lambda
-var formationSess *cloudformation.CloudFormation
-var s3Sess *s3.S3
+var lambdaClient *lambda.Client
+var formationClient *cloudformation.Client
+var s3Client *s3.Client
 
 var keyPass = []byte(pass)
 
@@ -83,10 +86,10 @@ func setup() {
 
 	awsClient = clients.NewAwsClient(accessKey, secretKey, bucket, region, lambdaRegion)
 
-	sess := createSession(region)
-	lambdaSess = lambda.New(createSession(lambdaRegion))
-	formationSess = cloudformation.New(sess)
-	s3Sess = s3.New(sess)
+	cfg := createConfig(region)
+	lambdaClient = lambda.NewFromConfig(*createConfig(lambdaRegion))
+	formationClient = cloudformation.NewFromConfig(*cfg)
+	s3Client = s3.NewFromConfig(*cfg)
 
 	if err := integrity.InitDocker(awsClient); err != nil {
 		log.Fatal(err)
@@ -132,7 +135,7 @@ func TestCodeSignAndVerify(t *testing.T) {
 	functionArn := initCodeLambda(t)
 
 	successTagValue := "Function signed and verified"
-	success, timeout := findTag(t, functionArn, lambdaSess, "Function clarity result", successTagValue)
+	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
 	if timeout {
 		t.Fatal("test failed on timout, the required tag not added in the time period")
 	}
@@ -163,7 +166,7 @@ func TestImageSignAndVerify(t *testing.T) {
 	}
 
 	successTagValue := "Function signed and verified"
-	success, timeout := findTag(t, functionArn, lambdaSess, "Function clarity result", successTagValue)
+	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
 	if timeout {
 		t.Fatal("test failed on timout, the required tag not added in the time period")
 	}
@@ -174,7 +177,7 @@ func TestImageSignAndVerify(t *testing.T) {
 	deleteLambda(imageFuncName)
 }
 
-func findTag(t *testing.T, functionArn string, lambdaSess *lambda.Lambda, successTagKey string, successTagValue string) (bool, bool) {
+func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, successTagKey string, successTagValue string) (bool, bool) {
 	t.Helper()
 	var timeout bool
 	timer := time.NewTimer(10 * time.Minute)
@@ -189,9 +192,7 @@ func findTag(t *testing.T, functionArn string, lambdaSess *lambda.Lambda, succes
 	var result *lambda.ListTagsOutput
 	var err error
 	for {
-		result, err = lambdaSess.ListTags(&lambda.ListTagsInput{
-			Resource: &functionArn,
-		})
+		result, err = lambdaClient.ListTags(context.TODO(), &lambda.ListTagsInput{Resource: &functionArn})
 		if err != nil {
 			t.Fatal("failed to get functions tags")
 		}
@@ -206,19 +207,21 @@ func findTag(t *testing.T, functionArn string, lambdaSess *lambda.Lambda, succes
 	}
 	var success bool
 	for key, value := range result.Tags {
-		if key == successTagKey && *value == successTagValue {
+		if key == successTagKey && value == successTagValue {
 			success = true
 		}
 	}
 	return success, false
 }
 
-func createSession(region string) *session.Session {
-	cfgs := &aws.Config{
-		Region:      aws.String(region),
-		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
+func createConfig(region string) *aws.Config {
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(region),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")))
+	if err != nil {
+		panic(fmt.Sprintf("failed loading config, %v", err))
 	}
-	return session.Must(session.NewSession(cfgs))
+	return &cfg
 }
 
 func getEnvVar(key string, name string) string {
@@ -230,7 +233,7 @@ func getEnvVar(key string, name string) string {
 }
 
 func deleteS3TrailBucketContent() {
-	result, err := s3Sess.ListBuckets(&s3.ListBucketsInput{})
+	result, err := s3Client.ListBuckets(context.TODO(), &s3.ListBucketsInput{})
 	if err != nil {
 		fmt.Println("Got an error retrieving buckets:")
 		fmt.Println(err)
@@ -238,43 +241,64 @@ func deleteS3TrailBucketContent() {
 	}
 	for _, bucket := range result.Buckets {
 		if strings.HasPrefix(*bucket.Name, "function-clarity-stack-functionclaritytrailbucket") {
-			bl, err := s3Sess.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: bucket.Name})
+			bl, err := s3Client.GetBucketLocation(context.TODO(), &s3.GetBucketLocationInput{Bucket: bucket.Name})
 			if err != nil {
 				continue
 			}
-			if bl.LocationConstraint != nil && *bl.LocationConstraint == region {
-				iter := s3manager.NewDeleteListIterator(s3Sess, &s3.ListObjectsInput{
-					Bucket: bucket.Name,
-				})
-
-				if err := s3manager.NewBatchDeleteWithClient(s3Sess).Delete(aws.BackgroundContext(), iter); err != nil {
-					log.Fatalf("delete all objects in bucket: %s failed", *bucket.Name)
-				}
+			if string(bl.LocationConstraint) == region {
+				deleteS3BucketContent(bucket.Name)
 			}
 		}
 	}
 }
 
+func deleteS3BucketContent(name *string) {
+	listObjectsV2Response, err := s3Client.ListObjectsV2(context.TODO(),
+		&s3.ListObjectsV2Input{
+			Bucket: name,
+		})
+
+	for {
+
+		if err != nil {
+			log.Fatalf("Couldn't list objects... delete all objects in bucket: %s failed", *name)
+		}
+		for _, item := range listObjectsV2Response.Contents {
+			_, err = s3Client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
+				Bucket: name,
+				Key:    item.Key,
+			})
+
+			if err != nil {
+				log.Fatalf("delete all objects in bucket: %s failed", *name)
+			}
+		}
+
+		if listObjectsV2Response.IsTruncated {
+			listObjectsV2Response, err = s3Client.ListObjectsV2(context.TODO(),
+				&s3.ListObjectsV2Input{
+					Bucket:            name,
+					ContinuationToken: listObjectsV2Response.ContinuationToken,
+				})
+		} else {
+			break
+		}
+	}
+}
+
 func deleteS3Bucket(name string) {
-	if _, err := s3Sess.HeadBucket(&s3.HeadBucketInput{Bucket: aws.String(name)}); err != nil {
+	if _, err := s3Client.HeadBucket(context.TODO(), &s3.HeadBucketInput{Bucket: aws.String(name)}); err != nil {
 		return
 	}
-
-	iter := s3manager.NewDeleteListIterator(s3Sess, &s3.ListObjectsInput{
-		Bucket: aws.String(name),
-	})
-	if err := s3manager.NewBatchDeleteWithClient(s3Sess).Delete(aws.BackgroundContext(), iter); err != nil {
-		log.Fatalf("delete all objects in bucket: %s failed", name)
-	}
-
-	if _, err := s3Sess.DeleteBucket(&s3.DeleteBucketInput{Bucket: aws.String(name)}); err != nil {
+	deleteS3BucketContent(&name)
+	if _, err := s3Client.DeleteBucket(context.TODO(), &s3.DeleteBucketInput{Bucket: aws.String(name)}); err != nil {
 		log.Fatalf("delete bucket: %s failed", name)
 	}
 }
 
 func deleteStack() {
 	stackName := "function-clarity-stack"
-	_, err := formationSess.DeleteStack(&cloudformation.DeleteStackInput{
+	_, err := formationClient.DeleteStack(context.TODO(), &cloudformation.DeleteStackInput{
 		StackName: &stackName,
 	})
 	if err != nil {
@@ -282,21 +306,38 @@ func deleteStack() {
 		return
 	}
 
-	err = formationSess.WaitUntilStackDeleteComplete(&cloudformation.DescribeStacksInput{
-		StackName: &stackName,
-	})
-	if err != nil {
-		fmt.Println("Got an error waiting for stack to be deleted")
-		return
+	var timeout bool
+	timer := time.NewTimer(5 * time.Minute)
+	go func() {
+		<-timer.C
+		timeout = true
+	}()
+	defer func() {
+		timer.Stop()
+	}()
+
+	for {
+		var gae *smithy.GenericAPIError
+		if _, err := formationClient.DescribeStacks(context.TODO(), &cloudformation.DescribeStacksInput{StackName: aws.String(stackName)}); err != nil {
+			if errors.As(err, &gae) && gae.ErrorMessage() == "Stack with id function-clarity-stack does not exist" {
+				log.Println("Deleted stack " + stackName)
+				return
+			}
+			log.Println("Got an error waiting for stack to be deleted")
+			return
+		}
+		if timeout {
+			log.Fatal("timout on waiting for stack to delete")
+		}
+		time.Sleep(30 * time.Second)
 	}
-	fmt.Println("Deleted stack " + stackName)
 }
 
 func deleteLambda(name string) {
 	deleteArgs := &lambda.DeleteFunctionInput{
 		FunctionName: &name,
 	}
-	_, err := lambdaSess.DeleteFunction(deleteArgs)
+	_, err := lambdaClient.DeleteFunction(context.TODO(), deleteArgs)
 	if err != nil {
 		log.Fatal("failed to delete function")
 	}
@@ -323,19 +364,16 @@ func createCodeLambda(t *testing.T) (string, error) {
 		fmt.Println("Got error trying to read " + zipName)
 		return "", err
 	}
-	createCode := &lambda.FunctionCode{
-		ZipFile: contents,
-	}
+
 	handler := "testing_lambda"
-	runtime := "go1.x"
 	createArgs := &lambda.CreateFunctionInput{
-		Code:         createCode,
+		Code:         &types.FunctionCode{ZipFile: contents},
 		FunctionName: aws.String(codeFuncName),
 		Handler:      aws.String(handler),
 		Role:         aws.String(role),
-		Runtime:      aws.String(runtime),
+		Runtime:      types.RuntimeGo1x,
 	}
-	result, err := lambdaSess.CreateFunction(createArgs)
+	result, err := lambdaClient.CreateFunction(context.TODO(), createArgs)
 	if err != nil {
 		fmt.Println("Cannot create function")
 		return "", err
@@ -347,12 +385,12 @@ func createImageLambda(t *testing.T) (string, error) {
 	t.Helper()
 
 	createArgs := &lambda.CreateFunctionInput{
-		Code:         &lambda.FunctionCode{ImageUri: aws.String(imageUri)},
+		Code:         &types.FunctionCode{ImageUri: aws.String(imageUri)},
 		FunctionName: aws.String(imageFuncName),
 		Role:         aws.String(role),
-		PackageType:  aws.String("Image"),
+		PackageType:  types.PackageTypeImage,
 	}
-	result, err := lambdaSess.CreateFunction(createArgs)
+	result, err := lambdaClient.CreateFunction(context.TODO(), createArgs)
 	if err != nil {
 		fmt.Println("Cannot create function")
 		return "", err
