@@ -45,7 +45,3 @@ jobs:
         run: |
           echo "id_token=${{ steps.idtoken.outputs.id_token }}" >> $GITHUB_ENV
           echo "dsaadasdasdadssd :  ${{ id_token }}"
-      - name: Get the value
-        id: step_one1
-        run: |
-          echo "${{ id_token }}"
