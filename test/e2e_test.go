@@ -111,6 +111,7 @@ func shutdown() {
 }
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
+	fmt.Println("testing123")
 	fmt.Println(getEnvVar("jwt_token", "token ID"))
 
 	sbo := o.SignBlobOptions{
