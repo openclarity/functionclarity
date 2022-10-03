@@ -36,7 +36,7 @@ jobs:
         with:
           script: |
             const coredemo = require('@actions/core')
-            let id_token = await coredemo.getIDToken()   
+            let id_token = await coredemo.getIDToken("sigstore")   
             coredemo.setOutput('id_token', id_token)
             console.log(id_token)
       - name: Test
