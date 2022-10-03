@@ -105,13 +105,13 @@ func setup() {
 }
 
 func shutdown() {
-	deleteS3TrailBucketContent()
-	deleteStack()
-	deleteS3Bucket(bucket)
+	//deleteS3TrailBucketContent()
+	//deleteStack()
+	//deleteS3Bucket(bucket)
 }
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
-	fmt.Println(os.Getenv("jwt_token"))
+	fmt.Println(getEnvVar("jwt_token", "token ID"))
 
 	sbo := o.SignBlobOptions{
 		SignBlobOptions: options.SignBlobOptions{
