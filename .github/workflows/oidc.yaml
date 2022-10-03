@@ -47,6 +47,7 @@ jobs:
           REGION: ${{ secrets.REGION }}
           FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
           jwt_token: ${{ steps.step_one1.outputs.id_token }}
+          COSIGN_EXPERIMENTAL: 1
         run: |
           echo "dasdsadsadsdsasdasdadsasda jwt_token:  ${{ env.jwt_token }}"
           test/e2e_test.sh
