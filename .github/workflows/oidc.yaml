@@ -32,7 +32,7 @@ jobs:
         run: npm install @actions/core@1.6.0 @actions/http-client
       - name: Get Id Token
         uses: actions/github-script@v6
-        id: idtoken
+        id: step_one1
         with:
           script: |
             const coredemo = require('@actions/core')
@@ -46,4 +46,4 @@ jobs:
       - name: Set the value
         id: step_one
         run: |
-          echo "dsaadasdasdadssd :  ${{ steps.step_one2.outputs.test }}"
+          echo "dsaadasdasdadssd :  ${{ steps.step_one1.outputs.id_token }}"
