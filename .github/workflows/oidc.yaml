@@ -6,12 +6,29 @@ on:
 
 
 jobs:
-  job:
-    environment: Production
+
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+
+      - name: Build
+        run: go build -v ./...
+
+      #      - name: Check licenses
+      #        env:
+      #          GITHUB_TOKEN: ${{ secrets.LICENSE_TOKEN }}
+      #        run: make license-check
+      #
+      #      - name: Run verification
+      #        run: make check
+
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
       - name: Get Id Token
@@ -23,4 +40,11 @@ jobs:
             let id_token = await coredemo.getIDToken()   
             coredemo.setOutput('id_token', id_token)
             console.log(id_token)
-            process.env.id_token = 'id_token';
+      - name: Set the value
+        id: step_one
+        run: |
+          echo "id_token=${{ steps.idtoken.outputs.id_token }}" >> $GITHUB_ENV
+      - name: Get the value
+        id: step_one1
+        run: |
+          echo "id_token: ${{ id_token }}"
