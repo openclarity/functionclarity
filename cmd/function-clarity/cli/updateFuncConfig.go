@@ -16,25 +16,15 @@
 package cli
 
 import (
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
-	"github.com/sigstore/cosign/cmd/cosign/cli"
+	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/aws"
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
+func UpdateFuncConfig() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "function-clarity",
-		Short: "cli for signing and verifying function content",
-		Long:  `cli for signing and verifying function content`,
+		Use:   "update-func-config",
+		Short: "Update verifier function runtime settings",
 	}
-
-	cmd.AddCommand(Sign())
-	cmd.AddCommand(Verify())
-	cmd.AddCommand(cli.GenerateKeyPair())
-	cmd.AddCommand(cli.ImportKeyPair())
-	cmd.AddCommand(Init())
-	cmd.AddCommand(Deploy())
-	cmd.AddCommand(UpdateFuncConfig())
-	cobra.OnInitialize(options.CobraInit)
+	cmd.AddCommand(aws.AwsUpdateFuncConfig())
 	return cmd
 }

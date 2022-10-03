@@ -32,6 +32,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdaTypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
@@ -51,6 +52,7 @@ import (
 )
 
 const FunctionClarityBucketName = "functionclarity"
+const FunctionClarityLambdaVerierName = "FunctionClarityLambdaVerifier"
 
 type AwsClient struct {
 	accessKey    string
@@ -314,7 +316,7 @@ func (o *AwsClient) DeleteConcurrencyLevel(funcIdentifier string) error {
 }
 
 func (o *AwsClient) GetConcurrencyLevel(funcIdentifier string) (*int32, error) {
-	cfg := o.getConfig()
+	cfg := o.getConfigForLambda()
 	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.GetFunctionConcurrencyInput{
 		FunctionName: &funcIdentifier,
@@ -466,6 +468,54 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, depl
 	}
 
 	fmt.Println("deployment finished successfully")
+	return nil
+}
+
+func (o *AwsClient) UpdateVerifierFucConfig(action *string, includedFuncTagKeys *[]string, includedFuncRegions *[]string, topic *string) error {
+	cfg := o.getConfig()
+	lambdaClient := lambda.NewFromConfig(*cfg)
+	input := &lambda.GetFunctionConfigurationInput{
+		FunctionName: aws.String(FunctionClarityLambdaVerierName),
+	}
+	functionConfiguration, err := lambdaClient.GetFunctionConfiguration(context.TODO(), input)
+	if err != nil {
+		return fmt.Errorf("failed to update configuration: %w", err)
+	}
+	funcConfigEnvEncoded := functionConfiguration.Environment.Variables[ConfigEnvVariableName]
+	funcConfigEnvDecoded, err := b64.StdEncoding.DecodeString(funcConfigEnvEncoded)
+	if err != nil {
+		return fmt.Errorf("failed to update configuration: %w", err)
+	}
+	config := i.AWSInput{}
+	err = yaml.Unmarshal(funcConfigEnvDecoded, &config)
+	if err != nil {
+		return fmt.Errorf("failed to update configuration: %w", err)
+	}
+	if action != nil {
+		config.Action = *action
+	}
+	if includedFuncTagKeys != nil {
+		config.IncludedFuncTagKeys = *includedFuncTagKeys
+	}
+	if includedFuncRegions != nil {
+		config.IncludedFuncRegions = *includedFuncRegions
+	}
+	if topic != nil {
+		config.SnsTopicArn = *topic
+	}
+	var environment = lambdaTypes.Environment{}
+	configMarshal, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to update configuration: %w", err)
+	}
+	configEncoded := b64.StdEncoding.EncodeToString(configMarshal)
+	environment.Variables = functionConfiguration.Environment.Variables
+	environment.Variables[ConfigEnvVariableName] = configEncoded
+	updateFunctionEnvInput := lambda.UpdateFunctionConfigurationInput{FunctionName: aws.String(FunctionClarityLambdaVerierName), Environment: &environment}
+	_, err = lambdaClient.UpdateFunctionConfiguration(context.TODO(), &updateFunctionEnvInput)
+	if err != nil {
+		return fmt.Errorf("failed to update configuration: %w", err)
+	}
 	return nil
 }
 
