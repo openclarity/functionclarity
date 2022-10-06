@@ -27,13 +27,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/smithy-go"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	"github.com/openclarity/function-clarity/pkg/integrity"
-	o "github.com/openclarity/function-clarity/pkg/options"
-	"github.com/openclarity/function-clarity/pkg/sign"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
+	s "github.com/sigstore/cosign/cmd/cosign/cli/sign"
 	"io"
 	"log"
 	"os"
@@ -111,32 +109,57 @@ func shutdown() {
 	//deleteS3Bucket(bucket)
 }
 
-func TestCodeSignAndVerifyKeyless(t *testing.T) {
+//func TestCodeSignAndVerifyKeyless(t *testing.T) {
+//	jwt := getEnvVar("jwt_token", "token ID")
+//	sbo := o.SignBlobOptions{
+//		SignBlobOptions: options.SignBlobOptions{
+//			Base64Output:     true,
+//			Registry:         options.RegistryOptions{},
+//			SkipConfirmation: true,
+//			Fulcio:           options.FulcioOptions{URL: options.DefaultFulcioURL, IdentityToken: jwt},
+//			Rekor:            options.RekorOptions{URL: options.DefaultRekorURL},
+//		},
+//	}
+//
+//	err := sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	functionArn := initCodeLambda(t)
+//
+//	successTagValue := "Function signed and verified"
+//	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+//	if timeout {
+//		t.Fatal("test failed on timout, the required tag not added in the time period")
+//	}
+//	if !success {
+//		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+//	}
+//	fmt.Println(successTagValue + " tag found in the signed function")
+//	deleteLambda(codeFuncName)
+//}
+
+func TestCodeImageAndVerifyKeyless(t *testing.T) {
 	fmt.Println("testing123")
 	fmt.Println(getEnvVar("jwt_token", "token ID"))
 	jwt := getEnvVar("jwt_token", "token ID")
 
-	snsClient := sns.NewFromConfig(*createConfig("us-east-1"))
-	snsClient.Publish(context.TODO(), &sns.PublishInput{
-		Message:  &jwt,
-		TopicArn: aws.String("arn:aws:sns:us-east-1:813189926740:romanTest1"),
-	})
-
-	sbo := o.SignBlobOptions{
-		SignBlobOptions: options.SignBlobOptions{
-			Base64Output:     true,
-			Registry:         options.RegistryOptions{},
-			SkipConfirmation: true,
-			Fulcio:           options.FulcioOptions{URL: options.DefaultFulcioURL, IdentityToken: jwt},
-			Rekor:            options.RekorOptions{URL: options.DefaultRekorURL},
-		},
+	ko := options.KeyOpts{
+		SkipConfirmation: true,
+		FulcioURL:        options.DefaultFulcioURL,
+		IDToken:          jwt,
+		RekorURL:         options.DefaultRekorURL,
 	}
-	err := sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+	err := s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	functionArn := initCodeLambda(t)
+	functionArn, err := createImageLambda(t)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	successTagValue := "Function signed and verified"
 	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
@@ -147,7 +170,7 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
-	deleteLambda(codeFuncName)
+	deleteLambda(imageFuncName)
 }
 
 //func TestCodeSignAndVerify(t *testing.T) {
