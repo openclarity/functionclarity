@@ -10,7 +10,7 @@ This version supports AWS only.
 * Deploy FunctionClarity – deploy FunctionClarity functions to the user cloud account (a one time operation); these functions scan and verify user functions when created or updated
 * Sign functions  - use the FunctionClarity CLI to sign the function code or image in the user’s environment, and then upload it to the user cloud account
 * Deploy the serverless function - using the signed function code/image 
-* Veify functions -  the FunctionClarity verifier function is triggered when user functions are created or updated, and does the following:
+* Verify functions -  the FunctionClarity verifier function is triggered when user functions are created or updated, and does the following:
   * Fetches the function code from the cloud account to the local machine
   * Verifies the signature of the function code image or zip file
   * Follows one of these actions, based on the verification results:
@@ -22,8 +22,8 @@ If a function is tagged as blocked, it will be prevented from being run by AWS w
 
 ## Download FunctionClarity
 Go to the [function clarity latest release](https://github.com/openclarity/functionclarity/releases/latest):
-* Create a folder, download and extract the functionclarity file for your OS.
-* Download ```aws_function.tar.gz```, and extract it to the folder
+* Create a folder, download
+* Download ```aws_function.tar.gz``` for your OS, and extract it to the folder
 
 ## Quick start
 This section explains how to get started using FunctionClarity. These steps are involved:
@@ -33,7 +33,7 @@ This section explains how to get started using FunctionClarity. These steps are 
 * Sign and verify new AWS functions
 * Verify functions:
   * From the cloud account
-  * From FunctionClarity command line
+  * From the FunctionClarity command line
 
 ### Initialize and deploy FunctionClarity
 Follow these  steps from a command line, to install FunctionClarity in your AWS account.
@@ -79,16 +79,16 @@ Use AWS cli to deploy a signed lambda function to your cloud account, or to  upd
 
 ### Verify function code
 
-#### Verify automatically on functoin create or update events
+#### Verify automatically on function create or update events
 
-If the verifier function is deployed in your account, any function create or update event will trigger it to verifier the new or updated function. It will follow the post verification action (detect, block, or notify). 
+If the verifier function is deployed in your account, any function create or update event will trigger it to verify the new or updated function. It will follow the post-verification action (detect, block, or notify). 
 
 If the action is 'detect', the function will be tagged with the FunctionClarity message that the function is verified:
 
 ![image](https://user-images.githubusercontent.com/109651023/189880644-bed91413-a81c-4b03-b6f8-00ebea6606a0.png)
 
 #### Verify manually
-You can also use the cli to manually verify a function. In this case, the function is downloaded from the cloud account, ahd then verified locally.
+You can also use the CLI to manually verify a function. In this case, the function is downloaded from the cloud account, and then verified locally.
 
 ```shell
 ./function-clarity verify aws funcclarity-test-signed --function-region=us-east-2
