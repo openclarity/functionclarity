@@ -181,6 +181,7 @@ func TestImageSignAndVerify(t *testing.T) {
 }
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
+	viper.Set("privatekey", "")
 	switchConfigurationToKeyless()
 	jwt := getEnvVar("jwt_token", "token ID")
 	sbo := o.SignBlobOptions{
@@ -213,6 +214,7 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 }
 
 func TestCodeImageAndVerifyKeyless(t *testing.T) {
+	viper.Set("privatekey", "")
 	switchConfigurationToKeyless()
 	fmt.Println("testing123")
 	fmt.Println(getEnvVar("jwt_token", "token ID"))
