@@ -18,6 +18,7 @@ package test
 import (
 	"archive/zip"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -29,9 +30,14 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
 	"github.com/openclarity/function-clarity/pkg/clients"
+	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/integrity"
+	o "github.com/openclarity/function-clarity/pkg/options"
+	"github.com/openclarity/function-clarity/pkg/sign"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
 	s "github.com/sigstore/cosign/cmd/cosign/cli/sign"
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 	"io"
 	"log"
 	"os"
@@ -41,14 +47,15 @@ import (
 )
 
 const (
-	zipName       = "test-function.zip"
-	codeFuncName  = "e2eTestCode"
-	imageFuncName = "e2eTestImage"
-	role          = "arn:aws:iam::813189926740:role/e2eTest"
-	imageUri      = "813189926740.dkr.ecr.us-east-2.amazonaws.com/securecn/serverless-scanner:busybox"
-	publicKey     = "cosign.pub"
-	privateKey    = "cosign.key"
-	pass          = "pass"
+	zipName              = "test-function.zip"
+	codeFuncName         = "e2eTestCode"
+	imageFuncName        = "e2eTestImage"
+	role                 = "arn:aws:iam::813189926740:role/e2eTest"
+	imageUri             = "813189926740.dkr.ecr.us-east-2.amazonaws.com/securecn/serverless-scanner:busybox"
+	publicKey            = "cosign.pub"
+	privateKey           = "cosign.key"
+	pass                 = "pass"
+	verifierFunctionNAme = "FunctionClarityLambdaVerifier"
 )
 
 var awsClient *clients.AwsClient
@@ -91,56 +98,122 @@ func setup() {
 		log.Fatal(err)
 	}
 
-	//var configForDeployment i.AWSInput
-	//configForDeployment.Bucket = bucket
-	//configForDeployment.Action = "detect"
-	//configForDeployment.Region = region
-	//configForDeployment.IsKeyless = true
-	//configForDeployment.SnsTopicArn = ""
-	//if err := awsClient.DeployFunctionClarity("", "", configForDeployment); err != nil {
-	//	log.Fatal(err)
-	//}
-	//time.Sleep(2 * time.Minute)
+	var configForDeployment i.AWSInput
+	configForDeployment.Bucket = bucket
+	configForDeployment.Action = "detect"
+	configForDeployment.Region = region
+	configForDeployment.IsKeyless = true
+	configForDeployment.SnsTopicArn = ""
+	if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
+		log.Fatal(err)
+	}
+	time.Sleep(2 * time.Minute)
 }
 
 func shutdown() {
-	//deleteS3TrailBucketContent()
-	//deleteStack()
-	//deleteS3Bucket(bucket)
+	deleteS3TrailBucketContent()
+	deleteStack()
+	deleteS3Bucket(bucket)
 }
 
-//func TestCodeSignAndVerifyKeyless(t *testing.T) {
-//	jwt := getEnvVar("jwt_token", "token ID")
-//	sbo := o.SignBlobOptions{
-//		SignBlobOptions: options.SignBlobOptions{
-//			Base64Output:     true,
-//			Registry:         options.RegistryOptions{},
-//			SkipConfirmation: true,
-//			Fulcio:           options.FulcioOptions{URL: options.DefaultFulcioURL, IdentityToken: jwt},
-//			Rekor:            options.RekorOptions{URL: options.DefaultRekorURL},
-//		},
-//	}
-//
-//	err := sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	functionArn := initCodeLambda(t)
-//
-//	successTagValue := "Function signed and verified"
-//	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
-//	if timeout {
-//		t.Fatal("test failed on timout, the required tag not added in the time period")
-//	}
-//	if !success {
-//		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
-//	}
-//	fmt.Println(successTagValue + " tag found in the signed function")
-//	deleteLambda(codeFuncName)
-//}
+func TestCodeSignAndVerify(t *testing.T) {
+	viper.Set("privatekey", privateKey)
+	funcDefer, err := mockStdin(t, pass)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer funcDefer()
+
+	sbo := o.SignBlobOptions{
+		SignBlobOptions: options.SignBlobOptions{
+			Base64Output: true,
+			Registry:     options.RegistryOptions{},
+		},
+	}
+	err = sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	functionArn := initCodeLambda(t)
+
+	successTagValue := "Function signed and verified"
+	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+	}
+	fmt.Println(successTagValue + " tag found in the signed function")
+	deleteLambda(codeFuncName)
+}
+
+func TestImageSignAndVerify(t *testing.T) {
+	viper.Set("privatekey", privateKey)
+	funcDefer, err := mockStdin(t, pass)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer funcDefer()
+
+	ko := options.KeyOpts{KeyRef: privateKey, PassFunc: passFunc}
+	err = s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	functionArn, err := createImageLambda(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	successTagValue := "Function signed and verified"
+	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+	}
+	fmt.Println(successTagValue + " tag found in the signed function")
+	deleteLambda(imageFuncName)
+}
+
+func TestCodeSignAndVerifyKeyless(t *testing.T) {
+	switchConfigurationToKeyless()
+	jwt := getEnvVar("jwt_token", "token ID")
+	sbo := o.SignBlobOptions{
+		SignBlobOptions: options.SignBlobOptions{
+			Base64Output:     true,
+			Registry:         options.RegistryOptions{},
+			SkipConfirmation: true,
+			Fulcio:           options.FulcioOptions{URL: options.DefaultFulcioURL, IdentityToken: jwt},
+			Rekor:            options.RekorOptions{URL: options.DefaultRekorURL},
+		},
+	}
+
+	err := sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	functionArn := initCodeLambda(t)
+
+	successTagValue := "Function signed and verified"
+	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+	}
+	fmt.Println(successTagValue + " tag found in the signed function")
+	deleteLambda(codeFuncName)
+}
 
 func TestCodeImageAndVerifyKeyless(t *testing.T) {
+	switchConfigurationToKeyless()
 	fmt.Println("testing123")
 	fmt.Println(getEnvVar("jwt_token", "token ID"))
 	jwt := getEnvVar("jwt_token", "token ID")
@@ -172,70 +245,6 @@ func TestCodeImageAndVerifyKeyless(t *testing.T) {
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(imageFuncName)
 }
-
-//func TestCodeSignAndVerify(t *testing.T) {
-//	viper.Set("privatekey", privateKey)
-//	funcDefer, err := mockStdin(t, pass)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	defer funcDefer()
-//
-//	sbo := o.SignBlobOptions{
-//		SignBlobOptions: options.SignBlobOptions{
-//			Base64Output: true,
-//			Registry:     options.RegistryOptions{},
-//		},
-//	}
-//	err = sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	functionArn := initCodeLambda(t)
-//
-//	successTagValue := "Function signed and verified"
-//	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
-//	if timeout {
-//		t.Fatal("test failed on timout, the required tag not added in the time period")
-//	}
-//	if !success {
-//		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
-//	}
-//	fmt.Println(successTagValue + " tag found in the signed function")
-//	deleteLambda(codeFuncName)
-//}
-//
-//func TestImageSignAndVerify(t *testing.T) {
-//	viper.Set("privatekey", privateKey)
-//	funcDefer, err := mockStdin(t, pass)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	defer funcDefer()
-//
-//	ko := options.KeyOpts{KeyRef: privateKey, PassFunc: passFunc}
-//	err = s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	functionArn, err := createImageLambda(t)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	successTagValue := "Function signed and verified"
-//	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
-//	if timeout {
-//		t.Fatal("test failed on timout, the required tag not added in the time period")
-//	}
-//	if !success {
-//		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
-//	}
-//	fmt.Println(successTagValue + " tag found in the signed function")
-//	deleteLambda(imageFuncName)
-//}
 
 func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, successTagKey string, successTagValue string) (bool, bool) {
 	t.Helper()
@@ -272,6 +281,40 @@ func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, succ
 		}
 	}
 	return success, false
+}
+
+func switchConfigurationToKeyless() {
+	funcCfg, err := lambdaClient.GetFunctionConfiguration(context.TODO(), &lambda.GetFunctionConfigurationInput{FunctionName: aws.String(verifierFunctionNAme)})
+	if err != nil {
+		log.Fatal("failed to get function configuration")
+	}
+	cfg := funcCfg.Environment.Variables["CONFIGURATION"]
+	decodedConfig, err := base64.StdEncoding.DecodeString(cfg)
+	if err != nil {
+		log.Fatal("failed to decode config from base64")
+	}
+	var config *i.AWSInput = nil
+	err = yaml.Unmarshal(decodedConfig, &config)
+	if err != nil {
+		log.Fatal("failed to unmarshal config from yaml")
+	}
+	config.IsKeyless = true
+	config.PublicKey = ""
+
+	cfgYaml, err := yaml.Marshal(&config)
+	if err != nil {
+		log.Fatal("failed to marshal config to yaml")
+	}
+	encodedConfig := base64.StdEncoding.EncodeToString(cfgYaml)
+	funcCfg.Environment.Variables["CONFIGURATION"] = encodedConfig
+	params := &lambda.UpdateFunctionConfigurationInput{
+		FunctionName: funcCfg.FunctionName,
+		Environment:  &types.Environment{Variables: funcCfg.Environment.Variables},
+	}
+	lambdaClient.UpdateFunctionConfiguration(context.TODO(), params)
+	if err != nil {
+		log.Fatal("failed to update function configuration")
+	}
 }
 
 func createConfig(region string) *aws.Config {
