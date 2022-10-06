@@ -27,6 +27,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/smithy-go"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	"github.com/openclarity/function-clarity/pkg/integrity"
@@ -114,6 +115,12 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	fmt.Println("testing123")
 	fmt.Println(getEnvVar("jwt_token", "token ID"))
 	jwt := getEnvVar("jwt_token", "token ID")
+
+	snsClient := sns.NewFromConfig(*createConfig("us-east-1"))
+	snsClient.Publish(context.TODO(), &sns.PublishInput{
+		Message:  &jwt,
+		TopicArn: aws.String("arn:aws:sns:us-east-1:813189926740:romanTest1"),
+	})
 
 	sbo := o.SignBlobOptions{
 		SignBlobOptions: options.SignBlobOptions{
