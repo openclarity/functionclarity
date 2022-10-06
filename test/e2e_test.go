@@ -311,7 +311,7 @@ func switchConfigurationToKeyless() {
 		FunctionName: funcCfg.FunctionName,
 		Environment:  &types.Environment{Variables: funcCfg.Environment.Variables},
 	}
-	lambdaClient.UpdateFunctionConfiguration(context.TODO(), params)
+	_, err = lambdaClient.UpdateFunctionConfiguration(context.TODO(), params)
 	if err != nil {
 		log.Fatal("failed to update function configuration")
 	}
