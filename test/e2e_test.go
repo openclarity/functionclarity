@@ -30,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/smithy-go"
 	"github.com/openclarity/function-clarity/pkg/clients"
+	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/integrity"
 	o "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/openclarity/function-clarity/pkg/sign"
@@ -93,16 +94,16 @@ func setup() {
 		log.Fatal(err)
 	}
 
-	//var configForDeployment i.AWSInput
-	//configForDeployment.Bucket = bucket
-	//configForDeployment.Action = "detect"
-	//configForDeployment.Region = region
-	//configForDeployment.IsKeyless = false
-	//configForDeployment.SnsTopicArn = ""
-	//if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
-	//	log.Fatal(err)
-	//}
-	//time.Sleep(2 * time.Minute)
+	var configForDeployment i.AWSInput
+	configForDeployment.Bucket = bucket
+	configForDeployment.Action = "detect"
+	configForDeployment.Region = region
+	configForDeployment.IsKeyless = true
+	configForDeployment.SnsTopicArn = ""
+	if err := awsClient.DeployFunctionClarity("", "", configForDeployment); err != nil {
+		log.Fatal(err)
+	}
+	time.Sleep(2 * time.Minute)
 }
 
 func shutdown() {
@@ -136,18 +137,18 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	//functionArn := initCodeLambda(t)
-	//
-	//successTagValue := "Function signed and verified"
-	//success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
-	//if timeout {
-	//	t.Fatal("test failed on timout, the required tag not added in the time period")
-	//}
-	//if !success {
-	//	t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
-	//}
-	//fmt.Println(successTagValue + " tag found in the signed function")
-	//deleteLambda(codeFuncName)
+	functionArn := initCodeLambda(t)
+
+	successTagValue := "Function signed and verified"
+	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+	}
+	fmt.Println(successTagValue + " tag found in the signed function")
+	deleteLambda(codeFuncName)
 }
 
 //func TestCodeSignAndVerify(t *testing.T) {
