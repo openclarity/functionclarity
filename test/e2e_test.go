@@ -30,7 +30,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/smithy-go"
 	"github.com/openclarity/function-clarity/pkg/clients"
-	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/integrity"
 	o "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/openclarity/function-clarity/pkg/sign"
@@ -94,16 +93,16 @@ func setup() {
 		log.Fatal(err)
 	}
 
-	var configForDeployment i.AWSInput
-	configForDeployment.Bucket = bucket
-	configForDeployment.Action = "detect"
-	configForDeployment.Region = region
-	configForDeployment.IsKeyless = true
-	configForDeployment.SnsTopicArn = ""
-	if err := awsClient.DeployFunctionClarity("", "", configForDeployment); err != nil {
-		log.Fatal(err)
-	}
-	time.Sleep(2 * time.Minute)
+	//var configForDeployment i.AWSInput
+	//configForDeployment.Bucket = bucket
+	//configForDeployment.Action = "detect"
+	//configForDeployment.Region = region
+	//configForDeployment.IsKeyless = true
+	//configForDeployment.SnsTopicArn = ""
+	//if err := awsClient.DeployFunctionClarity("", "", configForDeployment); err != nil {
+	//	log.Fatal(err)
+	//}
+	//time.Sleep(2 * time.Minute)
 }
 
 func shutdown() {
