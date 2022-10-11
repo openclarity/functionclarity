@@ -41,7 +41,6 @@ jobs:
             const coredemo = require('@actions/core')
             let id_token = await coredemo.getIDToken("sigstore")   
             coredemo.setOutput('id_token', id_token)
-            console.log(id_token)
       - name: Test
         env:
           ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
@@ -50,5 +49,4 @@ jobs:
           REGION: ${{ secrets.REGION }}
           FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
           jwt_token: ${{ steps.get_id_token.outputs.id_token }}
-          COSIGN_EXPERIMENTAL: 1
         run: test/e2e_test.sh

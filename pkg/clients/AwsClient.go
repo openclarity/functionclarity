@@ -32,6 +32,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudtrail"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdaTypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
@@ -51,6 +52,7 @@ import (
 )
 
 const FunctionClarityBucketName = "functionclarity"
+const FunctionClarityLambdaVerierName = "FunctionClarityLambdaVerifier"
 
 type AwsClient struct {
 	accessKey    string
@@ -314,7 +316,7 @@ func (o *AwsClient) DeleteConcurrencyLevel(funcIdentifier string) error {
 }
 
 func (o *AwsClient) GetConcurrencyLevel(funcIdentifier string) (*int32, error) {
-	cfg := o.getConfig()
+	cfg := o.getConfigForLambda()
 	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.GetFunctionConcurrencyInput{
 		FunctionName: &funcIdentifier,
@@ -469,6 +471,54 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, depl
 	return nil
 }
 
+func (o *AwsClient) UpdateVerifierFucConfig(action *string, includedFuncTagKeys *[]string, includedFuncRegions *[]string, topic *string) error {
+	cfg := o.getConfig()
+	lambdaClient := lambda.NewFromConfig(*cfg)
+	input := &lambda.GetFunctionConfigurationInput{
+		FunctionName: aws.String(FunctionClarityLambdaVerierName),
+	}
+	functionConfiguration, err := lambdaClient.GetFunctionConfiguration(context.TODO(), input)
+	if err != nil {
+		return fmt.Errorf("failed to update configuration: %w", err)
+	}
+	funcConfigEnvEncoded := functionConfiguration.Environment.Variables[ConfigEnvVariableName]
+	funcConfigEnvDecoded, err := b64.StdEncoding.DecodeString(funcConfigEnvEncoded)
+	if err != nil {
+		return fmt.Errorf("failed to update configuration: %w", err)
+	}
+	config := i.AWSInput{}
+	err = yaml.Unmarshal(funcConfigEnvDecoded, &config)
+	if err != nil {
+		return fmt.Errorf("failed to update configuration: %w", err)
+	}
+	if action != nil {
+		config.Action = *action
+	}
+	if includedFuncTagKeys != nil {
+		config.IncludedFuncTagKeys = *includedFuncTagKeys
+	}
+	if includedFuncRegions != nil {
+		config.IncludedFuncRegions = *includedFuncRegions
+	}
+	if topic != nil {
+		config.SnsTopicArn = *topic
+	}
+	var environment = lambdaTypes.Environment{}
+	configMarshal, err := yaml.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to update configuration: %w", err)
+	}
+	configEncoded := b64.StdEncoding.EncodeToString(configMarshal)
+	environment.Variables = functionConfiguration.Environment.Variables
+	environment.Variables[ConfigEnvVariableName] = configEncoded
+	updateFunctionEnvInput := lambda.UpdateFunctionConfigurationInput{FunctionName: aws.String(FunctionClarityLambdaVerierName), Environment: &environment}
+	_, err = lambdaClient.UpdateFunctionConfiguration(context.TODO(), &updateFunctionEnvInput)
+	if err != nil {
+		return fmt.Errorf("failed to update configuration: %w", err)
+	}
+	return nil
+}
+
 func (o *AwsClient) FillNotificationDetails(notification *Notification, functionIdentifier string) error {
 	if err := o.convertToArnIfNeeded(&functionIdentifier); err != nil {
 		return fmt.Errorf("failed to fill notification details: %w", err)
@@ -485,7 +535,7 @@ func (o *AwsClient) FillNotificationDetails(notification *Notification, function
 }
 
 func calculateStackTemplate(trailName string, cfg *aws.Config, config i.AWSInput) (error, string) {
-	templateFile := "utils/unified-template.template"
+	templateFile := "unified-template.template"
 	content, err := os.ReadFile(templateFile)
 	if err != nil {
 		return err, ""
@@ -567,10 +617,18 @@ func (o *AwsClient) getConfigForLambda() *aws.Config {
 
 func uploadFuncClarityCode(cfg *aws.Config, keyPath string, bucket string) error {
 	s3Client := s3.NewFromConfig(*cfg)
-	_, err := s3Client.CreateBucket(context.TODO(), &s3.CreateBucketInput{
-		Bucket:                    aws.String(bucket),
-		CreateBucketConfiguration: &s3types.CreateBucketConfiguration{LocationConstraint: s3types.BucketLocationConstraint(cfg.Region)},
-	})
+	var err error
+	if cfg.Region != "us-east-1" {
+		_, err = s3Client.CreateBucket(context.TODO(), &s3.CreateBucketInput{
+			Bucket:                    aws.String(bucket),
+			CreateBucketConfiguration: &s3types.CreateBucketConfiguration{LocationConstraint: s3types.BucketLocationConstraint(cfg.Region)},
+		})
+	} else {
+		_, err = s3Client.CreateBucket(context.TODO(), &s3.CreateBucketInput{
+			Bucket: aws.String(bucket),
+		})
+	}
+
 	var bne *s3types.BucketAlreadyOwnedByYou
 	if err != nil && !errors.As(err, &bne) {
 		return err

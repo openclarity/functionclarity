@@ -10,7 +10,7 @@ go build testing_lambda.go
 echo "testing lambda built successfully"
 
 cd ../..
-cp ./run_env/utils/unified-template.template ./test/utils/
+cp ./run_env/utils/unified-template.template ./test/
 echo "stack template copied to test folder"
 
 echo "e2e tests started"

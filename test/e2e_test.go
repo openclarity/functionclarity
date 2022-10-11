@@ -97,6 +97,7 @@ func setup() {
 		log.Fatal(err)
 	}
 
+<<<<<<< HEAD
 	//var configForDeployment i.AWSInput
 	//configForDeployment.Bucket = bucket
 	//configForDeployment.Action = "detect"
@@ -107,6 +108,19 @@ func setup() {
 	//	log.Fatal(err)
 	//}
 	//time.Sleep(2 * time.Minute)
+=======
+	var configForDeployment i.AWSInput
+	configForDeployment.Bucket = bucket
+	configForDeployment.Action = "detect"
+	configForDeployment.Region = region
+	configForDeployment.IsKeyless = false
+	configForDeployment.SnsTopicArn = ""
+	configForDeployment.IncludedFuncRegions = []string{"us-east-2"}
+	if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
+		log.Fatal(err)
+	}
+	time.Sleep(2 * time.Minute)
+>>>>>>> keyless_e2e_tests
 }
 
 func shutdown() {
@@ -115,22 +129,93 @@ func shutdown() {
 	deleteS3Bucket(bucket)
 }
 
+<<<<<<< HEAD
 func TestCodeSignAndVerify(t *testing.T) {
 	os.Setenv(integrity.ExperimentalEnv, "0")
+=======
+//func TestCodeSignAndVerify(t *testing.T) {
+//	os.Setenv(integrity.ExperimentalEnv, "0")
+//	viper.Set("privatekey", privateKey)
+//	funcDefer, err := mockStdin(t, pass)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	defer funcDefer()
+//
+//	sbo := o.SignBlobOptions{
+//		SignBlobOptions: options.SignBlobOptions{
+//			Base64Output: true,
+//			Registry:     options.RegistryOptions{},
+//		},
+//	}
+//	err = sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	functionArn := initCodeLambda(t)
+//
+//	successTagValue := "Function signed and verified"
+//	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+//	if timeout {
+//		t.Fatal("test failed on timout, the required tag not added in the time period")
+//	}
+//	if !success {
+//		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+//	}
+//	fmt.Println(successTagValue + " tag found in the signed function")
+//	deleteLambda(codeFuncName)
+//}
+
+func TestImageSignAndVerify(t *testing.T) {
+>>>>>>> keyless_e2e_tests
 	viper.Set("privatekey", privateKey)
+	os.Setenv(integrity.ExperimentalEnv, "0")
 	funcDefer, err := mockStdin(t, pass)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer funcDefer()
 
+	ko := options.KeyOpts{KeyRef: privateKey, PassFunc: passFunc}
+	err = s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	functionArn, err := createImageLambda(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	successTagValue := "Function signed and verified"
+	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+	}
+	fmt.Println(successTagValue + " tag found in the signed function")
+	deleteLambda(imageFuncName)
+}
+
+func TestCodeSignAndVerifyKeyless(t *testing.T) {
+	viper.Set("privatekey", "")
+	os.Setenv(integrity.ExperimentalEnv, "1")
+	switchConfigurationToKeyless()
+	jwt := getEnvVar("jwt_token", "token ID")
 	sbo := o.SignBlobOptions{
 		SignBlobOptions: options.SignBlobOptions{
-			Base64Output: true,
-			Registry:     options.RegistryOptions{},
+			Base64Output:     true,
+			Registry:         options.RegistryOptions{},
+			SkipConfirmation: true,
+			Fulcio:           options.FulcioOptions{URL: options.DefaultFulcioURL, IdentityToken: jwt},
+			Rekor:            options.RekorOptions{URL: options.DefaultRekorURL},
 		},
 	}
-	err = sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+
+	err := sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,6 +235,7 @@ func TestCodeSignAndVerify(t *testing.T) {
 	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 }
 
+<<<<<<< HEAD
 //func TestImageSignAndVerify(t *testing.T) {
 //	viper.Set("privatekey", privateKey)
 //	os.Setenv(integrity.ExperimentalEnv, "0")
@@ -198,6 +284,23 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	}
 
 	err := sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+=======
+func TestCodeImageAndVerifyKeyless(t *testing.T) {
+	viper.Set("privatekey", "")
+	os.Setenv(integrity.ExperimentalEnv, "1")
+	switchConfigurationToKeyless()
+	fmt.Println("testing123")
+	fmt.Println(getEnvVar("jwt_token", "token ID"))
+	jwt := getEnvVar("jwt_token", "token ID")
+
+	ko := options.KeyOpts{
+		SkipConfirmation: true,
+		FulcioURL:        options.DefaultFulcioURL,
+		IDToken:          jwt,
+		RekorURL:         options.DefaultRekorURL,
+	}
+	err := s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
+>>>>>>> keyless_e2e_tests
 	if err != nil {
 		t.Fatal(err)
 	}
