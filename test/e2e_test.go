@@ -190,7 +190,6 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(codeFuncName)
 	log.Printf("finished keyless code test... waiting...\n")
-	time.Sleep(1 * time.Minute)
 	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 }
 
