@@ -159,6 +159,7 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	os.Setenv(integrity.ExperimentalEnv, "1")
 	log.Printf("integrity.ExperimentalEnv: %v\n", os.Getenv(integrity.ExperimentalEnv))
 	log.Printf("bucket: %v\n", bucket)
+	viper.Set("privatekey", "")
 	switchConfigurationToKeyless()
 	time.Sleep(2 * time.Minute)
 	jwt := getEnvVar("jwt_token", "token ID")
