@@ -129,7 +129,7 @@ func AwsInit() *cobra.Command {
 			}
 			if !onlyCreateConfig {
 				awsClient := clients.NewAwsClientInit(input.AccessKey, input.SecretKey, input.Region)
-				err = awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey, configForDeployment)
+				err = awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey, configForDeployment, "")
 				if err != nil {
 					return fmt.Errorf("failed to deploy function clarity: %w", err)
 				}
@@ -174,7 +174,7 @@ func AwsDeploy() *cobra.Command {
 			configForDeployment.IncludedFuncTagKeys = viper.GetStringSlice("includedfunctagkeys")
 			configForDeployment.IncludedFuncRegions = viper.GetStringSlice("includedfuncregions")
 			awsClient := clients.NewAwsClientInit(viper.GetString("accesskey"), viper.GetString("secretkey"), viper.GetString("region"))
-			err := awsClient.DeployFunctionClarity(viper.GetString("cloudtrail.name"), viper.GetString("publickey"), configForDeployment)
+			err := awsClient.DeployFunctionClarity(viper.GetString("cloudtrail.name"), viper.GetString("publickey"), configForDeployment, "")
 			if err != nil {
 				return fmt.Errorf("failed to deploy function clarity: %w", err)
 			}

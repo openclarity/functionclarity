@@ -27,12 +27,16 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	sqsTypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/aws/smithy-go"
+	"github.com/google/uuid"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/integrity"
 	o "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/openclarity/function-clarity/pkg/sign"
+	"github.com/openclarity/function-clarity/pkg/utils"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
 	s "github.com/sigstore/cosign/cmd/cosign/cli/sign"
 	"github.com/spf13/viper"
@@ -45,22 +49,25 @@ import (
 )
 
 const (
-	zipName       = "test-function.zip"
-	codeFuncName  = "e2eTestCode"
-	imageFuncName = "e2eTestImage"
-	role          = "arn:aws:iam::813189926740:role/e2eTest"
-	imageUri      = "813189926740.dkr.ecr.us-east-2.amazonaws.com/securecn/serverless-scanner:busybox"
-	publicKey     = "cosign.pub"
-	privateKey    = "cosign.key"
-	pass          = "pass"
+	zipName               = "test-function.zip"
+	codeFuncNameSigned    = "e2eTestCodeSigned"
+	codeFuncNameNotSigned = "e2eTestCodeNotSigned"
+	imageFuncName         = "e2eTestImage"
+	role                  = "arn:aws:iam::813189926740:role/e2eTest"
+	imageUri              = "813189926740.dkr.ecr.us-east-1.amazonaws.com/helloworld:v1"
+	publicKey             = "cosign.pub"
+	privateKey            = "cosign.key"
+	pass                  = "pass"
 )
 
 var awsClient *clients.AwsClient
 var lambdaClient *lambda.Client
 var formationClient *cloudformation.Client
+var sqsClient *sqs.Client
 var s3Client *s3.Client
 
 var keyPass = []byte(pass)
+var suffix string
 
 var passFunc = func(_ bool) ([]byte, error) {
 	return keyPass, nil
@@ -70,6 +77,8 @@ var accessKey, secretKey, bucket, region, lambdaRegion string
 
 var ro = &options.RootOptions{Timeout: options.DefaultTimeout}
 
+const includeFuncTag = "funcclarity-e2e-tag"
+
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
@@ -78,9 +87,11 @@ func TestMain(m *testing.M) {
 }
 
 func setup() {
+	uuidSuffix, _ := uuid.NewUUID()
+	suffix = uuidSuffix.String()
 	accessKey = getEnvVar("ACCESS_KEY", "access key")
 	secretKey = getEnvVar("SECRET_KEY", "secret key")
-	bucket = getEnvVar("BUCKET", "bucket")
+	bucket = getEnvVar("BUCKET", "bucket") + suffix
 	region = getEnvVar("REGION", "region")
 	lambdaRegion = getEnvVar("FUNCTION_REGION", "function region")
 
@@ -89,6 +100,7 @@ func setup() {
 	cfg := createConfig(region)
 	lambdaClient = lambda.NewFromConfig(*createConfig(lambdaRegion))
 	formationClient = cloudformation.NewFromConfig(*cfg)
+	sqsClient = sqs.NewFromConfig(*cfg)
 	s3Client = s3.NewFromConfig(*cfg)
 
 	if err := integrity.InitDocker(awsClient); err != nil {
@@ -97,11 +109,12 @@ func setup() {
 
 	var configForDeployment i.AWSInput
 	configForDeployment.Bucket = bucket
-	configForDeployment.Action = "detect"
+	configForDeployment.Action = "block"
 	configForDeployment.Region = region
 	configForDeployment.IsKeyless = false
-	configForDeployment.SnsTopicArn = ""
-	if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
+	configForDeployment.SnsTopicArn = "arn:aws:sns:us-east-1:813189926740:func-clarity-e2e"
+	configForDeployment.IncludedFuncTagKeys = []string{includeFuncTag + suffix}
+	if err := awsClient.DeployFunctionClarity("SecurecnMonitoringTrail", publicKey, configForDeployment, suffix); err != nil {
 		log.Fatal(err)
 	}
 	time.Sleep(2 * time.Minute)
@@ -111,6 +124,66 @@ func shutdown() {
 	deleteS3TrailBucketContent()
 	deleteStack()
 	deleteS3Bucket(bucket)
+	deleteLambda(codeFuncNameSigned + suffix)
+	deleteLambda(codeFuncNameNotSigned + suffix)
+	deleteLambda(imageFuncName + suffix)
+}
+
+func TestCodeNotSignedAndVerify(t *testing.T) {
+	functionArn := initCodeLambda(t, codeFuncNameNotSigned)
+	success, timeout := findTag(t, functionArn, lambdaClient, utils.FunctionVerifyResultTagKey, utils.FunctionNotSignedTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + utils.FunctionNotSignedTagValue + " tag in the signed function")
+	}
+	fmt.Println(utils.FunctionNotSignedTagValue + " tag found in the signed function")
+	concurrencyLevel, err := awsClient.GetConcurrencyLevel(functionArn)
+	if err != nil {
+		t.Fatal("failed to get functions concurrency level")
+	}
+	if concurrencyLevel == nil {
+		t.Fatal("concurrency level not set to 0")
+	}
+	if *concurrencyLevel != 0 {
+		t.Fatal("Function not blocked")
+	}
+	queueInput := &sqs.GetQueueUrlInput{
+		QueueName: aws.String("func-clarity-e2e"),
+	}
+	GetQueueOutput, err := sqsClient.GetQueueUrl(context.TODO(), queueInput)
+	if err != nil {
+		fmt.Errorf("failed to sqs: %w", err)
+		t.Fatal("Failed to get sqs details")
+	}
+	queueUrl := GetQueueOutput.QueueUrl
+	GetMessagesInput := &sqs.ReceiveMessageInput{
+		MessageAttributeNames: []string{
+			string(sqsTypes.QueueAttributeNameAll),
+		},
+		QueueUrl:            queueUrl,
+		MaxNumberOfMessages: 10,
+		VisibilityTimeout:   int32(1),
+	}
+	receiveMessageOutput, err := sqsClient.ReceiveMessage(context.TODO(), GetMessagesInput)
+	if err != nil {
+		t.Fatal("Failed to get sqs messages")
+	}
+	foundMessage := false
+	if receiveMessageOutput.Messages != nil {
+		for _, message := range receiveMessageOutput.Messages {
+			if strings.Contains(*message.Body, codeFuncNameNotSigned+suffix) {
+				foundMessage = true
+			}
+		}
+	} else {
+		t.Fatal("No messages found in queue")
+	}
+	if !foundMessage {
+		t.Fatal("Message doesn't contain func name.")
+	}
+	deleteLambda(codeFuncNameNotSigned + suffix)
 }
 
 func TestCodeSignAndVerify(t *testing.T) {
@@ -132,10 +205,10 @@ func TestCodeSignAndVerify(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	functionArn := initCodeLambda(t)
+	functionArn := initCodeLambda(t, codeFuncNameSigned)
 
-	successTagValue := "Function signed and verified"
-	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+	successTagValue := utils.FunctionSignedTagValue
+	success, timeout := findTag(t, functionArn, lambdaClient, utils.FunctionVerifyResultTagKey, successTagValue)
 	if timeout {
 		t.Fatal("test failed on timout, the required tag not added in the time period")
 	}
@@ -143,7 +216,7 @@ func TestCodeSignAndVerify(t *testing.T) {
 		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
-	deleteLambda(codeFuncName)
+	deleteLambda(codeFuncNameSigned + suffix)
 }
 
 func TestImageSignAndVerify(t *testing.T) {
@@ -174,7 +247,7 @@ func TestImageSignAndVerify(t *testing.T) {
 		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
-	deleteLambda(imageFuncName)
+	deleteLambda(imageFuncName + suffix)
 }
 
 func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, successTagKey string, successTagValue string) (bool, bool) {
@@ -196,22 +269,18 @@ func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, succ
 		if err != nil {
 			t.Fatal("failed to get functions tags")
 		}
-		if len(result.Tags) == 0 {
-			time.Sleep(10 * time.Second)
-			continue
+		for key, value := range result.Tags {
+			if key == successTagKey && value == successTagValue {
+				return true, false
+			} else {
+				time.Sleep(10 * time.Second)
+			}
 		}
 		if timeout {
 			return false, true
 		}
-		break
 	}
-	var success bool
-	for key, value := range result.Tags {
-		if key == successTagKey && value == successTagValue {
-			success = true
-		}
-	}
-	return success, false
+	return false, false
 }
 
 func createConfig(region string) *aws.Config {
@@ -240,7 +309,7 @@ func deleteS3TrailBucketContent() {
 		return
 	}
 	for _, bucket := range result.Buckets {
-		if strings.HasPrefix(*bucket.Name, "function-clarity-stack-functionclaritytrailbucket") {
+		if strings.HasPrefix(*bucket.Name, "function-clarity-stack") {
 			bl, err := s3Client.GetBucketLocation(context.TODO(), &s3.GetBucketLocationInput{Bucket: bucket.Name})
 			if err != nil {
 				continue
@@ -297,7 +366,7 @@ func deleteS3Bucket(name string) {
 }
 
 func deleteStack() {
-	stackName := "function-clarity-stack"
+	stackName := "function-clarity-stack" + suffix
 	_, err := formationClient.DeleteStack(context.TODO(), &cloudformation.DeleteStackInput{
 		StackName: &stackName,
 	})
@@ -319,11 +388,11 @@ func deleteStack() {
 	for {
 		var gae *smithy.GenericAPIError
 		if _, err := formationClient.DescribeStacks(context.TODO(), &cloudformation.DescribeStacksInput{StackName: aws.String(stackName)}); err != nil {
-			if errors.As(err, &gae) && gae.ErrorMessage() == "Stack with id function-clarity-stack does not exist" {
+			if errors.As(err, &gae) && gae.ErrorMessage() == "Stack with id function-clarity-stack"+suffix+"does not exist" {
 				log.Println("Deleted stack " + stackName)
 				return
 			}
-			log.Println("Got an error waiting for stack to be deleted")
+			log.Println("Got an error waiting for stack to be deleted", err)
 			return
 		}
 		if timeout {
@@ -337,26 +406,23 @@ func deleteLambda(name string) {
 	deleteArgs := &lambda.DeleteFunctionInput{
 		FunctionName: &name,
 	}
-	_, err := lambdaClient.DeleteFunction(context.TODO(), deleteArgs)
-	if err != nil {
-		log.Fatal("failed to delete function")
-	}
+	lambdaClient.DeleteFunction(context.TODO(), deleteArgs)
 }
 
-func initCodeLambda(t *testing.T) string {
+func initCodeLambda(t *testing.T, funcName string) string {
 	t.Helper()
 
 	if err := createCodeZip(t); err != nil {
 		t.Fatal(err)
 	}
-	functionArn, err := createCodeLambda(t)
+	functionArn, err := createCodeLambda(t, funcName)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return functionArn
 }
 
-func createCodeLambda(t *testing.T) (string, error) {
+func createCodeLambda(t *testing.T, name string) (string, error) {
 	t.Helper()
 
 	contents, err := os.ReadFile(zipName)
@@ -368,10 +434,11 @@ func createCodeLambda(t *testing.T) (string, error) {
 	handler := "testing_lambda"
 	createArgs := &lambda.CreateFunctionInput{
 		Code:         &types.FunctionCode{ZipFile: contents},
-		FunctionName: aws.String(codeFuncName),
+		FunctionName: aws.String(name + suffix),
 		Handler:      aws.String(handler),
 		Role:         aws.String(role),
 		Runtime:      types.RuntimeGo1x,
+		Tags:         map[string]string{includeFuncTag + suffix: ""},
 	}
 	result, err := lambdaClient.CreateFunction(context.TODO(), createArgs)
 	if err != nil {
@@ -383,12 +450,12 @@ func createCodeLambda(t *testing.T) (string, error) {
 
 func createImageLambda(t *testing.T) (string, error) {
 	t.Helper()
-
 	createArgs := &lambda.CreateFunctionInput{
 		Code:         &types.FunctionCode{ImageUri: aws.String(imageUri)},
-		FunctionName: aws.String(imageFuncName),
+		FunctionName: aws.String(imageFuncName + suffix),
 		Role:         aws.String(role),
 		PackageType:  types.PackageTypeImage,
+		Tags:         map[string]string{includeFuncTag + suffix: ""},
 	}
 	result, err := lambdaClient.CreateFunction(context.TODO(), createArgs)
 	if err != nil {
