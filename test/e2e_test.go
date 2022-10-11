@@ -116,22 +116,23 @@ func shutdown() {
 	deleteS3Bucket(bucket)
 }
 
-func TestCodeSignAndVerifyKeyless(t *testing.T) {
-	os.Setenv(integrity.ExperimentalEnv, "1")
+func TestCodeSignAndVerify(t *testing.T) {
+	os.Setenv(integrity.ExperimentalEnv, "0")
 	log.Printf("integrity.ExperimentalEnv: %v\n", integrity.ExperimentalEnv)
-	switchConfigurationToKeyless()
-	jwt := getEnvVar("jwt_token", "token ID")
+	viper.Set("privatekey", privateKey)
+	funcDefer, err := mockStdin(t, pass)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer funcDefer()
+
 	sbo := o.SignBlobOptions{
 		SignBlobOptions: options.SignBlobOptions{
-			Base64Output:     true,
-			Registry:         options.RegistryOptions{},
-			SkipConfirmation: true,
-			Fulcio:           options.FulcioOptions{URL: options.DefaultFulcioURL, IdentityToken: jwt},
-			Rekor:            options.RekorOptions{URL: options.DefaultRekorURL},
+			Base64Output: true,
+			Registry:     options.RegistryOptions{},
 		},
 	}
-
-	err := sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+	err = sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,23 +152,22 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 }
 
-func TestCodeSignAndVerify(t *testing.T) {
-	os.Setenv(integrity.ExperimentalEnv, "0")
+func TestCodeSignAndVerifyKeyless(t *testing.T) {
+	os.Setenv(integrity.ExperimentalEnv, "1")
 	log.Printf("integrity.ExperimentalEnv: %v\n", integrity.ExperimentalEnv)
-	viper.Set("privatekey", privateKey)
-	funcDefer, err := mockStdin(t, pass)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer funcDefer()
-
+	switchConfigurationToKeyless()
+	jwt := getEnvVar("jwt_token", "token ID")
 	sbo := o.SignBlobOptions{
 		SignBlobOptions: options.SignBlobOptions{
-			Base64Output: true,
-			Registry:     options.RegistryOptions{},
+			Base64Output:     true,
+			Registry:         options.RegistryOptions{},
+			SkipConfirmation: true,
+			Fulcio:           options.FulcioOptions{URL: options.DefaultFulcioURL, IdentityToken: jwt},
+			Rekor:            options.RekorOptions{URL: options.DefaultRekorURL},
 		},
 	}
-	err = sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+
+	err := sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
 	if err != nil {
 		t.Fatal(err)
 	}
