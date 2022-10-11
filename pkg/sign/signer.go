@@ -23,6 +23,7 @@ import (
 	"github.com/openclarity/function-clarity/pkg/options"
 	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
 	"github.com/spf13/viper"
+	"log"
 )
 
 func SignAndUploadCode(client clients.Client, codePath string, o *options.SignBlobOptions, ro *co.RootOptions) error {
@@ -36,6 +37,11 @@ func SignAndUploadCode(client clients.Client, codePath string, o *options.SignBl
 	if !o.SecurityKey.Use && privateKey == "" && integrity.IsExperimentalEnv() {
 		isKeyless = true
 	}
+
+	log.Printf("privateKey: %v", privateKey)
+	log.Printf("publicKey: %v", viper.GetString("publickey"))
+	log.Printf("IsExperimentalEnv: %v", integrity.IsExperimentalEnv())
+	log.Printf("isKeyless: %v", isKeyless)
 
 	signedIdentity, err := sign.SignIdentity(codeIdentity, o, ro, isKeyless)
 	if err != nil {
