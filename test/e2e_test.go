@@ -55,7 +55,7 @@ const (
 	publicKey            = "cosign.pub"
 	privateKey           = "cosign.key"
 	pass                 = "pass"
-	verifierFunctionNAme = "FunctionClarityLambdaVerifier"
+	verifierFunctionName = "FunctionClarityLambdaVerifier"
 )
 
 var awsClient *clients.AwsClient
@@ -116,71 +116,75 @@ func shutdown() {
 	deleteS3Bucket(bucket)
 }
 
-func TestCodeSignAndVerify(t *testing.T) {
-	viper.Set("privatekey", privateKey)
-	funcDefer, err := mockStdin(t, pass)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer funcDefer()
+//func TestCodeSignAndVerify(t *testing.T) {
+//	os.Setenv(integrity.ExperimentalEnv, "0")
+//	viper.Set("privatekey", privateKey)
+//	funcDefer, err := mockStdin(t, pass)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	defer funcDefer()
+//
+//	sbo := o.SignBlobOptions{
+//		SignBlobOptions: options.SignBlobOptions{
+//			Base64Output: true,
+//			Registry:     options.RegistryOptions{},
+//		},
+//	}
+//	err = sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	functionArn := initCodeLambda(t)
+//
+//	successTagValue := "Function signed and verified"
+//	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+//	if timeout {
+//		t.Fatal("test failed on timout, the required tag not added in the time period")
+//	}
+//	if !success {
+//		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+//	}
+//	fmt.Println(successTagValue + " tag found in the signed function")
+//	deleteLambda(codeFuncName)
+//}
 
-	sbo := o.SignBlobOptions{
-		SignBlobOptions: options.SignBlobOptions{
-			Base64Output: true,
-			Registry:     options.RegistryOptions{},
-		},
-	}
-	err = sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	functionArn := initCodeLambda(t)
-
-	successTagValue := "Function signed and verified"
-	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
-	if timeout {
-		t.Fatal("test failed on timout, the required tag not added in the time period")
-	}
-	if !success {
-		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
-	}
-	fmt.Println(successTagValue + " tag found in the signed function")
-	deleteLambda(codeFuncName)
-}
-
-func TestImageSignAndVerify(t *testing.T) {
-	viper.Set("privatekey", privateKey)
-	funcDefer, err := mockStdin(t, pass)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer funcDefer()
-
-	ko := options.KeyOpts{KeyRef: privateKey, PassFunc: passFunc}
-	err = s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	functionArn, err := createImageLambda(t)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	successTagValue := "Function signed and verified"
-	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
-	if timeout {
-		t.Fatal("test failed on timout, the required tag not added in the time period")
-	}
-	if !success {
-		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
-	}
-	fmt.Println(successTagValue + " tag found in the signed function")
-	deleteLambda(imageFuncName)
-}
+//func TestImageSignAndVerify(t *testing.T) {
+//	viper.Set("privatekey", privateKey)
+//	os.Setenv(integrity.ExperimentalEnv, "0")
+//	funcDefer, err := mockStdin(t, pass)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//	defer funcDefer()
+//
+//	ko := options.KeyOpts{KeyRef: privateKey, PassFunc: passFunc}
+//	err = s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	functionArn, err := createImageLambda(t)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	successTagValue := "Function signed and verified"
+//	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+//	if timeout {
+//		t.Fatal("test failed on timout, the required tag not added in the time period")
+//	}
+//	if !success {
+//		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+//	}
+//	fmt.Println(successTagValue + " tag found in the signed function")
+//	deleteLambda(imageFuncName)
+//}
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
+	viper.Set("privatekey", "")
+	os.Setenv(integrity.ExperimentalEnv, "1")
 	switchConfigurationToKeyless()
 	jwt := getEnvVar("jwt_token", "token ID")
 	sbo := o.SignBlobOptions{
@@ -213,6 +217,8 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 }
 
 func TestCodeImageAndVerifyKeyless(t *testing.T) {
+	viper.Set("privatekey", "")
+	os.Setenv(integrity.ExperimentalEnv, "1")
 	switchConfigurationToKeyless()
 	fmt.Println("testing123")
 	fmt.Println(getEnvVar("jwt_token", "token ID"))
@@ -284,7 +290,7 @@ func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, succ
 }
 
 func switchConfigurationToKeyless() {
-	funcCfg, err := lambdaClient.GetFunctionConfiguration(context.TODO(), &lambda.GetFunctionConfigurationInput{FunctionName: aws.String(verifierFunctionNAme)})
+	funcCfg, err := lambdaClient.GetFunctionConfiguration(context.TODO(), &lambda.GetFunctionConfigurationInput{FunctionName: aws.String(verifierFunctionName)})
 	if err != nil {
 		log.Fatal("failed to get function configuration")
 	}
@@ -311,9 +317,9 @@ func switchConfigurationToKeyless() {
 		FunctionName: funcCfg.FunctionName,
 		Environment:  &types.Environment{Variables: funcCfg.Environment.Variables},
 	}
-	lambdaClient.UpdateFunctionConfiguration(context.TODO(), params)
+	_, err = lambdaClient.UpdateFunctionConfiguration(context.TODO(), params)
 	if err != nil {
-		log.Fatal("failed to update function configuration")
+		log.Fatalf("failed to update function configuration: %v", err)
 	}
 }
 
@@ -322,7 +328,7 @@ func createConfig(region string) *aws.Config {
 		config.WithRegion(region),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")))
 	if err != nil {
-		panic(fmt.Sprintf("failed loading config, %v", err))
+		panic(fmt.Sprintf("failed loading config: %v", err))
 	}
 	return &cfg
 }
