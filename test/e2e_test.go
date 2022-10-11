@@ -35,7 +35,6 @@ import (
 	o "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/openclarity/function-clarity/pkg/sign"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
-	s "github.com/sigstore/cosign/cmd/cosign/cli/sign"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -76,7 +75,7 @@ var ro = &options.RootOptions{Timeout: options.DefaultTimeout}
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
-	shutdown()
+	//shutdown()
 	os.Exit(code)
 }
 
@@ -98,16 +97,16 @@ func setup() {
 		log.Fatal(err)
 	}
 
-	var configForDeployment i.AWSInput
-	configForDeployment.Bucket = bucket
-	configForDeployment.Action = "detect"
-	configForDeployment.Region = region
-	configForDeployment.IsKeyless = true
-	configForDeployment.SnsTopicArn = ""
-	if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
-		log.Fatal(err)
-	}
-	time.Sleep(2 * time.Minute)
+	//var configForDeployment i.AWSInput
+	//configForDeployment.Bucket = bucket
+	//configForDeployment.Action = "detect"
+	//configForDeployment.Region = region
+	//configForDeployment.IsKeyless = true
+	//configForDeployment.SnsTopicArn = ""
+	//if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
+	//	log.Fatal(err)
+	//}
+	//time.Sleep(2 * time.Minute)
 }
 
 func shutdown() {
@@ -116,39 +115,40 @@ func shutdown() {
 	deleteS3Bucket(bucket)
 }
 
-//func TestCodeSignAndVerify(t *testing.T) {
-//	os.Setenv(integrity.ExperimentalEnv, "0")
-//	viper.Set("privatekey", privateKey)
-//	funcDefer, err := mockStdin(t, pass)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	defer funcDefer()
-//
-//	sbo := o.SignBlobOptions{
-//		SignBlobOptions: options.SignBlobOptions{
-//			Base64Output: true,
-//			Registry:     options.RegistryOptions{},
-//		},
-//	}
-//	err = sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	functionArn := initCodeLambda(t)
-//
-//	successTagValue := "Function signed and verified"
-//	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
-//	if timeout {
-//		t.Fatal("test failed on timout, the required tag not added in the time period")
-//	}
-//	if !success {
-//		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
-//	}
-//	fmt.Println(successTagValue + " tag found in the signed function")
-//	deleteLambda(codeFuncName)
-//}
+func TestCodeSignAndVerify(t *testing.T) {
+	os.Setenv(integrity.ExperimentalEnv, "0")
+	viper.Set("privatekey", privateKey)
+	funcDefer, err := mockStdin(t, pass)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer funcDefer()
+
+	sbo := o.SignBlobOptions{
+		SignBlobOptions: options.SignBlobOptions{
+			Base64Output: true,
+			Registry:     options.RegistryOptions{},
+		},
+	}
+	err = sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	functionArn := initCodeLambda(t)
+
+	successTagValue := "Function signed and verified"
+	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+	}
+	fmt.Println(successTagValue + " tag found in the signed function")
+	deleteLambda(codeFuncName)
+	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
+}
 
 //func TestImageSignAndVerify(t *testing.T) {
 //	viper.Set("privatekey", privateKey)
@@ -216,41 +216,41 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	deleteLambda(codeFuncName)
 }
 
-func TestCodeImageAndVerifyKeyless(t *testing.T) {
-	viper.Set("privatekey", "")
-	os.Setenv(integrity.ExperimentalEnv, "1")
-	switchConfigurationToKeyless()
-	fmt.Println("testing123")
-	fmt.Println(getEnvVar("jwt_token", "token ID"))
-	jwt := getEnvVar("jwt_token", "token ID")
-
-	ko := options.KeyOpts{
-		SkipConfirmation: true,
-		FulcioURL:        options.DefaultFulcioURL,
-		IDToken:          jwt,
-		RekorURL:         options.DefaultRekorURL,
-	}
-	err := s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	functionArn, err := createImageLambda(t)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	successTagValue := "Function signed and verified"
-	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
-	if timeout {
-		t.Fatal("test failed on timout, the required tag not added in the time period")
-	}
-	if !success {
-		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
-	}
-	fmt.Println(successTagValue + " tag found in the signed function")
-	deleteLambda(imageFuncName)
-}
+//func TestCodeImageAndVerifyKeyless(t *testing.T) {
+//	viper.Set("privatekey", "")
+//	os.Setenv(integrity.ExperimentalEnv, "1")
+//	switchConfigurationToKeyless()
+//	fmt.Println("testing123")
+//	fmt.Println(getEnvVar("jwt_token", "token ID"))
+//	jwt := getEnvVar("jwt_token", "token ID")
+//
+//	ko := options.KeyOpts{
+//		SkipConfirmation: true,
+//		FulcioURL:        options.DefaultFulcioURL,
+//		IDToken:          jwt,
+//		RekorURL:         options.DefaultRekorURL,
+//	}
+//	err := s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	functionArn, err := createImageLambda(t)
+//	if err != nil {
+//		t.Fatal(err)
+//	}
+//
+//	successTagValue := "Function signed and verified"
+//	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+//	if timeout {
+//		t.Fatal("test failed on timout, the required tag not added in the time period")
+//	}
+//	if !success {
+//		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+//	}
+//	fmt.Println(successTagValue + " tag found in the signed function")
+//	deleteLambda(imageFuncName)
+//}
 
 func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, successTagKey string, successTagValue string) (bool, bool) {
 	t.Helper()
@@ -355,13 +355,13 @@ func deleteS3TrailBucketContent() {
 				continue
 			}
 			if string(bl.LocationConstraint) == region {
-				deleteS3BucketContent(bucket.Name)
+				deleteS3BucketContent(bucket.Name, []string{})
 			}
 		}
 	}
 }
 
-func deleteS3BucketContent(name *string) {
+func deleteS3BucketContent(name *string, except []string) {
 	listObjectsV2Response, err := s3Client.ListObjectsV2(context.TODO(),
 		&s3.ListObjectsV2Input{
 			Bucket: name,
@@ -373,13 +373,15 @@ func deleteS3BucketContent(name *string) {
 			log.Fatalf("Couldn't list objects... delete all objects in bucket: %s failed", *name)
 		}
 		for _, item := range listObjectsV2Response.Contents {
-			_, err = s3Client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
-				Bucket: name,
-				Key:    item.Key,
-			})
+			if !contains(except, *item.Key) {
+				_, err = s3Client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
+					Bucket: name,
+					Key:    item.Key,
+				})
 
-			if err != nil {
-				log.Fatalf("delete all objects in bucket: %s failed", *name)
+				if err != nil {
+					log.Fatalf("delete all objects in bucket: %s failed", *name)
+				}
 			}
 		}
 
@@ -395,11 +397,21 @@ func deleteS3BucketContent(name *string) {
 	}
 }
 
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
 func deleteS3Bucket(name string) {
 	if _, err := s3Client.HeadBucket(context.TODO(), &s3.HeadBucketInput{Bucket: aws.String(name)}); err != nil {
 		return
 	}
-	deleteS3BucketContent(&name)
+	deleteS3BucketContent(&name, []string{})
 	if _, err := s3Client.DeleteBucket(context.TODO(), &s3.DeleteBucketInput{Bucket: aws.String(name)}); err != nil {
 		log.Fatalf("delete bucket: %s failed", name)
 	}
