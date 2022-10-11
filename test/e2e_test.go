@@ -152,7 +152,6 @@ func shutdown() {
 //	fmt.Println(successTagValue + " tag found in the signed function")
 //	deleteLambda(codeFuncName)
 //	log.Printf("finished pair code test... wait 1 min\n")
-//	time.Sleep(1 * time.Minute)
 //	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 //}
 
@@ -162,7 +161,6 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	log.Printf("bucket: %v\n", bucket)
 	viper.Set("privatekey", "")
 	switchConfiguration(true, "")
-	time.Sleep(2 * time.Minute)
 	jwt := getEnvVar("jwt_token", "token ID")
 	sbo := o.SignBlobOptions{
 		SignBlobOptions: options.SignBlobOptions{
