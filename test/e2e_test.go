@@ -55,7 +55,7 @@ const (
 	publicKey            = "cosign.pub"
 	privateKey           = "cosign.key"
 	pass                 = "pass"
-	verifierFunctionNAme = "FunctionClarityLambdaVerifier"
+	verifierFunctionName = "FunctionClarityLambdaVerifier"
 )
 
 var awsClient *clients.AwsClient
@@ -117,6 +117,7 @@ func shutdown() {
 }
 
 func TestCodeSignAndVerify(t *testing.T) {
+	os.Setenv(integrity.ExperimentalEnv, "0")
 	viper.Set("privatekey", privateKey)
 	funcDefer, err := mockStdin(t, pass)
 	if err != nil {
@@ -151,6 +152,7 @@ func TestCodeSignAndVerify(t *testing.T) {
 
 func TestImageSignAndVerify(t *testing.T) {
 	viper.Set("privatekey", privateKey)
+	os.Setenv(integrity.ExperimentalEnv, "0")
 	funcDefer, err := mockStdin(t, pass)
 	if err != nil {
 		t.Fatal(err)
@@ -182,6 +184,7 @@ func TestImageSignAndVerify(t *testing.T) {
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	viper.Set("privatekey", "")
+	os.Setenv(integrity.ExperimentalEnv, "1")
 	switchConfigurationToKeyless()
 	jwt := getEnvVar("jwt_token", "token ID")
 	sbo := o.SignBlobOptions{
@@ -215,6 +218,7 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 
 func TestCodeImageAndVerifyKeyless(t *testing.T) {
 	viper.Set("privatekey", "")
+	os.Setenv(integrity.ExperimentalEnv, "1")
 	switchConfigurationToKeyless()
 	fmt.Println("testing123")
 	fmt.Println(getEnvVar("jwt_token", "token ID"))
@@ -286,7 +290,7 @@ func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, succ
 }
 
 func switchConfigurationToKeyless() {
-	funcCfg, err := lambdaClient.GetFunctionConfiguration(context.TODO(), &lambda.GetFunctionConfigurationInput{FunctionName: aws.String(verifierFunctionNAme)})
+	funcCfg, err := lambdaClient.GetFunctionConfiguration(context.TODO(), &lambda.GetFunctionConfigurationInput{FunctionName: aws.String(verifierFunctionName)})
 	if err != nil {
 		log.Fatal("failed to get function configuration")
 	}
