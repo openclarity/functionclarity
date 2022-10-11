@@ -38,10 +38,10 @@ func SignAndUploadCode(client clients.Client, codePath string, o *options.SignBl
 		isKeyless = true
 	}
 
-	log.Printf("privateKey: %v", privateKey)
-	log.Printf("publicKey: %v", viper.GetString("publickey"))
-	log.Printf("IsExperimentalEnv: %v", integrity.IsExperimentalEnv())
-	log.Printf("isKeyless: %v", isKeyless)
+	log.Printf("privateKey: %v\n", privateKey)
+	log.Printf("publicKey: %v\n", viper.GetString("publickey"))
+	log.Printf("IsExperimentalEnv: %v\n", integrity.IsExperimentalEnv())
+	log.Printf("isKeyless: %v\n", isKeyless)
 
 	signedIdentity, err := sign.SignIdentity(codeIdentity, o, ro, isKeyless)
 	if err != nil {

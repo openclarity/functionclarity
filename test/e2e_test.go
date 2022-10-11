@@ -118,6 +118,7 @@ func shutdown() {
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	os.Setenv(integrity.ExperimentalEnv, "1")
+	log.Printf("integrity.ExperimentalEnv: %v\n", integrity.ExperimentalEnv)
 	switchConfigurationToKeyless()
 	jwt := getEnvVar("jwt_token", "token ID")
 	sbo := o.SignBlobOptions{
@@ -152,6 +153,7 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 
 func TestCodeSignAndVerify(t *testing.T) {
 	os.Setenv(integrity.ExperimentalEnv, "0")
+	log.Printf("integrity.ExperimentalEnv: %v\n", integrity.ExperimentalEnv)
 	viper.Set("privatekey", privateKey)
 	funcDefer, err := mockStdin(t, pass)
 	if err != nil {
