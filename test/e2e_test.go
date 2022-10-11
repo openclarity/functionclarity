@@ -121,6 +121,7 @@ func TestCodeSignAndVerify(t *testing.T) {
 	log.Printf("integrity.ExperimentalEnv: %v\n", os.Getenv(integrity.ExperimentalEnv))
 	log.Printf("bucket: %v\n", bucket)
 	viper.Set("privatekey", privateKey)
+	switchConfiguration(false, publicKey)
 	funcDefer, err := mockStdin(t, pass)
 	if err != nil {
 		t.Fatal(err)
@@ -160,7 +161,7 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	log.Printf("integrity.ExperimentalEnv: %v\n", os.Getenv(integrity.ExperimentalEnv))
 	log.Printf("bucket: %v\n", bucket)
 	viper.Set("privatekey", "")
-	switchConfigurationToKeyless()
+	switchConfiguration(true, "")
 	time.Sleep(2 * time.Minute)
 	jwt := getEnvVar("jwt_token", "token ID")
 	sbo := o.SignBlobOptions{
@@ -230,7 +231,7 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 //func TestCodeImageAndVerifyKeyless(t *testing.T) {
 //	viper.Set("privatekey", "")
 //	os.Setenv(integrity.ExperimentalEnv, "1")
-//	switchConfigurationToKeyless()
+//	switchConfiguration(true, "")
 //	fmt.Println("testing123")
 //	fmt.Println(getEnvVar("jwt_token", "token ID"))
 //	jwt := getEnvVar("jwt_token", "token ID")
@@ -300,7 +301,7 @@ func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, succ
 	return success, false
 }
 
-func switchConfigurationToKeyless() {
+func switchConfiguration(isKeyless bool, publicKey string) {
 	funcCfg, err := lambdaClient.GetFunctionConfiguration(context.TODO(), &lambda.GetFunctionConfigurationInput{FunctionName: aws.String(verifierFunctionName)})
 	if err != nil {
 		log.Fatal("failed to get function configuration")
@@ -315,8 +316,8 @@ func switchConfigurationToKeyless() {
 	if err != nil {
 		log.Fatal("failed to unmarshal config from yaml")
 	}
-	config.IsKeyless = true
-	config.PublicKey = ""
+	config.IsKeyless = isKeyless
+	config.PublicKey = publicKey
 
 	cfgYaml, err := yaml.Marshal(&config)
 	if err != nil {
