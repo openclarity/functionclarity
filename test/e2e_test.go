@@ -154,8 +154,7 @@ func TestCodeNotSignedAndVerify(t *testing.T) {
 	}
 	GetQueueOutput, err := sqsClient.GetQueueUrl(context.TODO(), queueInput)
 	if err != nil {
-		fmt.Errorf("failed to sqs: %w", err)
-		t.Fatal("Failed to get sqs details")
+		t.Fatal("Failed to get sqs details", err)
 	}
 	queueUrl := GetQueueOutput.QueueUrl
 	GetMessagesInput := &sqs.ReceiveMessageInput{
@@ -280,7 +279,6 @@ func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, succ
 			return false, true
 		}
 	}
-	return false, false
 }
 
 func createConfig(region string) *aws.Config {
@@ -406,7 +404,7 @@ func deleteLambda(name string) {
 	deleteArgs := &lambda.DeleteFunctionInput{
 		FunctionName: &name,
 	}
-	lambdaClient.DeleteFunction(context.TODO(), deleteArgs)
+	_, _ = lambdaClient.DeleteFunction(context.TODO(), deleteArgs)
 }
 
 func initCodeLambda(t *testing.T, funcName string) string {
