@@ -119,6 +119,7 @@ func shutdown() {
 func TestCodeSignAndVerify(t *testing.T) {
 	os.Setenv(integrity.ExperimentalEnv, "0")
 	log.Printf("integrity.ExperimentalEnv: %v\n", os.Getenv(integrity.ExperimentalEnv))
+	log.Printf("bucket: %v\n", bucket)
 	viper.Set("privatekey", privateKey)
 	funcDefer, err := mockStdin(t, pass)
 	if err != nil {
@@ -149,12 +150,15 @@ func TestCodeSignAndVerify(t *testing.T) {
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(codeFuncName)
+	log.Printf("finished pair code test... wait 1 min\n")
+	time.Sleep(1 * time.Minute)
 	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 }
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	os.Setenv(integrity.ExperimentalEnv, "1")
 	log.Printf("integrity.ExperimentalEnv: %v\n", os.Getenv(integrity.ExperimentalEnv))
+	log.Printf("bucket: %v\n", bucket)
 	switchConfigurationToKeyless()
 	time.Sleep(2 * time.Minute)
 	jwt := getEnvVar("jwt_token", "token ID")
@@ -185,6 +189,8 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(codeFuncName)
+	log.Printf("finished keyless code test... waiting...\n")
+	time.Sleep(1 * time.Minute)
 	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 }
 
