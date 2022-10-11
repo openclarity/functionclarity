@@ -117,7 +117,6 @@ func shutdown() {
 }
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
-	viper.Set("privatekey", "")
 	os.Setenv(integrity.ExperimentalEnv, "1")
 	switchConfigurationToKeyless()
 	jwt := getEnvVar("jwt_token", "token ID")
@@ -148,6 +147,7 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(codeFuncName)
+	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 }
 
 func TestCodeSignAndVerify(t *testing.T) {
