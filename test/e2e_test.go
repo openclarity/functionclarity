@@ -153,6 +153,7 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 }
 
 func TestCodeImageAndVerifyKeyless(t *testing.T) {
+	viper.Set("privatekey", "")
 	os.Setenv(integrity.ExperimentalEnv, "1")
 	switchConfiguration(true, "")
 
@@ -327,6 +328,7 @@ func switchConfiguration(isKeyless bool, publicKey string) {
 	if err != nil {
 		log.Fatalf("failed to update function configuration: %v", err)
 	}
+	time.Sleep(1 * time.Minute)
 }
 
 func createConfig(region string) *aws.Config {
