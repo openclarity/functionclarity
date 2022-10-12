@@ -118,7 +118,7 @@ func shutdown() {
 }
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
-	os.Setenv(integrity.ExperimentalEnv, "1")
+	//os.Setenv(integrity.ExperimentalEnv, "1")
 	switchConfiguration(true, "")
 
 	jwt := getEnvVar("jwt_token", "token ID")
@@ -154,7 +154,7 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 
 func TestCodeImageAndVerifyKeyless(t *testing.T) {
 	viper.Set("privatekey", "")
-	os.Setenv(integrity.ExperimentalEnv, "1")
+	//os.Setenv(integrity.ExperimentalEnv, "1")
 	log.Printf("privateKey: %v\n", privateKey)
 	log.Printf("publicKey: %v\n", viper.GetString("publickey"))
 	log.Printf("IsExperimentalEnv: %v\n", integrity.IsExperimentalEnv())
