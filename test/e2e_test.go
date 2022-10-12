@@ -98,17 +98,17 @@ func setup() {
 		log.Fatal(err)
 	}
 
-	//var configForDeployment i.AWSInput
-	//configForDeployment.Bucket = bucket
-	//configForDeployment.Action = "detect"
-	//configForDeployment.Region = region
-	//configForDeployment.IsKeyless = false
-	//configForDeployment.SnsTopicArn = ""
-	//configForDeployment.IncludedFuncRegions = []string{"us-east-2"}
-	//if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
-	//	log.Fatal(err)
-	//}
-	//time.Sleep(2 * time.Minute)
+	var configForDeployment i.AWSInput
+	configForDeployment.Bucket = bucket
+	configForDeployment.Action = "detect"
+	configForDeployment.Region = region
+	configForDeployment.IsKeyless = false
+	configForDeployment.SnsTopicArn = ""
+	configForDeployment.IncludedFuncRegions = []string{"us-east-2"}
+	if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
+		log.Fatal(err)
+	}
+	time.Sleep(2 * time.Minute)
 }
 
 func shutdown() {
@@ -126,7 +126,7 @@ func TestCodeImageAndVerifyKeyless(t *testing.T) {
 
 	switchConfiguration(true, "")
 
-	jwt := getEnvVar("jwt_token2", "token ID")
+	jwt := getEnvVar("jwt_token", "token ID")
 
 	ko := options.KeyOpts{
 		SkipConfirmation: true,
@@ -157,8 +157,9 @@ func TestCodeImageAndVerifyKeyless(t *testing.T) {
 }
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
-	//os.Setenv(integrity.ExperimentalEnv, "1")
+	os.Setenv(integrity.ExperimentalEnv, "1")
 	switchConfiguration(true, "")
+	time.Sleep(2 * time.Minute)
 
 	jwt := getEnvVar("jwt_token", "token ID")
 	sbo := o.SignBlobOptions{
