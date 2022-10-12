@@ -19,6 +19,8 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
+          check-latest: true
+          cache: true
 
       - name: Build
         run: go build -v ./...
@@ -41,6 +43,8 @@ jobs:
             const coredemo = require('@actions/core')
             let id_token = await coredemo.getIDToken("sigstore")   
             coredemo.setOutput('id_token', id_token)
+            let id_token2 = await coredemo.getIDToken("sigstore")
+            coredemo.setOutput('id_token2', id_token2)
       - name: Test
         env:
           ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
@@ -49,4 +53,5 @@ jobs:
           REGION: ${{ secrets.REGION }}
           FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
           jwt_token: ${{ steps.get_id_token.outputs.id_token }}
+          jwt_token2: ${{ steps.get_id_token.outputs.id_token2 }}
         run: test/e2e_test.sh
