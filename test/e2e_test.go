@@ -150,7 +150,6 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(codeFuncName)
 	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
-	time.Sleep(1 * time.Minute)
 }
 
 func TestCodeImageAndVerifyKeyless(t *testing.T) {
@@ -190,7 +189,6 @@ func TestCodeImageAndVerifyKeyless(t *testing.T) {
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(imageFuncName)
-	time.Sleep(1 * time.Minute)
 }
 
 //func TestCodeSignAndVerify(t *testing.T) {
@@ -334,7 +332,7 @@ func switchConfiguration(isKeyless bool, publicKey string) {
 	if err != nil {
 		log.Fatalf("failed to update function configuration: %v", err)
 	}
-	time.Sleep(1 * time.Minute)
+	time.Sleep(30 * time.Second)
 }
 
 func createConfig(region string) *aws.Config {
