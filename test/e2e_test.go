@@ -98,17 +98,17 @@ func setup() {
 		log.Fatal(err)
 	}
 
-	//var configForDeployment i.AWSInput
-	//configForDeployment.Bucket = bucket
-	//configForDeployment.Action = "detect"
-	//configForDeployment.Region = region
-	//configForDeployment.IsKeyless = false
-	//configForDeployment.SnsTopicArn = ""
-	//configForDeployment.IncludedFuncRegions = []string{"us-east-2"}
-	//if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
-	//	log.Fatal(err)
-	//}
-	//time.Sleep(2 * time.Minute)
+	var configForDeployment i.AWSInput
+	configForDeployment.Bucket = bucket
+	configForDeployment.Action = "detect"
+	configForDeployment.Region = region
+	configForDeployment.IsKeyless = false
+	configForDeployment.SnsTopicArn = ""
+	configForDeployment.IncludedFuncRegions = []string{"us-east-2"}
+	if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
+		log.Fatal(err)
+	}
+	time.Sleep(2 * time.Minute)
 }
 
 func shutdown() {
