@@ -67,5 +67,6 @@ jobs:
           jwt_token2: ${{ steps.get_id_token.outputs.id_token2 }}
           COSIGN_EXPERIMENTAL: 1
         run: |
+          cd ./test
           go test -timeout 30m -v -run TestCodeSignAndVerifyKeyless
           go test -timeout 30m -v -run TestImageSignAndVerifyKeyless
