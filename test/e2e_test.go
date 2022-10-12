@@ -41,6 +41,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -76,7 +77,13 @@ var ro = &options.RootOptions{Timeout: options.DefaultTimeout}
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
-	//shutdown()
+	parseBool, err := strconv.ParseBool(os.Getenv("is_start"))
+	if err != nil {
+		panic("is_start not bool")
+	}
+	if !parseBool {
+		shutdown()
+	}
 	os.Exit(code)
 }
 
@@ -98,17 +105,23 @@ func setup() {
 		log.Fatal(err)
 	}
 
-	//var configForDeployment i.AWSInput
-	//configForDeployment.Bucket = bucket
-	//configForDeployment.Action = "detect"
-	//configForDeployment.Region = region
-	//configForDeployment.IsKeyless = false
-	//configForDeployment.SnsTopicArn = ""
-	//configForDeployment.IncludedFuncRegions = []string{"us-east-2"}
-	//if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
-	//	log.Fatal(err)
-	//}
-	//time.Sleep(2 * time.Minute)
+	parseBool, err := strconv.ParseBool(os.Getenv("is_start"))
+	if err != nil {
+		panic("is_start not bool")
+	}
+	if parseBool {
+		var configForDeployment i.AWSInput
+		configForDeployment.Bucket = bucket
+		configForDeployment.Action = "detect"
+		configForDeployment.Region = region
+		configForDeployment.IsKeyless = false
+		configForDeployment.SnsTopicArn = ""
+		configForDeployment.IncludedFuncRegions = []string{"us-east-2"}
+		if err := awsClient.DeployFunctionClarity("", publicKey, configForDeployment); err != nil {
+			log.Fatal(err)
+		}
+		time.Sleep(2 * time.Minute)
+	}
 }
 
 func shutdown() {
