@@ -14,7 +14,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
@@ -33,6 +32,18 @@ jobs:
 #      - name: Run verification
 #        run: make check
 
+#      - name: Test
+#        env:
+#          ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+#          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+#          BUCKET: ${{ secrets.BUCKET }}
+#          REGION: ${{ secrets.REGION }}
+#          FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
+#          jwt_token: ${{ steps.get_id_token.outputs.id_token }}
+#          jwt_token2: ${{ steps.get_id_token.outputs.id_token2 }}
+#          COSIGN_EXPERIMENTAL: 0
+#        run: test/e2e_test.sh
+
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
       - name: Get IdToken
@@ -45,7 +56,7 @@ jobs:
             coredemo.setOutput('id_token', id_token)
             let id_token2 = await coredemo.getIDToken("sigstore")
             coredemo.setOutput('id_token2', id_token2)
-      - name: Test
+      - name: KeylessTest
         env:
           ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
@@ -55,4 +66,6 @@ jobs:
           jwt_token: ${{ steps.get_id_token.outputs.id_token }}
           jwt_token2: ${{ steps.get_id_token.outputs.id_token2 }}
           COSIGN_EXPERIMENTAL: 1
-        run: test/e2e_test.sh
+        run: |
+          go test -timeout 30m -v -run TestCodeSignAndVerifyKeyless
+          go test -timeout 30m -v -run TestImageSignAndVerifyKeyless
