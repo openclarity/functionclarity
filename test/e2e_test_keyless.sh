@@ -15,5 +15,4 @@ echo "stack template copied to test folder"
 
 echo "e2e tests started"
 cd ./test
-go test -timeout 30m -v -run TestCodeSignAndVerifyKeyless
-go test -timeout 30m -v -run TestImageSignAndVerifyKeyless
+go test -timeout 30m -v -run "Verify$"
