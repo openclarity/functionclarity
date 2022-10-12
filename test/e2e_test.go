@@ -119,8 +119,8 @@ func shutdown() {
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	os.Setenv(integrity.ExperimentalEnv, "1")
-	viper.Set("privatekey", "")
 	switchConfiguration(true, "")
+
 	jwt := getEnvVar("jwt_token", "token ID")
 	sbo := o.SignBlobOptions{
 		SignBlobOptions: options.SignBlobOptions{
@@ -149,14 +149,13 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(codeFuncName)
-	log.Printf("finished keyless code test... waiting...\n")
 	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 }
 
 func TestCodeImageAndVerifyKeyless(t *testing.T) {
-	viper.Set("privatekey", "")
 	os.Setenv(integrity.ExperimentalEnv, "1")
 	switchConfiguration(true, "")
+
 	jwt := getEnvVar("jwt_token", "token ID")
 
 	ko := options.KeyOpts{
@@ -190,10 +189,9 @@ func TestCodeImageAndVerifyKeyless(t *testing.T) {
 
 func TestCodeSignAndVerify(t *testing.T) {
 	os.Setenv(integrity.ExperimentalEnv, "0")
-	log.Printf("integrity.ExperimentalEnv: %v\n", os.Getenv(integrity.ExperimentalEnv))
-	log.Printf("bucket: %v\n", bucket)
 	viper.Set("privatekey", privateKey)
 	switchConfiguration(false, publicKey)
+
 	funcDefer, err := mockStdin(t, pass)
 	if err != nil {
 		t.Fatal(err)
@@ -223,14 +221,13 @@ func TestCodeSignAndVerify(t *testing.T) {
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(codeFuncName)
-	log.Printf("finished pair code test... wait 1 min\n")
 	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 }
 
 func TestImageSignAndVerify(t *testing.T) {
-	viper.Set("privatekey", privateKey)
 	os.Setenv(integrity.ExperimentalEnv, "0")
 	switchConfiguration(false, publicKey)
+
 	funcDefer, err := mockStdin(t, pass)
 	if err != nil {
 		t.Fatal(err)
@@ -459,7 +456,7 @@ func deleteStack() {
 		if timeout {
 			log.Fatal("timout on waiting for stack to delete")
 		}
-		time.Sleep(30 * time.Second)
+		time.Sleep(15 * time.Second)
 	}
 }
 
