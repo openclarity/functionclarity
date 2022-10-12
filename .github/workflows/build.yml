@@ -55,8 +55,6 @@ jobs:
             const coredemo = require('@actions/core')
             let id_token = await coredemo.getIDToken("sigstore")   
             coredemo.setOutput('id_token', id_token)
-            let id_token2 = await coredemo.getIDToken("sigstore")
-            coredemo.setOutput('id_token2', id_token2)
       - name: KeylessTest
         env:
           ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
@@ -65,7 +63,6 @@ jobs:
           REGION: ${{ secrets.REGION }}
           FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
           jwt_token: ${{ steps.get_id_token.outputs.id_token }}
-          jwt_token2: ${{ steps.get_id_token.outputs.id_token2 }}
           COSIGN_EXPERIMENTAL: 1
           is_start: false
         run: test/e2e_test_keyless.sh

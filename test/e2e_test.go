@@ -131,14 +131,7 @@ func shutdown() {
 }
 
 func TestCodeImageAndVerifyKeyless(t *testing.T) {
-	viper.Set("privatekey", "")
-	//os.Setenv(integrity.ExperimentalEnv, "1")
-	log.Printf("privateKey: %v\n", privateKey)
-	log.Printf("publicKey: %v\n", viper.GetString("publickey"))
-	log.Printf("IsExperimentalEnv: %v\n", integrity.IsExperimentalEnv())
-
 	switchConfiguration(true, "")
-
 	jwt := getEnvVar("jwt_token", "token ID")
 
 	ko := options.KeyOpts{
@@ -170,9 +163,7 @@ func TestCodeImageAndVerifyKeyless(t *testing.T) {
 }
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
-	os.Setenv(integrity.ExperimentalEnv, "1")
 	switchConfiguration(true, "")
-	time.Sleep(2 * time.Minute)
 
 	jwt := getEnvVar("jwt_token", "token ID")
 	sbo := o.SignBlobOptions{
@@ -206,7 +197,6 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 }
 
 func TestCodeSignAndVerify(t *testing.T) {
-	os.Setenv(integrity.ExperimentalEnv, "0")
 	viper.Set("privatekey", privateKey)
 	switchConfiguration(false, publicKey)
 
@@ -243,7 +233,6 @@ func TestCodeSignAndVerify(t *testing.T) {
 }
 
 func TestImageSignAndVerify(t *testing.T) {
-	os.Setenv(integrity.ExperimentalEnv, "0")
 	switchConfiguration(false, publicKey)
 
 	funcDefer, err := mockStdin(t, pass)
