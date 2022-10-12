@@ -119,8 +119,6 @@ func shutdown() {
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	os.Setenv(integrity.ExperimentalEnv, "1")
-	log.Printf("integrity.ExperimentalEnv: %v\n", os.Getenv(integrity.ExperimentalEnv))
-	log.Printf("bucket: %v\n", bucket)
 	viper.Set("privatekey", "")
 	switchConfiguration(true, "")
 	jwt := getEnvVar("jwt_token", "token ID")
@@ -152,6 +150,41 @@ func TestCodeSignAndVerifyKeyless(t *testing.T) {
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(codeFuncName)
 	log.Printf("finished keyless code test... waiting...\n")
+	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
+}
+
+func TestCodeImageAndVerifyKeyless(t *testing.T) {
+	viper.Set("privatekey", "")
+	os.Setenv(integrity.ExperimentalEnv, "1")
+	switchConfiguration(true, "")
+	jwt := getEnvVar("jwt_token", "token ID")
+
+	ko := options.KeyOpts{
+		SkipConfirmation: true,
+		FulcioURL:        options.DefaultFulcioURL,
+		IDToken:          jwt,
+		RekorURL:         options.DefaultRekorURL,
+	}
+	err := s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	functionArn, err := createImageLambda(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	successTagValue := "Function signed and verified"
+	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+	}
+	fmt.Println(successTagValue + " tag found in the signed function")
+	deleteLambda(imageFuncName)
 	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 }
 
@@ -194,40 +227,6 @@ func TestCodeSignAndVerify(t *testing.T) {
 	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 }
 
-func TestCodeImageAndVerifyKeyless(t *testing.T) {
-	viper.Set("privatekey", "")
-	os.Setenv(integrity.ExperimentalEnv, "1")
-	switchConfiguration(true, "")
-	jwt := getEnvVar("jwt_token", "token ID")
-
-	ko := options.KeyOpts{
-		SkipConfirmation: true,
-		FulcioURL:        options.DefaultFulcioURL,
-		IDToken:          jwt,
-		RekorURL:         options.DefaultRekorURL,
-	}
-	err := s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	functionArn, err := createImageLambda(t)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	successTagValue := "Function signed and verified"
-	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
-	if timeout {
-		t.Fatal("test failed on timout, the required tag not added in the time period")
-	}
-	if !success {
-		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
-	}
-	fmt.Println(successTagValue + " tag found in the signed function")
-	deleteLambda(imageFuncName)
-}
-
 func TestImageSignAndVerify(t *testing.T) {
 	viper.Set("privatekey", privateKey)
 	os.Setenv(integrity.ExperimentalEnv, "0")
@@ -259,6 +258,7 @@ func TestImageSignAndVerify(t *testing.T) {
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(imageFuncName)
+	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 }
 
 func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, successTagKey string, successTagValue string) (bool, bool) {
