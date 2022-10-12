@@ -17,4 +17,3 @@ echo "e2e tests started"
 cd ./test
 go test -timeout 30m -v -run TestCodeSignAndVerifyKeyless
 go test -timeout 30m -v -run TestImageSignAndVerifyKeyless
-
