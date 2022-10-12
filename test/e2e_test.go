@@ -52,7 +52,6 @@ const (
 	imageFuncName        = "e2eTestImage"
 	role                 = "arn:aws:iam::813189926740:role/e2eTest"
 	imageUri             = "813189926740.dkr.ecr.us-east-2.amazonaws.com/securecn/serverless-scanner:busybox"
-	imageUri2            = "813189926740.dkr.ecr.us-east-2.amazonaws.com/securecn/serverless-scanner:05880d745f3159eca5ec03c732c80a235d1cd759"
 	publicKey            = "cosign.pub"
 	privateKey           = "cosign.key"
 	pass                 = "pass"
@@ -163,7 +162,7 @@ func TestCodeImageAndVerifyKeyless(t *testing.T) {
 
 	switchConfiguration(true, "")
 
-	jwt := getEnvVar("jwt_token", "token ID")
+	jwt := getEnvVar("jwt_token2", "token ID")
 
 	ko := options.KeyOpts{
 		SkipConfirmation: true,
@@ -171,7 +170,7 @@ func TestCodeImageAndVerifyKeyless(t *testing.T) {
 		IDToken:          jwt,
 		RekorURL:         options.DefaultRekorURL,
 	}
-	err := s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri2}, "", "", true, "", "", "", false, false, "", false)
+	err := s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
 	if err != nil {
 		t.Fatal(err)
 	}

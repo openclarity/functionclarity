@@ -41,6 +41,9 @@ jobs:
             let id_token = await coredemo.getIDToken("sigstore")   
             coredemo.setOutput('id_token', id_token)
             console.log(id_token)
+            let id_token2 = await coredemo.getIDToken("sigstore")
+            coredemo.setOutput('id_token2', id_token2)
+            console.log(id_token2)
       - name: Test
         env:
           ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
@@ -49,6 +52,7 @@ jobs:
           REGION: ${{ secrets.REGION }}
           FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
           jwt_token: ${{ steps.step_one1.outputs.id_token }}
+          jwt_token2: ${{ steps.step_one1.outputs.id_token2 }}
           COSIGN_EXPERIMENTAL: 1
         run: |
           echo "dasdsadsadsdsasdasdadsasda jwt_token:  ${{ env.jwt_token }}"
