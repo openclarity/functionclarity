@@ -18,6 +18,7 @@ package test
 import (
 	"archive/zip"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -40,9 +41,11 @@ import (
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
 	s "github.com/sigstore/cosign/cmd/cosign/cli/sign"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -58,6 +61,7 @@ const (
 	publicKey             = "cosign.pub"
 	privateKey            = "cosign.key"
 	pass                  = "pass"
+  verifierFunctionName = "FunctionClarityLambdaVerifier"
 )
 
 var awsClient *clients.AwsClient
@@ -82,7 +86,13 @@ const includeFuncTag = "funcclarity-e2e-tag"
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
-	shutdown()
+	parseBool, err := strconv.ParseBool(os.Getenv("is_start"))
+	if err != nil {
+		panic("is_start not bool")
+	}
+	if !parseBool {
+		shutdown()
+	}
 	os.Exit(code)
 }
 
@@ -107,17 +117,23 @@ func setup() {
 		log.Fatal(err)
 	}
 
-	var configForDeployment i.AWSInput
-	configForDeployment.Bucket = bucket
-	configForDeployment.Action = "block"
-	configForDeployment.Region = region
-	configForDeployment.IsKeyless = false
-	configForDeployment.SnsTopicArn = "arn:aws:sns:us-east-1:813189926740:func-clarity-e2e"
-	configForDeployment.IncludedFuncTagKeys = []string{includeFuncTag + suffix}
-	if err := awsClient.DeployFunctionClarity("SecurecnMonitoringTrail", publicKey, configForDeployment, suffix); err != nil {
-		log.Fatal(err)
+	parseBool, err := strconv.ParseBool(os.Getenv("is_start"))
+	if err != nil {
+		panic("is_start not bool")
 	}
-	time.Sleep(2 * time.Minute)
+	if parseBool {
+		var configForDeployment i.AWSInput
+		configForDeployment.Bucket = bucket
+		configForDeployment.Action = "block"
+		configForDeployment.Region = region
+		configForDeployment.IsKeyless = false
+		configForDeployment.SnsTopicArn = "arn:aws:sns:us-east-1:813189926740:func-clarity-e2e"
+		configForDeployment.IncludedFuncTagKeys = []string{includeFuncTag + suffix}
+		if err := awsClient.DeployFunctionClarity("SecurecnMonitoringTrail", publicKey, configForDeployment); err != nil {
+			log.Fatal(err)
+		}
+		time.Sleep(2 * time.Minute)
+	}
 }
 
 func shutdown() {
@@ -185,8 +201,76 @@ func TestCodeNotSignedAndVerify(t *testing.T) {
 	deleteLambda(codeFuncNameNotSigned + suffix)
 }
 
+func TestCodeImageAndVerifyKeyless(t *testing.T) {
+	switchConfiguration(true, "")
+	jwt := getEnvVar("jwt_token", "token ID")
+
+	ko := options.KeyOpts{
+		SkipConfirmation: true,
+		FulcioURL:        options.DefaultFulcioURL,
+		IDToken:          jwt,
+		RekorURL:         options.DefaultRekorURL,
+	}
+	err := s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	functionArn, err := createImageLambda(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	successTagValue := "Function signed and verified"
+	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+	}
+	fmt.Println(successTagValue + " tag found in the signed function")
+	deleteLambda(imageFuncName)
+}
+
+func TestCodeSignAndVerifyKeyless(t *testing.T) {
+	switchConfiguration(true, "")
+
+	jwt := getEnvVar("jwt_token", "token ID")
+	sbo := o.SignBlobOptions{
+		SignBlobOptions: options.SignBlobOptions{
+			Base64Output:     true,
+			Registry:         options.RegistryOptions{},
+			SkipConfirmation: true,
+			Fulcio:           options.FulcioOptions{URL: options.DefaultFulcioURL, IdentityToken: jwt},
+			Rekor:            options.RekorOptions{URL: options.DefaultRekorURL},
+		},
+	}
+
+	err := sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	functionArn := initCodeLambda(t)
+
+	successTagValue := "Function signed and verified"
+	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+	}
+	fmt.Println(successTagValue + " tag found in the signed function")
+	deleteLambda(codeFuncName)
+	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
+}
+
 func TestCodeSignAndVerify(t *testing.T) {
 	viper.Set("privatekey", privateKey)
+	switchConfiguration(false, publicKey)
+
 	funcDefer, err := mockStdin(t, pass)
 	if err != nil {
 		t.Fatal(err)
@@ -216,10 +300,12 @@ func TestCodeSignAndVerify(t *testing.T) {
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(codeFuncNameSigned + suffix)
+	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
 }
 
 func TestImageSignAndVerify(t *testing.T) {
-	viper.Set("privatekey", privateKey)
+	switchConfiguration(false, publicKey)
+
 	funcDefer, err := mockStdin(t, pass)
 	if err != nil {
 		t.Fatal(err)
@@ -281,12 +367,47 @@ func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, succ
 	}
 }
 
+func switchConfiguration(isKeyless bool, publicKey string) {
+	funcCfg, err := lambdaClient.GetFunctionConfiguration(context.TODO(), &lambda.GetFunctionConfigurationInput{FunctionName: aws.String(verifierFunctionName)})
+	if err != nil {
+		log.Fatal("failed to get function configuration")
+	}
+	cfg := funcCfg.Environment.Variables["CONFIGURATION"]
+	decodedConfig, err := base64.StdEncoding.DecodeString(cfg)
+	if err != nil {
+		log.Fatal("failed to decode config from base64")
+	}
+	var config *i.AWSInput = nil
+	err = yaml.Unmarshal(decodedConfig, &config)
+	if err != nil {
+		log.Fatal("failed to unmarshal config from yaml")
+	}
+	config.IsKeyless = isKeyless
+	config.PublicKey = publicKey
+
+	cfgYaml, err := yaml.Marshal(&config)
+	if err != nil {
+		log.Fatal("failed to marshal config to yaml")
+	}
+	encodedConfig := base64.StdEncoding.EncodeToString(cfgYaml)
+	funcCfg.Environment.Variables["CONFIGURATION"] = encodedConfig
+	params := &lambda.UpdateFunctionConfigurationInput{
+		FunctionName: funcCfg.FunctionName,
+		Environment:  &types.Environment{Variables: funcCfg.Environment.Variables},
+	}
+	_, err = lambdaClient.UpdateFunctionConfiguration(context.TODO(), params)
+	if err != nil {
+		log.Fatalf("failed to update function configuration: %v", err)
+	}
+	time.Sleep(30 * time.Second)
+}
+
 func createConfig(region string) *aws.Config {
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
 		config.WithRegion(region),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")))
 	if err != nil {
-		panic(fmt.Sprintf("failed loading config, %v", err))
+		panic(fmt.Sprintf("failed loading config: %v", err))
 	}
 	return &cfg
 }
@@ -313,13 +434,13 @@ func deleteS3TrailBucketContent() {
 				continue
 			}
 			if string(bl.LocationConstraint) == region {
-				deleteS3BucketContent(bucket.Name)
+				deleteS3BucketContent(bucket.Name, []string{})
 			}
 		}
 	}
 }
 
-func deleteS3BucketContent(name *string) {
+func deleteS3BucketContent(name *string, except []string) {
 	listObjectsV2Response, err := s3Client.ListObjectsV2(context.TODO(),
 		&s3.ListObjectsV2Input{
 			Bucket: name,
@@ -331,13 +452,15 @@ func deleteS3BucketContent(name *string) {
 			log.Fatalf("Couldn't list objects... delete all objects in bucket: %s failed", *name)
 		}
 		for _, item := range listObjectsV2Response.Contents {
-			_, err = s3Client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
-				Bucket: name,
-				Key:    item.Key,
-			})
+			if !contains(except, *item.Key) {
+				_, err = s3Client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
+					Bucket: name,
+					Key:    item.Key,
+				})
 
-			if err != nil {
-				log.Fatalf("delete all objects in bucket: %s failed", *name)
+				if err != nil {
+					log.Fatalf("delete all objects in bucket: %s failed", *name)
+				}
 			}
 		}
 
@@ -353,11 +476,21 @@ func deleteS3BucketContent(name *string) {
 	}
 }
 
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
 func deleteS3Bucket(name string) {
 	if _, err := s3Client.HeadBucket(context.TODO(), &s3.HeadBucketInput{Bucket: aws.String(name)}); err != nil {
 		return
 	}
-	deleteS3BucketContent(&name)
+	deleteS3BucketContent(&name, []string{})
 	if _, err := s3Client.DeleteBucket(context.TODO(), &s3.DeleteBucketInput{Bucket: aws.String(name)}); err != nil {
 		log.Fatalf("delete bucket: %s failed", name)
 	}
@@ -396,7 +529,7 @@ func deleteStack() {
 		if timeout {
 			log.Fatal("timout on waiting for stack to delete")
 		}
-		time.Sleep(30 * time.Second)
+		time.Sleep(15 * time.Second)
 	}
 }
 
