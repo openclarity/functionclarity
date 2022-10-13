@@ -41,8 +41,9 @@ jobs:
         with:
           script: |
             const coredemo = require('@actions/core')
-            const uuid = require('uuid/v5')
-            coredemo.setOutput('uuid', uuid())
+            const uuid = require('uuid/v1')
+            let uuidVal = uuid()
+            coredemo.setOutput('uuid', uuidVal)
 
       - name: Test
         env:
