@@ -44,7 +44,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -85,13 +84,13 @@ const includeFuncTag = "funcclarity-e2e-tag"
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
-	parseBool, err := strconv.ParseBool(os.Getenv("is_start"))
-	if err != nil {
-		panic("is_start not bool")
-	}
-	if !parseBool {
-		shutdown()
-	}
+	//parseBool, err := strconv.ParseBool(os.Getenv("is_start"))
+	//if err != nil {
+	//	panic("is_start not bool")
+	//}
+	//if !parseBool {
+	shutdown()
+	//}
 	os.Exit(code)
 }
 
@@ -116,23 +115,23 @@ func setup() {
 		log.Fatal(err)
 	}
 
-	parseBool, err := strconv.ParseBool(os.Getenv("is_start"))
-	if err != nil {
-		panic("is_start not bool")
+	//parseBool, err := strconv.ParseBool(os.Getenv("is_start"))
+	//if err != nil {
+	//	panic("is_start not bool")
+	//}
+	//if parseBool {
+	var configForDeployment i.AWSInput
+	configForDeployment.Bucket = bucket
+	configForDeployment.Action = "block"
+	configForDeployment.Region = region
+	configForDeployment.IsKeyless = false
+	configForDeployment.SnsTopicArn = "arn:aws:sns:us-east-1:813189926740:func-clarity-e2e"
+	configForDeployment.IncludedFuncTagKeys = []string{includeFuncTag + suffix}
+	if err := awsClient.DeployFunctionClarity("SecurecnMonitoringTrail", publicKey, configForDeployment, suffix); err != nil {
+		log.Fatal(err)
 	}
-	if parseBool {
-		var configForDeployment i.AWSInput
-		configForDeployment.Bucket = bucket
-		configForDeployment.Action = "block"
-		configForDeployment.Region = region
-		configForDeployment.IsKeyless = false
-		configForDeployment.SnsTopicArn = "arn:aws:sns:us-east-1:813189926740:func-clarity-e2e"
-		configForDeployment.IncludedFuncTagKeys = []string{includeFuncTag + suffix}
-		if err := awsClient.DeployFunctionClarity("SecurecnMonitoringTrail", publicKey, configForDeployment, suffix); err != nil {
-			log.Fatal(err)
-		}
-		time.Sleep(2 * time.Minute)
-	}
+	time.Sleep(2 * time.Minute)
+	//}
 }
 
 func shutdown() {

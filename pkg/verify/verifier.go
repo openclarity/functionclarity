@@ -112,6 +112,7 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 
 func verifyImage(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context) error {
 	imageURI, err := client.GetFuncImageURI(functionIdentifier)
+	fmt.Printf("image uri: %s", imageURI)
 	if err != nil {
 		return fmt.Errorf("failed to fetch function image URI for function: %s: %w", functionIdentifier, err)
 	}
@@ -151,6 +152,7 @@ func verifyImage(client clients.Client, functionIdentifier string, o *options.Ve
 	}
 
 	if err = vc.Exec(ctx, []string{imageURI}); err != nil {
+		fmt.Printf("error in vrify image: %v", err)
 		return VerifyError{Err: fmt.Errorf("image verification error: %w", err)}
 	}
 	return nil
