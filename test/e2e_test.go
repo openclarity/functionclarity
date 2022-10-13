@@ -137,12 +137,12 @@ func setup() {
 }
 
 func shutdown() {
-	deleteS3TrailBucketContent()
-	deleteStack()
-	deleteS3Bucket(bucket)
-	deleteLambda(codeFuncNameSigned + suffix)
-	deleteLambda(codeFuncNameNotSigned + suffix)
-	deleteLambda(imageFuncName + suffix)
+	//deleteS3TrailBucketContent()
+	//deleteStack()
+	//deleteS3Bucket(bucket)
+	//deleteLambda(codeFuncNameSigned + suffix)
+	//deleteLambda(codeFuncNameNotSigned + suffix)
+	//deleteLambda(imageFuncName + suffix)
 }
 
 func TestCodeNotSignedAndVerify(t *testing.T) {
@@ -292,7 +292,7 @@ func TestCodeImageAndVerifyKeyless(t *testing.T) {
 		OIDCProvider:             "",
 		SkipConfirmation:         false,
 	}
-	err := s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
+	err := s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", true, false, "", false)
 	if err != nil {
 		t.Fatal(err)
 	}
