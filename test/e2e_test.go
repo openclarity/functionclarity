@@ -29,15 +29,18 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	sqsTypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/aws/smithy-go"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/integrity"
 	o "github.com/openclarity/function-clarity/pkg/options"
 	"github.com/openclarity/function-clarity/pkg/sign"
+	"github.com/openclarity/function-clarity/pkg/utils"
 	"github.com/sigstore/cosign/cmd/cosign/cli/generate"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
 	s "github.com/sigstore/cosign/cmd/cosign/cli/sign"
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 	"io"
 	"log"
@@ -142,131 +145,131 @@ func shutdown() {
 	deleteLambda(imageFuncName + suffix)
 }
 
-//func TestCodeNotSignedAndVerify(t *testing.T) {
-//	viper.Set("privatekey", privateKey)
-//	switchConfiguration(false, publicKey)
-//	functionArn := initCodeLambda(t, codeFuncNameNotSigned)
-//	success, timeout := findTag(t, functionArn, lambdaClient, utils.FunctionVerifyResultTagKey, utils.FunctionNotSignedTagValue)
-//	if timeout {
-//		t.Fatal("test failed on timout, the required tag not added in the time period")
-//	}
-//	if !success {
-//		t.Fatal("test failure: no " + utils.FunctionNotSignedTagValue + " tag in the signed function")
-//	}
-//	fmt.Println(utils.FunctionNotSignedTagValue + " tag found in the signed function")
-//	concurrencyLevel, err := awsClient.GetConcurrencyLevel(functionArn)
-//	if err != nil {
-//		t.Fatal("failed to get functions concurrency level")
-//	}
-//	if concurrencyLevel == nil {
-//		t.Fatal("concurrency level not set to 0")
-//	}
-//	if *concurrencyLevel != 0 {
-//		t.Fatal("Function not blocked")
-//	}
-//	queueInput := &sqs.GetQueueUrlInput{
-//		QueueName: aws.String("func-clarity-e2e"),
-//	}
-//	GetQueueOutput, err := sqsClient.GetQueueUrl(context.TODO(), queueInput)
-//	if err != nil {
-//		t.Fatal("Failed to get sqs details", err)
-//	}
-//	queueUrl := GetQueueOutput.QueueUrl
-//	GetMessagesInput := &sqs.ReceiveMessageInput{
-//		MessageAttributeNames: []string{
-//			string(sqsTypes.QueueAttributeNameAll),
-//		},
-//		QueueUrl:            queueUrl,
-//		MaxNumberOfMessages: 10,
-//		VisibilityTimeout:   int32(1),
-//	}
-//	receiveMessageOutput, err := sqsClient.ReceiveMessage(context.TODO(), GetMessagesInput)
-//	if err != nil {
-//		t.Fatal("Failed to get sqs messages")
-//	}
-//	foundMessage := false
-//	if receiveMessageOutput.Messages != nil {
-//		for _, message := range receiveMessageOutput.Messages {
-//			if strings.Contains(*message.Body, codeFuncNameNotSigned+suffix) {
-//				foundMessage = true
-//			}
-//		}
-//	} else {
-//		t.Fatal("No messages found in queue")
-//	}
-//	if !foundMessage {
-//		t.Fatal("Message doesn't contain func name.")
-//	}
-//	deleteLambda(codeFuncNameNotSigned + suffix)
-//}
-//
-//func TestCodeSignAndVerify(t *testing.T) {
-//	viper.Set("privatekey", privateKey)
-//	switchConfiguration(false, publicKey)
-//
-//	funcDefer, err := mockStdin(t, pass)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	defer funcDefer()
-//
-//	sbo := o.SignBlobOptions{
-//		SignBlobOptions: options.SignBlobOptions{
-//			Base64Output: true,
-//			Registry:     options.RegistryOptions{},
-//		},
-//	}
-//	err = sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	functionArn := initCodeLambda(t, codeFuncNameSigned)
-//
-//	successTagValue := utils.FunctionSignedTagValue
-//	success, timeout := findTag(t, functionArn, lambdaClient, utils.FunctionVerifyResultTagKey, successTagValue)
-//	if timeout {
-//		t.Fatal("test failed on timout, the required tag not added in the time period")
-//	}
-//	if !success {
-//		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
-//	}
-//	fmt.Println(successTagValue + " tag found in the signed function")
-//	deleteLambda(codeFuncNameSigned + suffix)
-//	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
-//}
-//
-//func TestImageSignAndVerify(t *testing.T) {
-//	switchConfiguration(false, publicKey)
-//
-//	funcDefer, err := mockStdin(t, pass)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	defer funcDefer()
-//
-//	ko := options.KeyOpts{KeyRef: privateKey, PassFunc: passFunc}
-//	err = s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	functionArn, err := createImageLambda(t)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//
-//	successTagValue := "Function signed and verified"
-//	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
-//	if timeout {
-//		t.Fatal("test failed on timout, the required tag not added in the time period")
-//	}
-//	if !success {
-//		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
-//	}
-//	fmt.Println(successTagValue + " tag found in the signed function")
-//	deleteLambda(imageFuncName + suffix)
-//}
+func TestCodeNotSignedAndVerify(t *testing.T) {
+	viper.Set("privatekey", privateKey)
+	switchConfiguration(false, publicKey)
+	functionArn := initCodeLambda(t, codeFuncNameNotSigned)
+	success, timeout := findTag(t, functionArn, lambdaClient, utils.FunctionVerifyResultTagKey, utils.FunctionNotSignedTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + utils.FunctionNotSignedTagValue + " tag in the signed function")
+	}
+	fmt.Println(utils.FunctionNotSignedTagValue + " tag found in the signed function")
+	concurrencyLevel, err := awsClient.GetConcurrencyLevel(functionArn)
+	if err != nil {
+		t.Fatal("failed to get functions concurrency level")
+	}
+	if concurrencyLevel == nil {
+		t.Fatal("concurrency level not set to 0")
+	}
+	if *concurrencyLevel != 0 {
+		t.Fatal("Function not blocked")
+	}
+	queueInput := &sqs.GetQueueUrlInput{
+		QueueName: aws.String("func-clarity-e2e"),
+	}
+	GetQueueOutput, err := sqsClient.GetQueueUrl(context.TODO(), queueInput)
+	if err != nil {
+		t.Fatal("Failed to get sqs details", err)
+	}
+	queueUrl := GetQueueOutput.QueueUrl
+	GetMessagesInput := &sqs.ReceiveMessageInput{
+		MessageAttributeNames: []string{
+			string(sqsTypes.QueueAttributeNameAll),
+		},
+		QueueUrl:            queueUrl,
+		MaxNumberOfMessages: 10,
+		VisibilityTimeout:   int32(1),
+	}
+	receiveMessageOutput, err := sqsClient.ReceiveMessage(context.TODO(), GetMessagesInput)
+	if err != nil {
+		t.Fatal("Failed to get sqs messages")
+	}
+	foundMessage := false
+	if receiveMessageOutput.Messages != nil {
+		for _, message := range receiveMessageOutput.Messages {
+			if strings.Contains(*message.Body, codeFuncNameNotSigned+suffix) {
+				foundMessage = true
+			}
+		}
+	} else {
+		t.Fatal("No messages found in queue")
+	}
+	if !foundMessage {
+		t.Fatal("Message doesn't contain func name.")
+	}
+	deleteLambda(codeFuncNameNotSigned + suffix)
+}
+
+func TestCodeSignAndVerify(t *testing.T) {
+	viper.Set("privatekey", privateKey)
+	switchConfiguration(false, publicKey)
+
+	funcDefer, err := mockStdin(t, pass)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer funcDefer()
+
+	sbo := o.SignBlobOptions{
+		SignBlobOptions: options.SignBlobOptions{
+			Base64Output: true,
+			Registry:     options.RegistryOptions{},
+		},
+	}
+	err = sign.SignAndUploadCode(awsClient, "utils/testing_lambda", &sbo, ro)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	functionArn := initCodeLambda(t, codeFuncNameSigned)
+
+	successTagValue := utils.FunctionSignedTagValue
+	success, timeout := findTag(t, functionArn, lambdaClient, utils.FunctionVerifyResultTagKey, successTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+	}
+	fmt.Println(successTagValue + " tag found in the signed function")
+	deleteLambda(codeFuncNameSigned + suffix)
+	deleteS3BucketContent(&bucket, []string{"function-clarity.zip"})
+}
+
+func TestImageSignAndVerify(t *testing.T) {
+	switchConfiguration(false, publicKey)
+
+	funcDefer, err := mockStdin(t, pass)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer funcDefer()
+
+	ko := options.KeyOpts{KeyRef: privateKey, PassFunc: passFunc}
+	err = s.SignCmd(ro, ko, options.RegistryOptions{}, nil, []string{imageUri}, "", "", true, "", "", "", false, false, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	functionArn, err := createImageLambda(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	successTagValue := "Function signed and verified"
+	success, timeout := findTag(t, functionArn, lambdaClient, "Function clarity result", successTagValue)
+	if timeout {
+		t.Fatal("test failed on timout, the required tag not added in the time period")
+	}
+	if !success {
+		t.Fatal("test failure: no " + successTagValue + " tag in the signed function")
+	}
+	fmt.Println(successTagValue + " tag found in the signed function")
+	deleteLambda(imageFuncName + suffix)
+}
 
 func TestCodeImageAndVerifyKeyless(t *testing.T) {
 	switchConfiguration(true, "")
