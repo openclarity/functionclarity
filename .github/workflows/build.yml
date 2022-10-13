@@ -24,13 +24,13 @@ jobs:
       - name: Build
         run: go build -v ./...
 
-#      - name: Check licenses
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        run: make license-check
-#
-#      - name: Run verification
-#        run: make check
+      - name: Check licenses
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make license-check
+
+      - name: Run verification
+        run: make check
 
       - name: Install required packages
         run: npm install @actions/core@1.6.0 @actions/http-client uuid@^3.3.3
