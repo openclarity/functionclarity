@@ -78,6 +78,6 @@ jobs:
           FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
           jwt_token: ${{ steps.get_id_token.outputs.id_token }}
           COSIGN_EXPERIMENTAL: 1
-#          is_start: false
+          is_start: false
           uuid: ${{ steps.get_uuid.outputs.uuid }}
         run: test/e2e_test_keyless.sh
