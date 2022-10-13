@@ -33,7 +33,7 @@ jobs:
         run: make check
 
       - name: Install required packages
-        run: npm install @actions/core@1.6.0 @actions/http-client @types/uuid
+        run: npm install @actions/core@1.6.0 @actions/http-client uuid@^3.3.3
 
       - name: Generate uuid
         uses: actions/github-script@v6
