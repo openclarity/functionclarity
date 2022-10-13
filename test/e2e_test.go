@@ -133,12 +133,12 @@ func setup() {
 }
 
 func shutdown() {
-	deleteS3TrailBucketContent()
-	deleteStack()
-	deleteS3Bucket(bucket)
+	//deleteS3TrailBucketContent()
+	//deleteStack()
+	//deleteS3Bucket(bucket)
 	deleteLambda(codeFuncNameSigned + suffix)
 	deleteLambda(codeFuncNameNotSigned + suffix)
-	deleteLambda(imageFuncName + suffix)
+	//deleteLambda(imageFuncName + suffix)
 }
 
 //func TestCodeNotSignedAndVerify(t *testing.T) {
