@@ -32,6 +32,18 @@ jobs:
       - name: Run verification
         run: make check
 
+      - name: Install required packages
+        run: npm install @actions/core@1.6.0 @actions/http-client @types/uuid
+
+      - name: Generate uuid
+        uses: actions/github-script@v6
+        id: get_uuid
+        with:
+          script: |
+            const coredemo = require('@actions/core')
+            const uuid = require('@types/uuid')
+            coredemo.setOutput('uuid', uuid())
+
       - name: Test
         env:
           ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
@@ -43,10 +55,9 @@ jobs:
           jwt_token2: ${{ steps.get_id_token.outputs.id_token2 }}
           COSIGN_EXPERIMENTAL: 0
           is_start: true
+          uuid: ${{ steps.get_uuid.outputs.uuid }}
         run: test/e2e_test.sh
 
-      - name: Install OIDC Client from Core Package
-        run: npm install @actions/core@1.6.0 @actions/http-client
       - name: Get IdToken
         uses: actions/github-script@v6
         id: get_id_token
@@ -65,4 +76,5 @@ jobs:
           jwt_token: ${{ steps.get_id_token.outputs.id_token }}
           COSIGN_EXPERIMENTAL: 1
           is_start: false
+          uuid: ${{ steps.get_uuid.outputs.uuid }}
         run: test/e2e_test_keyless.sh
