@@ -60,6 +60,7 @@ jobs:
         run: test/e2e_test.sh
 
       - name: Get IdToken
+        if: always()
         uses: actions/github-script@v6
         id: get_id_token
         with:
@@ -68,6 +69,7 @@ jobs:
             let id_token = await coredemo.getIDToken("sigstore")   
             coredemo.setOutput('id_token', id_token)
       - name: KeylessTest
+        if: always()
         env:
           ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
