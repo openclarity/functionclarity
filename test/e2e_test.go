@@ -60,7 +60,7 @@ const (
 	publicKey             = "cosign.pub"
 	privateKey            = "cosign.key"
 	pass                  = "pass"
-	verifierFunctionName  = "FunctionClarityLambdaVerifier"
+	verifierFunctionName  = "FunctionClarityLambda"
 )
 
 var awsClient *clients.AwsClient
@@ -369,7 +369,7 @@ func findTag(t *testing.T, functionArn string, lambdaClient *lambda.Client, succ
 }
 
 func switchConfiguration(isKeyless bool, publicKey string) {
-	funcCfg, err := lambdaClient.GetFunctionConfiguration(context.TODO(), &lambda.GetFunctionConfigurationInput{FunctionName: aws.String(verifierFunctionName)})
+	funcCfg, err := lambdaClient.GetFunctionConfiguration(context.TODO(), &lambda.GetFunctionConfigurationInput{FunctionName: aws.String(verifierFunctionName + suffix)})
 	if err != nil {
 		log.Fatal("failed to get function configuration")
 	}
