@@ -29,8 +29,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.LICENSE_TOKEN }}
         run: make license-check
 
-      - name: Run verification
-        run: make check
+#      - name: Run verification
+#        run: make check
 
       - name: Install required packages
         run: npm install @actions/core@1.6.0 @actions/http-client uuid@^3.3.3
