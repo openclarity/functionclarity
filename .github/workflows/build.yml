@@ -41,7 +41,7 @@ jobs:
         with:
           script: |
             const coredemo = require('@actions/core')
-            const uuid = require('@types/uuid')
+            const uuid = require('uuid/v5')
             coredemo.setOutput('uuid', uuid())
 
       - name: Test
