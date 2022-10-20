@@ -26,11 +26,24 @@ jobs:
 
       - name: Check licenses
         env:
-          GITHUB_TOKEN: ${{ secrets.LICENSE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: make license-check
 
       - name: Run verification
         run: make check
+
+      - name: Install required packages
+        run: npm install @actions/core@1.6.0 @actions/http-client uuid@^3.3.3
+
+      - name: Generate uuid
+        uses: actions/github-script@v6
+        id: get_uuid
+        with:
+          script: |
+            const coredemo = require('@actions/core')
+            const uuid = require('uuid/v1')
+            let uuidVal = uuid()
+            coredemo.setOutput('uuid', uuidVal)
 
       - name: Test
         env:
@@ -43,11 +56,11 @@ jobs:
           jwt_token2: ${{ steps.get_id_token.outputs.id_token2 }}
           COSIGN_EXPERIMENTAL: 0
           is_start: true
+          uuid: ${{ steps.get_uuid.outputs.uuid }}
         run: test/e2e_test.sh
 
-      - name: Install OIDC Client from Core Package
-        run: npm install @actions/core@1.6.0 @actions/http-client
       - name: Get IdToken
+        if: always()
         uses: actions/github-script@v6
         id: get_id_token
         with:
@@ -56,6 +69,7 @@ jobs:
             let id_token = await coredemo.getIDToken("sigstore")   
             coredemo.setOutput('id_token', id_token)
       - name: KeylessTest
+        if: always()
         env:
           ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
@@ -65,4 +79,5 @@ jobs:
           jwt_token: ${{ steps.get_id_token.outputs.id_token }}
           COSIGN_EXPERIMENTAL: 1
           is_start: false
+          uuid: ${{ steps.get_uuid.outputs.uuid }}
         run: test/e2e_test_keyless.sh

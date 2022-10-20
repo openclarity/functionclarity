@@ -412,13 +412,13 @@ func (o *AwsClient) GetEcrToken() (*ecr.GetAuthorizationTokenOutput, error) {
 	return output, nil
 }
 
-func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, deploymentConfig i.AWSInput) error {
+func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, deploymentConfig i.AWSInput, suffix string) error {
 	cfg := o.getConfig()
 	if err := uploadFuncClarityCode(cfg, keyPath, deploymentConfig.Bucket); err != nil {
 		return fmt.Errorf("failed to upload function clarity code: %w", err)
 	}
 	cloudformationClient := cloudformation.NewFromConfig(*cfg)
-	const funcClarityStackName = "function-clarity-stack"
+	funcClarityStackName := "function-clarity-stack" + suffix
 	stackExists, err := stackExists(funcClarityStackName, cloudformationClient)
 	if err != nil {
 		return fmt.Errorf("failed to check if stack exists: %w", err)
@@ -427,7 +427,7 @@ func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, depl
 		return fmt.Errorf("function clarity already deployed, please delete stack before you dpeloy")
 	}
 
-	err, stackCalculatedTemplate := calculateStackTemplate(trailName, cfg, deploymentConfig)
+	err, stackCalculatedTemplate := calculateStackTemplate(trailName, cfg, deploymentConfig, suffix)
 	if err != nil {
 		return err
 	}
@@ -534,7 +534,7 @@ func (o *AwsClient) FillNotificationDetails(notification *Notification, function
 	return nil
 }
 
-func calculateStackTemplate(trailName string, cfg *aws.Config, config i.AWSInput) (error, string) {
+func calculateStackTemplate(trailName string, cfg *aws.Config, config i.AWSInput, suffix string) (error, string) {
 	templateFile := "unified-template.template"
 	content, err := os.ReadFile(templateFile)
 	if err != nil {
@@ -552,6 +552,7 @@ func calculateStackTemplate(trailName string, cfg *aws.Config, config i.AWSInput
 		return fmt.Errorf("failed to create template. %v", err), ""
 	}
 	encodedConfig := b64.StdEncoding.EncodeToString(serConfig)
+	data["suffix"] = suffix
 	data["config"] = encodedConfig
 	if trailName == "" {
 		data["withTrail"] = "True"
