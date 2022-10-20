@@ -25,6 +25,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation"
+	"github.com/aws/aws-sdk-go-v2/service/ecr"
+	et "github.com/aws/aws-sdk-go-v2/service/ecr/types"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -57,6 +59,7 @@ const (
 	codeFuncNameNotSigned = "e2eTestCodeNotSigned"
 	imageFuncName         = "e2eTestImage"
 	role                  = "arn:aws:iam::813189926740:role/e2eTest"
+	repoName              = "helloworld"
 	imageUri              = "813189926740.dkr.ecr.us-east-1.amazonaws.com/helloworld:v1"
 	publicKey             = "cosign.pub"
 	privateKey            = "cosign.key"
@@ -69,6 +72,7 @@ var lambdaClient *lambda.Client
 var formationClient *cloudformation.Client
 var sqsClient *sqs.Client
 var s3Client *s3.Client
+var ecrClient *ecr.Client
 
 var keyPass = []byte(pass)
 var suffix string
@@ -112,6 +116,7 @@ func setup() {
 	formationClient = cloudformation.NewFromConfig(*cfg)
 	sqsClient = sqs.NewFromConfig(*cfg)
 	s3Client = s3.NewFromConfig(*cfg)
+	ecrClient = ecr.NewFromConfig(*cfg)
 
 	if err := integrity.InitDocker(awsClient); err != nil {
 		log.Fatal(err)
@@ -269,6 +274,7 @@ func TestImageSignAndVerify(t *testing.T) {
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(imageFuncName + suffix)
+	cleanupImages()
 }
 
 func TestCodeImageAndVerifyKeyless(t *testing.T) {
@@ -312,6 +318,7 @@ func TestCodeImageAndVerifyKeyless(t *testing.T) {
 	}
 	fmt.Println(successTagValue + " tag found in the signed function")
 	deleteLambda(imageFuncName + suffix)
+	cleanupImages()
 }
 
 func TestCodeSignAndVerifyKeyless(t *testing.T) {
@@ -551,6 +558,23 @@ func deleteLambda(name string) {
 		FunctionName: &name,
 	}
 	lambdaClient.DeleteFunction(context.TODO(), deleteArgs) //nolint:errcheck
+}
+
+func cleanupImages() {
+	images, err := ecrClient.ListImages(context.TODO(), &ecr.ListImagesInput{RepositoryName: aws.String(repoName)})
+	if err != nil {
+		log.Fatal("Failed to get list of images", err)
+	}
+	var imageIds []et.ImageIdentifier
+	for _, imageId := range images.ImageIds {
+		imageTag := *imageId.ImageTag
+		if imageTag != "v1" && imageTag != "v2" {
+			imageIds = append(imageIds, imageId)
+		}
+	}
+	if _, err := ecrClient.BatchDeleteImage(context.TODO(), &ecr.BatchDeleteImageInput{RepositoryName: aws.String(repoName), ImageIds: imageIds}); err != nil {
+		log.Fatal("Failed to delete images", err)
+	}
 }
 
 func initCodeLambda(t *testing.T, funcName string) string {
