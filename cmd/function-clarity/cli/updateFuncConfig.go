@@ -13,23 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package init
+package cli
 
-type AWSInput struct {
-	AccessKey           string
-	SecretKey           string
-	Region              string
-	Bucket              string
-	Action              string
-	PublicKey           string
-	PrivateKey          string
-	CloudTrail          CloudTrail
-	IsKeyless           bool
-	SnsTopicArn         string
-	IncludedFuncTagKeys []string
-	IncludedFuncRegions []string
-}
+import (
+	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/aws"
+	"github.com/spf13/cobra"
+)
 
-type CloudTrail struct {
-	Name string
+func UpdateFuncConfig() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "update-func-config",
+		Short: "Update verifier function runtime settings",
+	}
+	cmd.AddCommand(aws.AwsUpdateFuncConfig())
+	return cmd
 }

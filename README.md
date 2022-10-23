@@ -1,63 +1,70 @@
 ![image](https://user-images.githubusercontent.com/109651023/189649537-95638785-618f-4c74-93af-2cafedec2f07.png)
+
 FunctionClarity (a.k.a FC) is a code integrity solution for serverless functions, allowing users to sign and verify the function's code integrity prior to its execution in cloud accounts. The solution consist of a cli tool complemented by a cloud specific infrastructure to perform the signature validation. The solution is designed to be used in the CI/CD process of the function's creation prior to its upload to the cloud repository complemented by a (serverless) validation infrastructure to be used in the cloud accouts.
+This version supports AWS only.
 
 ## How does it works
 
 ![Untitled Diagram(1) drawio (1)](https://user-images.githubusercontent.com/109651023/189673319-5c66fb32-98f5-430c-a01f-4823ab51fc98.png)
 
-* Deploy FunctionClarity infrastructure (one time operation) which will result in FunctionClarity ecosystem deployed in the user's cloud account
-* Using the FunctionClarity cli, run code/image signing on user's environment - at this phase the code/image signature is uploaded to the cloud
-* Deploy the serverless function using the signed code/image content from the previous step
-* Verifier lambda is triggered upon create-function/update-function code events and performs the following:
-  * Fetch the verified function code
-  * Analyse the code image/zip
-  * Check whether it is signed by FunctionClarity and act accordingly:
+* Deploy FunctionClarity – deploy FunctionClarity function to the user cloud account (a one time operation); these functions scan and verify user functions when created or updated
+* Sign functions  - use the FunctionClarity CLI to sign the function code or image in the user’s environment, and then upload it to the user cloud account
+* Deploy the serverless function - using the signed function code/image 
+* Verify functions -  the FunctionClarity verifier function is triggered when user functions are created or updated, and does the following:
+  * Fetches the function code from the cloud account to the local machine
+  * Verifies the signature of the function code image or zip file
+  * Follows one of these actions, based on the verification results:
     * Detect - marks the function with the verification results
-    * Block - block the function from running in case its not verified
-    * Notify - send notification to queue
----
+    * Block - tags the function as 'blocked', if the signature is not correctly verified, otherwise does nothing
+    * Notify - sends a notification of the verification results to an SNS queue
 
-**NOTE**:
-At the moment only AWS cloud provider is supported, additional cloud providers will be added over time
-  
----
+If a function is tagged as blocked, it will be prevented from being run by AWS when it is invoked.
 
-## Install FuctionClarity
-<TBD>
+## Download FunctionClarity
+Go to the [function clarity latest release](https://github.com/openclarity/functionclarity/releases/latest):
+* Create a folder, download
+* Download ```aws_function.tar.gz``` for your OS, and extract it to the folder
 
 ## Quick start
-We'll be using an AWS account, and show how to:
+This section explains how to get started using FunctionClarity. These steps are involved:
+
 * Initialize and deploy FunctionClarity
-* Sign and upload Serverless functions' code
-* create new AWS functions
-* Check function verification
+* Sign and upload srverless function code
+* Sign and verify new AWS functions
+* Verify functions:
   * From the cloud account
-  * From FunctionClarity command line
+  * From the FunctionClarity command line
 
 ### Initialize and deploy FunctionClarity
-The command prompts the user to enter information regarding the installation of FunctionClarity.
-When this command will finish to run, FunctionClarity will be deployed to your AWS account and a configuration file will be created locally under ~/.fc, the default values for the sign/verify commands will be taken from this config file unless flags are supplied.
-```shell
-./function-clarity init AWS
-enter Access Key: ********
-enter Secret Key: ********
-enter region: 
-enter default bucket (you can leave empty and a bucket with name functionclarity will be created):
-select post verification action : (1) for detect; (2) for block; leave empty for no post verification action to perform: 1
-is there existing trail in CloudTrail which you would like to use? (if no, please press enter): 
-do you want to work in keyless mode (y/n): n
-enter path to custom public key for code signing? (if you want us to generate key pair, please press enter): 
-Enter password for private key:
-Enter password for private key again:
-File cosign.key already exists. Overwrite (y/n)? y
+Follow these  steps from a command line, to install FunctionClarity in your AWS account.
+Run the command from the folder in which the FunctionClarity tar file is located.
+As part of the deployment, a verifier function will be deployed in your cloud account, which will be triggered when lambda functions are created or updated in the account. This function  verifies function identities and signatures, according to the FunctionClarity settings.
+A configuration file will also be created locally, in ```~/.fc```, with default values that are used  when signing or verifying functions, unless specific settings are set with command line flags.
 
-Private key written to cosign.key
-Public key written to cosign.pub
-deployment finished successfully
+1.	Run the command ```./function-clarity init AWS```
+2.	When prompted, enter the following details:
+```
+    enter Access Key: ********
+    enter Secret Key: ********
+    enter region: 
+    enter default bucket (you can leave empty and a bucket with name functionclarity will be created):
+    select post verification action : (1) for detect; (2) for block; leave empty for no post verification action to perform: 1
+    is there existing trail in CloudTrail which you would like to use? (if no, please press enter): 
+    do you want to work in keyless mode (y/n): n
+    enter path to custom public key for code signing? (if you want us to generate key pair, please press enter): 
+    Enter password for private key:
+    Enter password for private key again:
+    File cosign.key already exists. Overwrite (y/n)? y 
+```
+3.	The installation process will continue, until complete:
+```
+    Private key written to cosign.key
+    Public key written to cosign.pub
+    deployment finished successfully
 ```
 
-### Sign code
-The command below will sign a folder containing code and upload it to the user's cloud account
+### Sign function code
+Use the command below to  sign a folder containing function code, and then upload it to the user cloud account.
 
 ```shell
 ./function-clarity sign AWS code /sample-code-verified-folder
@@ -67,89 +74,112 @@ Enter password for private key:
 MEYCIQDskDWwLEURdALycGH/ntCRjA5G74yJ/qeSDzHTQSRY8gIhALE6Z5XW/iyjz++rzrdhzskPwfwW2gAMjK1H9lCXOGom
 Code uploaded successfully
 ```
-### Deploy function or update function code
-Use AWS cli to deploy lambda or update lambda code
+### Deploy a function or update function code
+Use AWS cli to deploy a signed lambda function to your cloud account, or to  update lambda code in the account
+
 ### Verify function code
-If you completed "init and deployment" step a verifier function runs in your cloud account and handles CreateFunction/UpdateFunctionCode events, after several minutes your lambda function, in case you chose detect action for "post verification action", will be tagged with FunctionClarity message that the function is verified:
+
+#### Verify automatically on function create or update events
+
+If the verifier function is deployed in your account, any function create or update event will trigger it to verify the new or updated function. It will follow the post-verification action (detect, block, or notify). 
+
+If the action is 'detect', the function will be tagged with the FunctionClarity message that the function is verified:
 
 ![image](https://user-images.githubusercontent.com/109651023/189880644-bed91413-a81c-4b03-b6f8-00ebea6606a0.png)
 
-You can also use the cli to perform manual verification of a function:
+#### Verify manually
+You can also use the CLI to manually verify a function. In this case, the function is downloaded from the cloud account, and then verified locally.
+
 ```shell
 ./function-clarity verify aws funcclarity-test-signed --function-region=us-east-2
 using config file: /Users/john/.fc
 Verified OK
 ```
 
-## Advanced usage
-FunctionClarity includes several features, we will elaborate on the commands and its usage.
-FunctionClarity leverages [cosign](https://github.com/sigstore/cosign) for signing and verifying code, we support key-pair and keyless signing techniques.
+## Advanced use
+FunctionClarity includes several advanced commands and features, which are described below.
 
-### Init command detailed usage
-#### AWS
-| Input | Description |
-| --- | --- |
-| access key | AWS access key |
-| secret key | AWS secret key |
-| region | region to deploy FunctionClarity |
-| default bucket | bucket to deploy code signatures and FunctionClarity verifier lambda code for the deployment |
-| post verification action | action to perform upon validation results (detect, block or leave empty for no action to perform) |
-| sns arn | in case you would like to notify to an sns queue in case function is not verified |
-| CloudTrail | cloud trail to use, can be empty and a new trail will be created |
-| keyless mode (y/n) | select whether you would like to work in keyless mode |
-| public key for code signing | path to public key to use when verifying functions, can leave empty and a key-pair will be created |
-| privte key for code signing | in case a public key path was entered, supply the corresponding private key path |
+FunctionClarity leverages [cosign](https://github.com/sigstore/cosign) to sign and verify, code, for both  key-pair and keyless signing techniques.
 
+### Init command detailed use
+```shell
+function-clarity init aws
+```
+| Argument                       | Description                                                                                        |
+|-----------------------------|----------------------------------------------------------------------------------------------------|
+| access key                  | AWS access key                                                                                     |
+| secret key                  | AWS secret key                                                                                     |
+| region                      | AWS region in which to deploy FunctionClarity                                                                   |
+| default bucket              | AWS bucket in which to deploy code signatures and FunctionClarity verifier lambda code for the deployment       |
+| post verification action    | action to perform after verification (detect, block, or notify;  leave empty for no action to be performed)  |
+| sns arn                     | for the 'notify' action,  an SNS queue for notifications if verification fails                  |
+| CloudTrail                  | AWS cloudtrail to use; if  empty a new trail will be created                                   |
+| keyless mode (y/n)          | work in keyless mode                                              |
+| public key for code signing | path to public key to use when verifying functions; if blank a new key-pair will be created |
+| privte key for code signing | private key path; used only if a public key path is also supplied                   |
 
-### Sign command detailed usage
-FunctionClarity supports signing of code from local folders and images.
-When signing images, make sure you are logged in to the docker repository where your images deployed.
+| Flag               | Description                                                             |
+|--------------------|-------------------------------------------------------------------------|
+| only-create-config | determine whether to only create config file without actually deploying |
+
+### Deploy command detailed use
+The ```deploy``` command does the same as ```init```, but it uses the config file, so you don't
+need to supply parameters  using the command line
+```shell
+function-clarity deploy aws
+```
+
+### Sign command detailed use
+FunctionClarity supports signing  code from local folders and images.
+When signing images, you must be logged in to the docker repository where your images deployed.
+
 
 ---
 
 **NOTE**:
-In case a default config file exists (under ~/.fc) it will be used, if a custom config file flag is presented it will be used, if flags are presented that will take precedence.
+If  a default config file exists (in  ```~/.fc```) it will be used. If a custom config file flag is included in the command line, it will be used instead of the default file. If flags are included in the command line, they will be used and take precedence.
 
 ---
-#### AWS
-For code signing use the command:
+### Examples
+To sign code, use this command:
 ```shell
-function-clarity sign aws code <folder to sign> --flags (optional if you have configuration file)
+function-clarity sign aws code <file/folder to sign> --flags (optional if you have configuration file)
 ```
-For image singing use the command:
+To sign images,  use this command:
 ```shell
 function-clarity sign aws image <image url> --flags (optional if you have configuration file)
 ```
-below is the optional flags that the command uses.
-| flag | Description |
-| --- | --- |
-| access key | AWS access key |
-| secret key | AWS secret key |
-| region | region to deploy signature (relevant only for code signing) |
-| bucket | bucket to deploy code signature (relevant only for code signing)|
-| privatekey | key to sign code with |
+These are  optional flags for the ```sign```  command:
+
+| flag       | Description                                                      |
+|------------|------------------------------------------------------------------|
+| access key | AWS access key                                                   |
+| secret key | AWS secret key                                                   |
+| region     | AWS region in which to deploy signature (relevant only for code signing)      |
+| bucket     | AWS bucket in which to deploy code signature (relevant only for code signing) |
+| privatekey | key to use to sign code                                            |
 
 
-### Verify command detailed usage
+### Verify command detailed use
 
 ---
 
 **NOTE**:
-In case a default config file exists (under ~/.fc) it will be used, if a custom config file flag is presented it will be used, if flags are presented that will take precedence.
+If  a default config file exists (in  ```~/.fc```) it will be used. If a custom config file flag is included in the command line, it will be used instead of the default file. If flags are included in the command line, they will be used and take precedence.
 
 ---
 
-#### AWS
 Command for verification
 ```shell
 function-clarity verify aws <function name to verify> --function-region=<function region location> --flags (optional if you have configuration file)
 ```
 
-below is the optional flags that the command uses.
-| flag | Description |
-| --- | --- |
-| access key | AWS access key |
-| secret key | AWS secret key |
-| region | region to load the signature from (relevant only for code signing) |
-| bucket | bucket to load signatures from (relevant only for code signing) |
-| key | public key for verification |
+These are  optional flags for the ```verify``` command:
+
+| flag       | Description                                                        |
+|------------|--------------------------------------------------------------------|
+| access key | AWS access key                                                     |
+| secret key | AWS secret key                                                     |
+| region     | AWS region from which  to load the signature from (relevant only for code signing) |
+| bucket     | AWS bucket from which to load signatures from (relevant only for code signing)    |
+| key        | public key for verification                                        |

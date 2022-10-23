@@ -7,28 +7,43 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
+    permissions:
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
+          check-latest: true
+          cache: true
 
       - name: Build
         run: go build -v ./...
 
       - name: Check licenses
         env:
-          GITHUB_TOKEN: ${{ secrets.LICENSE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: make license-check
 
       - name: Run verification
         run: make check
+
+      - name: Install required packages
+        run: npm install @actions/core@1.6.0 @actions/http-client uuid@^3.3.3
+
+      - name: Generate uuid
+        uses: actions/github-script@v6
+        id: get_uuid
+        with:
+          script: |
+            const coredemo = require('@actions/core')
+            const uuid = require('uuid/v1')
+            let uuidVal = uuid()
+            coredemo.setOutput('uuid', uuidVal)
 
       - name: Test
         env:
@@ -37,4 +52,32 @@ jobs:
           BUCKET: ${{ secrets.BUCKET }}
           REGION: ${{ secrets.REGION }}
           FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
+          jwt_token: ${{ steps.get_id_token.outputs.id_token }}
+          jwt_token2: ${{ steps.get_id_token.outputs.id_token2 }}
+          COSIGN_EXPERIMENTAL: 0
+          is_start: true
+          uuid: ${{ steps.get_uuid.outputs.uuid }}
         run: test/e2e_test.sh
+
+      - name: Get IdToken
+        if: always()
+        uses: actions/github-script@v6
+        id: get_id_token
+        with:
+          script: |
+            const coredemo = require('@actions/core')
+            let id_token = await coredemo.getIDToken("sigstore")   
+            coredemo.setOutput('id_token', id_token)
+      - name: KeylessTest
+        if: always()
+        env:
+          ACCESS_KEY: ${{ secrets.ACCESS_KEY }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          BUCKET: ${{ secrets.BUCKET }}
+          REGION: ${{ secrets.REGION }}
+          FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
+          jwt_token: ${{ steps.get_id_token.outputs.id_token }}
+          COSIGN_EXPERIMENTAL: 1
+          is_start: false
+          uuid: ${{ steps.get_uuid.outputs.uuid }}
+        run: test/e2e_test_keyless.sh

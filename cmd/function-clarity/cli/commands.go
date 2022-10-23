@@ -34,6 +34,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(cli.ImportKeyPair())
 	cmd.AddCommand(Init())
 	cmd.AddCommand(Deploy())
+	cmd.AddCommand(UpdateFuncConfig())
 	cobra.OnInitialize(options.CobraInit)
 	return cmd
 }
