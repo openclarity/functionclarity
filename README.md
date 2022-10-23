@@ -5,7 +5,7 @@ This version supports AWS only.
 
 ## How it works
 
-![Untitled Diagram(1) drawio (1)](https://user-images.githubusercontent.com/109651023/189673319-5c66fb32-98f5-430c-a01f-4823ab51fc98.png)
+![FunctionClarity Diagram](https://user-images.githubusercontent.com/36041037/197404138-7d018fca-8076-4611-bb79-bfd44634af0f.png)
 
 * Deploy FunctionClarity – deploy FunctionClarity function to the user cloud account (a one time operation); these functions scan and verify user functions when created or updated
 * Sign functions  - use the FunctionClarity CLI to sign the function code or image in the user’s environment, and then upload it to the user cloud account
