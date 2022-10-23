@@ -567,8 +567,7 @@ func cleanupImages() {
 	}
 	var imageIds []et.ImageIdentifier
 	for _, imageId := range images.ImageIds {
-		imageTag := *imageId.ImageTag
-		if imageTag != "v1" && imageTag != "v2" {
+		if *imageId.ImageTag != "v1" && *imageId.ImageTag != "v2" {
 			imageIds = append(imageIds, imageId)
 		}
 	}
