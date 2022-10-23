@@ -23,6 +23,8 @@ type Notification struct {
 	Region             string
 }
 
+const ConfigEnvVariableName = "CONFIGURATION"
+
 type Client interface {
 	ResolvePackageType(funcIdentifier string) (string, error)
 	GetFuncCode(funcIdentifier string) (string, error)

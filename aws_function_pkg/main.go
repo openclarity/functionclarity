@@ -92,7 +92,7 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 
 func shouldHandleEvent(recordMessage RecordMessage) bool {
 	return (strings.Contains(recordMessage.EventName, "CreateFunction") || strings.Contains(recordMessage.EventName, "UpdateFunctionCode")) &&
-		"FunctionClarityLambdaVerifier" != recordMessage.ResponseElements.FunctionName && "" != recordMessage.ResponseElements.FunctionName
+		clients.FunctionClarityLambdaVerierName != recordMessage.ResponseElements.FunctionName && "" != recordMessage.ResponseElements.FunctionName
 }
 
 func handleFunctionEvent(recordMessage RecordMessage, tagKeysFilter []string, regionsFilter []string, ctx context.Context) {
@@ -113,7 +113,7 @@ func handleFunctionEvent(recordMessage RecordMessage, tagKeysFilter []string, re
 }
 
 func initConfig() error {
-	envConfig := os.Getenv("CONFIGURATION")
+	envConfig := os.Getenv(clients.ConfigEnvVariableName)
 	log.Printf("config: %s", envConfig)
 	decodedConfig, err := base64.StdEncoding.DecodeString(envConfig)
 	if err != nil {

@@ -16,7 +16,7 @@
             "CONFIGURATION": "{{.config}}"
           }
         },
-        "FunctionName": "FunctionClarityLambdaVerifier",
+        "FunctionName": "FunctionClarityLambda{{.suffix}}",
         "Handler": "function-clarity",
         "PackageType": "Zip",
         "MemorySize": 1024,
@@ -93,7 +93,7 @@
       "Type": "AWS::Lambda::Permission",
       {{if .withTrail -}}"DependsOn": "FunctionClarityLogGroup",{{- else}} "DependsOn": "FunctionClarityLambdaVerifier",{{- end}}
       "Properties" : {
-        "FunctionName": "FunctionClarityLambdaVerifier",
+        "FunctionName": "FunctionClarityLambda{{.suffix}}",
         "Action" : "lambda:InvokeFunction",
         "Principal": { "Fn::Sub": "logs.${AWS::Region}.amazonaws.com"},
         "SourceArn": {{if .withTrail -}}

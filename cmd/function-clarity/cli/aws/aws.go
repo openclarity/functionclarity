@@ -129,7 +129,7 @@ func AwsInit() *cobra.Command {
 			}
 			if !onlyCreateConfig {
 				awsClient := clients.NewAwsClientInit(input.AccessKey, input.SecretKey, input.Region)
-				err = awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey, configForDeployment)
+				err = awsClient.DeployFunctionClarity(input.CloudTrail.Name, input.PublicKey, configForDeployment, "")
 				if err != nil {
 					return fmt.Errorf("failed to deploy function clarity: %w", err)
 				}
@@ -174,7 +174,7 @@ func AwsDeploy() *cobra.Command {
 			configForDeployment.IncludedFuncTagKeys = viper.GetStringSlice("includedfunctagkeys")
 			configForDeployment.IncludedFuncRegions = viper.GetStringSlice("includedfuncregions")
 			awsClient := clients.NewAwsClientInit(viper.GetString("accesskey"), viper.GetString("secretkey"), viper.GetString("region"))
-			err := awsClient.DeployFunctionClarity(viper.GetString("cloudtrail.name"), viper.GetString("publickey"), configForDeployment)
+			err := awsClient.DeployFunctionClarity(viper.GetString("cloudtrail.name"), viper.GetString("publickey"), configForDeployment, "")
 			if err != nil {
 				return fmt.Errorf("failed to deploy function clarity: %w", err)
 			}
@@ -182,4 +182,78 @@ func AwsDeploy() *cobra.Command {
 		},
 	}
 	return cmd
+}
+
+func AwsUpdateFuncConfig() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "aws",
+		Short: "update verifier function runtime configuration",
+		Long: "update verifier function runtime configuration, the following configurations can be updated:\n" +
+			"- included functions tags\n" +
+			"- included functions regions\n" +
+			"- sns topic arn\n" +
+			"- action",
+		Args: cobra.NoArgs,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := viper.BindPFlag("accessKey", cmd.Flags().Lookup("aws-access-key")); err != nil {
+				return fmt.Errorf("error binding accessKey: %w", err)
+			}
+			if err := viper.BindPFlag("secretKey", cmd.Flags().Lookup("aws-secret-key")); err != nil {
+				return fmt.Errorf("error binding secretKey: %w", err)
+			}
+			if err := viper.BindPFlag("region", cmd.Flags().Lookup("region")); err != nil {
+				return fmt.Errorf("error binding region: %w", err)
+			}
+			if err := viper.BindPFlag("action", cmd.Flags().Lookup("action")); err != nil {
+				return fmt.Errorf("error binding action: %w", err)
+			}
+			if err := viper.BindPFlag("includedfunctagkeys", cmd.Flags().Lookup("included-func-tags")); err != nil {
+				return fmt.Errorf("error binding action: %w", err)
+			}
+			if err := viper.BindPFlag("includedfuncregions", cmd.Flags().Lookup("included-func-regions")); err != nil {
+				return fmt.Errorf("error binding action: %w", err)
+			}
+			if err := viper.BindPFlag("snsTopicArn", cmd.Flags().Lookup("sns-topic-arn")); err != nil {
+				return fmt.Errorf("error binding snsTopicArn: %w", err)
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			awsClient := clients.NewAwsClientInit(viper.GetString("accesskey"), viper.GetString("secretkey"), viper.GetString("region"))
+			includedFuncTagKeysStringArray := viper.GetStringSlice("includedfunctagkeys")
+			includedFuncTagKeys := &includedFuncTagKeysStringArray
+			if !viper.IsSet("includedfunctagkeys") && !cmd.Flags().Lookup("included-func-tags").Changed {
+				includedFuncTagKeys = nil
+			}
+			actionString := viper.GetString("action")
+			action := &actionString
+			if !viper.IsSet("action") && !cmd.Flags().Lookup("action").Changed {
+				action = nil
+			}
+			includedFuncRegionsStringArray := viper.GetStringSlice("includedfuncregions")
+			includedFuncRegions := &includedFuncRegionsStringArray
+			if !viper.IsSet("includedfuncregions") && !cmd.Flags().Lookup("included-func-regions").Changed {
+				includedFuncRegions = nil
+			}
+			topicString := viper.GetString("snsTopicArn")
+			topic := &topicString
+			if !viper.IsSet("snsTopicArn") && !cmd.Flags().Lookup("sns-topic-arn").Changed {
+				topic = nil
+			}
+			return awsClient.UpdateVerifierFucConfig(action, includedFuncTagKeys,
+				includedFuncRegions, topic)
+		},
+	}
+	initAwsUpdateConfigFlags(cmd)
+	return cmd
+}
+
+func initAwsUpdateConfigFlags(cmd *cobra.Command) {
+	cmd.Flags().String("aws-access-key", "", "aws access key")
+	cmd.Flags().String("aws-secret-key", "", "aws secret key")
+	cmd.Flags().String("region", "", "aws region where function clarity is deployed")
+	cmd.Flags().String("action", "", "action to perform upon validation result")
+	cmd.Flags().StringSlice("included-func-tags", []string{}, "function tags to include when verifying")
+	cmd.Flags().StringSlice("included-func-regions", []string{}, "function regions to include when verifying")
+	cmd.Flags().String("sns-topic-arn", "", "SNS topic ARN for notifications")
 }
