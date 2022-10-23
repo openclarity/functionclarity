@@ -36,6 +36,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/google/uuid"
 	i "github.com/openclarity/function-clarity/pkg/init"
 	"github.com/openclarity/function-clarity/pkg/utils"
@@ -410,6 +411,42 @@ func (o *AwsClient) GetEcrToken() (*ecr.GetAuthorizationTokenOutput, error) {
 		return nil, err
 	}
 	return output, nil
+}
+
+func (o *AwsClient) ValidateCredentials() bool {
+	cfg := o.getConfig()
+	stsClient := sts.NewFromConfig(*cfg)
+	if _, err := stsClient.GetCallerIdentity(context.TODO(), &sts.GetCallerIdentityInput{}); err != nil {
+		return false
+	}
+	return true
+}
+
+func (o *AwsClient) IsBucketExist(bucketName string) bool {
+	cfg := o.getConfig()
+	s3Client := s3.NewFromConfig(*cfg)
+	if _, err := s3Client.HeadBucket(context.TODO(), &s3.HeadBucketInput{Bucket: aws.String(bucketName)}); err != nil {
+		return false
+	}
+	return true
+}
+
+func (o *AwsClient) IsSnsTopicExist(topicArn string) bool {
+	cfg := o.getConfig()
+	snsClient := sns.NewFromConfig(*cfg)
+	if _, err := snsClient.GetTopicAttributes(context.TODO(), &sns.GetTopicAttributesInput{TopicArn: aws.String(topicArn)}); err != nil {
+		return false
+	}
+	return true
+}
+
+func (o *AwsClient) IsCloudTrailExist(trailName string) bool {
+	cfg := o.getConfig()
+	svt := cloudtrail.NewFromConfig(*cfg)
+	if _, err := svt.GetTrail(context.TODO(), &cloudtrail.GetTrailInput{Name: &trailName}); err != nil {
+		return false
+	}
+	return true
 }
 
 func (o *AwsClient) DeployFunctionClarity(trailName string, keyPath string, deploymentConfig i.AWSInput, suffix string) error {

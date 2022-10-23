@@ -109,7 +109,7 @@ func AwsInit() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var input i.AWSInput
-			if err := input.ReceiveParameters(); err != nil {
+			if err := ReceiveParameters(&input); err != nil {
 				return err
 			}
 			if input.Bucket == "" {
