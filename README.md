@@ -5,7 +5,7 @@ This version supports serverless functions on AWS (Lambda functions) only, suppo
 
 ## How does it work?
 
-![Untitled Diagram(1) drawio (1)](https://user-images.githubusercontent.com/109651023/189673319-5c66fb32-98f5-430c-a01f-4823ab51fc98.png)
+![FunctionClarity Diagram](https://user-images.githubusercontent.com/36041037/197404138-7d018fca-8076-4611-bb79-bfd44634af0f.png)
 
 * Deploy FunctionClarity – deploy FunctionClarity "validation" function in the target cloud account (a one time operation); this function will scan and verify new functions when created or updated in the target account
 * Sign functions  - use FunctionClarity CLI to sign the function code or image in the user’s environment, and then upload it to the target cloud account

@@ -53,7 +53,6 @@ jobs:
           REGION: ${{ secrets.REGION }}
           FUNCTION_REGION: ${{ secrets.FUNCTION_REGION }}
           jwt_token: ${{ steps.get_id_token.outputs.id_token }}
-          jwt_token2: ${{ steps.get_id_token.outputs.id_token2 }}
           COSIGN_EXPERIMENTAL: 0
           is_start: true
           uuid: ${{ steps.get_uuid.outputs.uuid }}
