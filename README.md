@@ -1,5 +1,5 @@
 ![image](https://user-images.githubusercontent.com/109651023/189649537-95638785-618f-4c74-93af-2cafedec2f07.png)
-FunctionClarity (FC) is a code integrity solution for serverless functions. It allows users to sign their serverless functions and verify their integrity prior to their execution in their cloud environments. FC includes a CLI tool, complemented by a "verification" function deployed in the target cloud account.  The solution is designed for CI/CD insertion, where the serverless function code/images can be signed and uploaded before the function is created in the cloud repository.
+FunctionClarity is a code integrity solution for serverless functions. It allows users to sign their serverless functions and verify their integrity prior to their execution in their cloud environments. FunctionClarity includes a CLI tool, complemented by a "verification" function deployed in the target cloud account.  The solution is designed for CI/CD insertion, where the serverless function code/images can be signed and uploaded before the function is created in the cloud repository.
 
 This version supports serverless functions on AWS (Lambda functions) only, support for Azure functions and Google functions/cloud-run are part of the near-term roadmap plan.
 
@@ -7,8 +7,8 @@ This version supports serverless functions on AWS (Lambda functions) only, suppo
 
 ![Untitled Diagram(1) drawio (1)](https://user-images.githubusercontent.com/109651023/189673319-5c66fb32-98f5-430c-a01f-4823ab51fc98.png)
 
-* Deploy FunctionClarity – deploy the FC "validation" function in the target cloud account (a one time operation); this function will scan and verify new functions when created or updated in the target account
-* Sign functions  - use the FC CLI to sign the function code or image in the user’s environment, and then upload it to the target cloud account
+* Deploy FunctionClarity – deploy FunctionClarity "validation" function in the target cloud account (a one time operation); this function will scan and verify new functions when created or updated in the target account
+* Sign functions  - use FunctionClarity CLI to sign the function code or image in the user’s environment, and then upload it to the target cloud account
 * Deploy the serverless function - using the signed function code/image 
 * Verify functions -  the FunctionClarity verifier function is triggered when user functions are created or updated, and does the following:
   * Fetches the function code from the cloud account to the local machine
