@@ -46,7 +46,7 @@ func VerifyIdentity(identity string, o *opts.VerifyOpts, ctx context.Context, is
 	sigRef := "/tmp/" + identity + ".sig"
 
 	if err := verify.VerifyBlobCmd(ctx, ko, certRef,
-		o.CertVerify.CertEmail, o.CertVerify.CertOidcIssuer, o.CertVerify.CertChain,
+		o.CertVerify.CertEmail, o.CertVerify.CertIdentity, o.CertVerify.CertOidcIssuer, o.CertVerify.CertChain,
 		sigRef, path, o.CertVerify.CertGithubWorkflowTrigger, o.CertVerify.CertGithubWorkflowSha,
 		o.CertVerify.CertGithubWorkflowName, o.CertVerify.CertGithubWorkflowRepository, o.CertVerify.CertGithubWorkflowRef,
 		o.CertVerify.EnforceSCT); err != nil {
