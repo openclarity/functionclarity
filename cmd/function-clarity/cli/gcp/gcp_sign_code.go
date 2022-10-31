@@ -47,7 +47,7 @@ func GCPSignCode() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gcpProperties := clients.NewGCPPropertiesInit(viper.GetString("bucket"), viper.GetString("region"), "")
+			gcpProperties := clients.NewGCPClientInit(viper.GetString("bucket"), viper.GetString("location"), "")
 			return sign.SignAndUploadCode(gcpProperties, args[0], sbo, ro)
 		},
 	}

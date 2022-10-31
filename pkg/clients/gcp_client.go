@@ -24,21 +24,21 @@ import (
 	"time"
 )
 
-type GCPProperties struct {
+type GCPClient struct {
 	bucket         string
 	location       string
 	functionRegion string
 }
 
-func NewGCPPropertiesInit(bucket string, location string, functionRegion string) *GCPProperties {
-	p := new(GCPProperties)
+func NewGCPClientInit(bucket string, location string, functionRegion string) *GCPClient {
+	p := new(GCPClient)
 	p.bucket = bucket
 	p.location = location
 	p.functionRegion = functionRegion
 	return p
 }
 
-func (p *GCPProperties) Upload(signature string, identity string, isKeyless bool) error {
+func (p *GCPClient) Upload(signature string, identity string, isKeyless bool) error {
 	ctx := context.Background()
 
 	client, err := storage.NewClient(ctx)
@@ -63,42 +63,42 @@ func (p *GCPProperties) Upload(signature string, identity string, isKeyless bool
 	return nil
 }
 
-func (p *GCPProperties) ResolvePackageType(funcIdentifier string) (string, error) {
+func (p *GCPClient) ResolvePackageType(funcIdentifier string) (string, error) {
 	panic("not yet supported")
 }
 
-func (p *GCPProperties) GetFuncCode(funcIdentifier string) (string, error) {
+func (p *GCPClient) GetFuncCode(funcIdentifier string) (string, error) {
 	panic("not yet supported")
 }
 
-func (p *GCPProperties) GetFuncImageURI(funcIdentifier string) (string, error) {
+func (p *GCPClient) GetFuncImageURI(funcIdentifier string) (string, error) {
 	panic("not yet supported")
 }
 
-func (p *GCPProperties) IsFuncInRegions(regions []string) bool {
+func (p *GCPClient) IsFuncInRegions(regions []string) bool {
 	panic("not yet supported")
 }
 
-func (p *GCPProperties) FuncContainsTags(funcIdentifier string, tagKes []string) (bool, error) {
+func (p *GCPClient) FuncContainsTags(funcIdentifier string, tagKes []string) (bool, error) {
 	panic("not yet supported")
 }
 
-func (p *GCPProperties) Download(fileName string, outputType string) error {
+func (p *GCPClient) Download(fileName string, outputType string) error {
 	panic("not yet supported")
 }
 
-func (p *GCPProperties) HandleBlock(funcIdentifier *string, failed bool) error {
+func (p *GCPClient) HandleBlock(funcIdentifier *string, failed bool) error {
 	panic("not yet supported")
 }
 
-func (p *GCPProperties) HandleDetect(funcIdentifier *string, failed bool) error {
+func (p *GCPClient) HandleDetect(funcIdentifier *string, failed bool) error {
 	panic("not yet supported")
 }
 
-func (p *GCPProperties) Notify(msg string, snsArn string) error {
+func (p *GCPClient) Notify(msg string, snsArn string) error {
 	panic("not yet supported")
 }
 
-func (p *GCPProperties) FillNotificationDetails(notification *Notification, functionIdentifier string) error {
+func (p *GCPClient) FillNotificationDetails(notification *Notification, functionIdentifier string) error {
 	panic("not yet supported")
 }
