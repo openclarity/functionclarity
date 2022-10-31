@@ -18,6 +18,7 @@ ignored = [
     "github.com/xeipuuv/gojsonreference",  # Apache 2.0 - https://github.com/xeipuuv/gojsonreference/blob/master/LICENSE-APACHE-2.0.txt
     "github.com/rcrowley/go-metrics", # BSD-3-Clause - https://github.com/rcrowley/go-metrics/blob/master/LICENSE
     "github.com/ghodss/yaml", # MIT -https://github.com/ghodss/yaml/blob/master/LICENSE
+    "github.com/alibabacloud-go/tea-xml", # Apache 2.0 - https://github.com/alibabacloud-go/tea-xml#license
 ]
 
 [header]
