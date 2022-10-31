@@ -13,20 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cli
+package gcp
 
 import (
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/aws"
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/gcp"
 	"github.com/spf13/cobra"
 )
 
-func Sign() *cobra.Command {
+func GcpSign() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "sign",
-		Short: "sign image/folder and upload the signature to cloud provider",
+		Use:   "gcp",
+		Short: "sign code/image and upload to GCP",
 	}
-	cmd.AddCommand(aws.AwsSign())
-	cmd.AddCommand(gcp.GcpSign())
+	cmd.AddCommand(GCPSignCode())
 	return cmd
 }
