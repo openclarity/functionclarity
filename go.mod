@@ -3,6 +3,8 @@ module github.com/openclarity/function-clarity
 go 1.19
 
 require (
+	cloud.google.com/go/functions v1.8.0
+	cloud.google.com/go/run v0.2.0
 	cloud.google.com/go/storage v1.27.0
 	github.com/aws/aws-lambda-go v1.34.1
 	github.com/aws/aws-sdk-go-v2 v1.17.1
@@ -31,6 +33,7 @@ require (
 	cloud.google.com/go/compute v1.12.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
 	cloud.google.com/go/iam v0.6.0 // indirect
+	cloud.google.com/go/longrunning v0.1.1 // indirect
 	cuelang.org/go v0.4.3 // indirect
 	github.com/AliyunContainerService/ack-ram-tool/pkg/credentials/alibabacloudsdkgo/helper v0.2.0 // indirect
 	github.com/Azure/azure-sdk-for-go v67.0.0+incompatible // indirect

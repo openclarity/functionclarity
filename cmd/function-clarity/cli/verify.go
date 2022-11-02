@@ -17,6 +17,7 @@ package cli
 
 import (
 	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/aws"
+	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/gcp"
 	"github.com/spf13/cobra"
 )
 
@@ -26,5 +27,6 @@ func Verify() *cobra.Command {
 		Short: "verify function's code/image integrity",
 	}
 	cmd.AddCommand(aws.AwsVerify())
+	cmd.AddCommand(gcp.GcpVerify())
 	return cmd
 }
