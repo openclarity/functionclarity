@@ -16,7 +16,13 @@
 package gcp
 
 import (
+	"fmt"
+	opt "github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
+	"github.com/openclarity/function-clarity/pkg/clients"
+	"github.com/openclarity/function-clarity/pkg/options"
+	"github.com/openclarity/function-clarity/pkg/verify"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func GcpSign() *cobra.Command {
@@ -26,4 +32,43 @@ func GcpSign() *cobra.Command {
 	}
 	cmd.AddCommand(GCPSignCode())
 	return cmd
+}
+
+func GcpVerify() *cobra.Command {
+	o := &options.VerifyOpts{}
+	var functionRegion string
+	cmd := &cobra.Command{
+		Use:   "gcp",
+		Short: "verify function identity",
+		Args:  cobra.ExactArgs(1),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := viper.BindPFlag("location", cmd.Flags().Lookup("location")); err != nil {
+				return fmt.Errorf("error binding location: %w", err)
+			}
+			if err := viper.BindPFlag("bucket", cmd.Flags().Lookup("bucket")); err != nil {
+				return fmt.Errorf("error binding bucket: %w", err)
+			}
+			if err := viper.BindPFlag("publickey", cmd.Flags().Lookup("key")); err != nil {
+				return fmt.Errorf("error binding publickey: %w", err)
+			}
+			return nil
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			o.Key = viper.GetString("publickey")
+			gcpClient := clients.NewGCPClientInit(viper.GetString("bucket"), viper.GetString("location"), functionRegion)
+			return verify.Verify(gcpClient, args[0], o, cmd.Context(), "", "", nil, nil)
+		},
+	}
+	cmd.Flags().StringVar(&functionRegion, "function-location", "", "GCP location where the verified function runs")
+	cmd.MarkFlagRequired("function-region") //nolint:errcheck
+	o.AddFlags(cmd)
+	initGCPVerifyFlags(cmd)
+	return cmd
+}
+
+func initGCPVerifyFlags(cmd *cobra.Command) {
+	cmd.Flags().StringVar(&opt.Config, "config", "", "config file (default: $HOME/.fs)")
+	cmd.Flags().String("location", "", "GCP location to perform the operation against")
+	cmd.Flags().String("bucket", "", "GCP bucket to work against")
+	cmd.Flags().String("key", "", "public key")
 }

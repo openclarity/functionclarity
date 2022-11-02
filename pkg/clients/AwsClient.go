@@ -43,9 +43,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"io"
 	"log"
-	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
@@ -162,10 +160,10 @@ func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
 	}
 	contentName := uuid.New().String()
 	zipFileName := contentName + ".zip"
-	if err := DownloadFile(contentName+".zip", result.Code.Location); err != nil {
+	if err := utils.DownloadFile(contentName+".zip", result.Code.Location); err != nil {
 		return "", err
 	}
-	if err := ExtractZip("/tmp/"+zipFileName, "/tmp/"+contentName); err != nil {
+	if err := utils.ExtractZip("/tmp/"+zipFileName, "/tmp/"+contentName); err != nil {
 		return "", err
 	}
 	return "/tmp/" + contentName, nil
@@ -740,51 +738,6 @@ func uploadFuncClarityCode(cfg *aws.Config, keyPath string, bucket string) error
 	return nil
 }
 
-func ExtractZip(zipPath string, dstToExtract string) error {
-
-	archive, err := zip.OpenReader(zipPath)
-	if err != nil {
-		return fmt.Errorf("failed to open archive file : %s. %v", zipPath, err)
-	}
-	defer archive.Close()
-
-	for _, f := range archive.File {
-		filePath := filepath.Join(dstToExtract, f.Name)
-
-		if !strings.HasPrefix(filePath, filepath.Clean(dstToExtract)+string(os.PathSeparator)) {
-			return fmt.Errorf("invalid file path")
-		}
-		if f.FileInfo().IsDir() {
-			if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
-				return fmt.Errorf("failed to create directory for path: %s. %v", filePath, err)
-			}
-			continue
-		}
-
-		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create directories for path: %s. %v", filePath, err)
-		}
-
-		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return fmt.Errorf("failed to open destination file for writing: %s. %v", filePath, err)
-		}
-
-		fileInArchive, err := f.Open()
-		if err != nil {
-			return fmt.Errorf("failed to open file in archive : %s. %v", f.Name, err)
-		}
-
-		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			return fmt.Errorf("failed to copy file: %s from archive to local path: %s. %v", f.Name, dstFile.Name(), err)
-		}
-
-		dstFile.Close()
-		fileInArchive.Close()
-	}
-	return nil
-}
-
 func stackExists(stackNameOrID string, cfClient *cloudformation.Client) (bool, error) {
 	describeStacksInput := &cloudformation.DescribeStacksInput{
 		StackName: aws.String(stackNameOrID),
@@ -800,25 +753,4 @@ func stackExists(stackNameOrID string, cfClient *cloudformation.Client) (bool, e
 
 	}
 	return true, nil
-}
-
-func DownloadFile(fileName string, url *string) error {
-
-	// Get the data
-	resp, err := http.Get(*url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Create the file
-	out, err := os.Create("/tmp/" + fileName)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	return err
 }

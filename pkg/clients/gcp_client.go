@@ -16,10 +16,15 @@
 package clients
 
 import (
+	f "cloud.google.com/go/functions/apiv2"
+	"cloud.google.com/go/functions/apiv2/functionspb"
 	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/openclarity/function-clarity/pkg/utils"
 	"io"
+	"os"
 	"strings"
 	"time"
 )
@@ -59,16 +64,45 @@ func (p *GCPClient) Upload(signature string, identity string, isKeyless bool) er
 	if err := wc.Close(); err != nil {
 		return fmt.Errorf("Writer.Close: %w", err)
 	}
-	fmt.Printf("Uploaded %v to: %v\n", identity+".sig\n", p.bucket)
+	fmt.Printf("Uploaded %v to: %v\n", identity+".sig", p.bucket)
 	return nil
 }
 
 func (p *GCPClient) ResolvePackageType(funcIdentifier string) (string, error) {
-	panic("not yet supported")
+	if strings.Contains(funcIdentifier, "services") {
+		return "Image", nil
+	}
+	if strings.Contains(funcIdentifier, "functions") {
+		return "Zip", nil
+	}
+
+	return "", fmt.Errorf("function identifier doesn't match to any known package type")
+
 }
 
 func (p *GCPClient) GetFuncCode(funcIdentifier string) (string, error) {
-	panic("not yet supported")
+	ctx := context.Background()
+	client, err := f.NewFunctionClient(ctx)
+	if err != nil {
+		return "", fmt.Errorf("cloud functions.NewClient: %w", err)
+	}
+	defer client.Close()
+
+	downloadUrl, err := client.GenerateDownloadUrl(ctx, &functionspb.GenerateDownloadUrlRequest{Name: funcIdentifier})
+	if err != nil {
+		return "", fmt.Errorf("failed to get function: %w", err)
+	}
+
+	contentName := uuid.New().String()
+	zipFileName := contentName + ".zip"
+	url := downloadUrl.GetDownloadUrl()
+	if err := utils.DownloadFile(contentName+".zip", &url); err != nil {
+		return "", err
+	}
+	if err := utils.ExtractZip("/tmp/"+zipFileName, "/tmp/"+contentName); err != nil {
+		return "", err
+	}
+	return "/tmp/" + contentName, nil
 }
 
 func (p *GCPClient) GetFuncImageURI(funcIdentifier string) (string, error) {
@@ -84,7 +118,37 @@ func (p *GCPClient) FuncContainsTags(funcIdentifier string, tagKes []string) (bo
 }
 
 func (p *GCPClient) Download(fileName string, outputType string) error {
-	panic("not yet supported")
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return fmt.Errorf("storage.NewClient: %v", err)
+	}
+	defer client.Close()
+
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+
+	outputFile := "/tmp/" + fileName + "." + outputType
+	f, err := os.Create(outputFile)
+	if err != nil {
+		return fmt.Errorf("os.Create: %v", err)
+	}
+
+	objectName := fileName + "." + outputType
+	rc, err := client.Bucket(p.bucket).Object(objectName).NewReader(ctx)
+	if err != nil {
+		return fmt.Errorf("Object(%q).NewReader: %v", objectName, err)
+	}
+	defer rc.Close()
+
+	if _, err := io.Copy(f, rc); err != nil {
+		return fmt.Errorf("io.Copy: %v", err)
+	}
+	if err = f.Close(); err != nil {
+		return fmt.Errorf("f.Close: %v", err)
+	}
+	fmt.Printf("Downloaded %v to: %v\n", objectName, outputFile)
+	return nil
 }
 
 func (p *GCPClient) HandleBlock(funcIdentifier *string, failed bool) error {

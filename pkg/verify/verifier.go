@@ -26,10 +26,11 @@ import (
 	"github.com/openclarity/function-clarity/pkg/integrity"
 	"github.com/openclarity/function-clarity/pkg/options"
 	v "github.com/sigstore/cosign/cmd/cosign/cli/verify"
+	"strings"
 )
 
 func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context,
-	action string, topicArn string, region string, tagKeysFilter []string, filteredRegions []string) error {
+	action string, topicArn string, tagKeysFilter []string, filteredRegions []string) error {
 
 	if filteredRegions != nil && (len(filteredRegions) > 0) {
 		funcInRegions := client.IsFuncInRegions(filteredRegions)
@@ -61,10 +62,10 @@ func Verify(client clients.Client, functionIdentifier string, o *options.VerifyO
 	default:
 		return fmt.Errorf("unsupported package type: %s for function: %s", packageType, functionIdentifier)
 	}
-	return HandleVerification(client, action, functionIdentifier, err, topicArn, region)
+	return HandleVerification(client, action, functionIdentifier, err, topicArn)
 }
 
-func HandleVerification(client clients.Client, action string, funcIdentifier string, err error, topicArn string, region string) error {
+func HandleVerification(client clients.Client, action string, funcIdentifier string, err error, topicArn string) error {
 	if err != nil && !errors.Is(err, VerifyError{}) {
 		return err
 	}
@@ -183,7 +184,7 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 func downloadSignatureAndCertificate(client clients.Client, functionIdentifier string, functionIdentity string, isKeyless bool) error {
 	if err := client.Download(functionIdentity, "sig"); err != nil {
 		var nsk *s3types.NoSuchKey
-		if errors.As(err, &nsk) {
+		if errors.As(err, &nsk) || strings.Contains(err.Error(), "storage: object doesn't exist") {
 			return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
 		}
 		return fmt.Errorf("verify code: failed to get signed identity for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)
@@ -191,7 +192,7 @@ func downloadSignatureAndCertificate(client clients.Client, functionIdentifier s
 	if isKeyless {
 		if err := client.Download(functionIdentity, "crt.base64"); err != nil {
 			var nsk *s3types.NoSuchKey
-			if errors.As(err, &nsk) {
+			if errors.As(err, &nsk) || strings.Contains(err.Error(), "storage: object doesn't exist") {
 				return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
 			}
 			return fmt.Errorf("verify code: failed to get certificate for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)

@@ -105,7 +105,7 @@ func handleFunctionEvent(recordMessage RecordMessage, tagKeysFilter []string, re
 	o := getVerifierOptions(config.IsKeyless, config.PublicKey)
 	log.Printf("about to execute verification with post action: %s.", config.Action)
 	awsClient := clients.NewAwsClient("", "", config.Bucket, config.Region, recordMessage.AwsRegion)
-	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, config.Action, config.SnsTopicArn, config.Region, tagKeysFilter, regionsFilter)
+	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, config.Action, config.SnsTopicArn, tagKeysFilter, regionsFilter)
 
 	if err != nil {
 		log.Printf("Failed to handle lambda result: %s, %v", recordMessage.ResponseElements.FunctionArn, err)
