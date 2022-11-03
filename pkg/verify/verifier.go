@@ -74,7 +74,7 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 	var e error
 	switch action {
 	case "":
-		fmt.Printf("no action defined, nothing to do")
+		fmt.Printf("no action defined, nothing to do\n")
 	case "detect":
 		e = client.HandleDetect(&funcIdentifier, failed)
 		if e != nil {
@@ -107,6 +107,9 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 			return err
 		}
 		e = client.Notify(string(msg), topicArn)
+	}
+	if e == nil && failed {
+		return err
 	}
 	return e
 }

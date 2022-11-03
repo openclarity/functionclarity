@@ -16,8 +16,10 @@
 package clients
 
 import (
-	f "cloud.google.com/go/functions/apiv2"
-	"cloud.google.com/go/functions/apiv2/functionspb"
+	v1 "cloud.google.com/go/functions/apiv1"
+	p1 "cloud.google.com/go/functions/apiv1/functionspb"
+	v2 "cloud.google.com/go/functions/apiv2"
+	p2 "cloud.google.com/go/functions/apiv2/functionspb"
 	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
@@ -65,6 +67,25 @@ func (p *GCPClient) Upload(signature string, identity string, isKeyless bool) er
 		return fmt.Errorf("Writer.Close: %w", err)
 	}
 	fmt.Printf("Uploaded %v to: %v\n", identity+".sig", p.bucket)
+
+	if isKeyless {
+		certificatePath := "/tmp/" + identity + ".crt.base64"
+		f, err := os.Open(certificatePath)
+		if err != nil {
+			return err
+		}
+
+		o := client.Bucket(p.bucket).Object(identity + ".crt.base64")
+
+		wc := o.NewWriter(ctx)
+		if _, err = io.Copy(wc, f); err != nil {
+			return fmt.Errorf("io.Copy: %w", err)
+		}
+		if err := wc.Close(); err != nil {
+			return fmt.Errorf("Writer.Close: %w", err)
+		}
+		fmt.Printf("Certificate %v, uploaded to: %v\n", identity+".crt.base64", p.bucket)
+	}
 	return nil
 }
 
@@ -81,21 +102,17 @@ func (p *GCPClient) ResolvePackageType(funcIdentifier string) (string, error) {
 }
 
 func (p *GCPClient) GetFuncCode(funcIdentifier string) (string, error) {
-	ctx := context.Background()
-	client, err := f.NewFunctionClient(ctx)
+	url, err := getDownloadURLFuncGen1(funcIdentifier)
 	if err != nil {
-		return "", fmt.Errorf("cloud functions.NewClient: %w", err)
-	}
-	defer client.Close()
-
-	downloadUrl, err := client.GenerateDownloadUrl(ctx, &functionspb.GenerateDownloadUrlRequest{Name: funcIdentifier})
-	if err != nil {
-		return "", fmt.Errorf("failed to get function: %w", err)
+		url, err = getDownloadURLFuncGen2(funcIdentifier)
+		if err != nil {
+			return "", fmt.Errorf("failed to get function: %w", err)
+		}
 	}
 
 	contentName := uuid.New().String()
 	zipFileName := contentName + ".zip"
-	url := downloadUrl.GetDownloadUrl()
+
 	if err := utils.DownloadFile(contentName+".zip", &url); err != nil {
 		return "", err
 	}
@@ -103,6 +120,36 @@ func (p *GCPClient) GetFuncCode(funcIdentifier string) (string, error) {
 		return "", err
 	}
 	return "/tmp/" + contentName, nil
+}
+
+func getDownloadURLFuncGen1(funcIdentifier string) (string, error) {
+	ctx := context.Background()
+	client, err := v1.NewCloudFunctionsClient(ctx)
+	if err != nil {
+		return "", fmt.Errorf("cloud functions.NewClient: %w", err)
+	}
+	defer client.Close()
+
+	downloadUrl, err := client.GenerateDownloadUrl(ctx, &p1.GenerateDownloadUrlRequest{Name: funcIdentifier})
+	if err != nil {
+		return "", err
+	}
+	return downloadUrl.DownloadUrl, err
+}
+
+func getDownloadURLFuncGen2(funcIdentifier string) (string, error) {
+	ctx := context.Background()
+	client, err := v2.NewFunctionClient(ctx)
+	if err != nil {
+		return "", fmt.Errorf("cloud functions.NewClient: %w", err)
+	}
+	defer client.Close()
+
+	downloadUrl, err := client.GenerateDownloadUrl(ctx, &p2.GenerateDownloadUrlRequest{Name: funcIdentifier})
+	if err != nil {
+		return "", err
+	}
+	return downloadUrl.DownloadUrl, nil
 }
 
 func (p *GCPClient) GetFuncImageURI(funcIdentifier string) (string, error) {
