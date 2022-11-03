@@ -16,10 +16,12 @@
 package clients
 
 import (
-	v1 "cloud.google.com/go/functions/apiv1"
-	p1 "cloud.google.com/go/functions/apiv1/functionspb"
-	v2 "cloud.google.com/go/functions/apiv2"
-	p2 "cloud.google.com/go/functions/apiv2/functionspb"
+	funcv1 "cloud.google.com/go/functions/apiv1"
+	funcpb1 "cloud.google.com/go/functions/apiv1/functionspb"
+	funcv2 "cloud.google.com/go/functions/apiv2"
+	funcpb2 "cloud.google.com/go/functions/apiv2/functionspb"
+	run "cloud.google.com/go/run/apiv2"
+	"cloud.google.com/go/run/apiv2/runpb"
 	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
@@ -33,14 +35,12 @@ import (
 
 type GCPClient struct {
 	bucket         string
-	location       string
 	functionRegion string
 }
 
 func NewGCPClientInit(bucket string, location string, functionRegion string) *GCPClient {
 	p := new(GCPClient)
 	p.bucket = bucket
-	p.location = location
 	p.functionRegion = functionRegion
 	return p
 }
@@ -124,13 +124,13 @@ func (p *GCPClient) GetFuncCode(funcIdentifier string) (string, error) {
 
 func getDownloadURLFuncGen1(funcIdentifier string) (string, error) {
 	ctx := context.Background()
-	client, err := v1.NewCloudFunctionsClient(ctx)
+	client, err := funcv1.NewCloudFunctionsClient(ctx)
 	if err != nil {
 		return "", fmt.Errorf("cloud functions.NewClient: %w", err)
 	}
 	defer client.Close()
 
-	downloadUrl, err := client.GenerateDownloadUrl(ctx, &p1.GenerateDownloadUrlRequest{Name: funcIdentifier})
+	downloadUrl, err := client.GenerateDownloadUrl(ctx, &funcpb1.GenerateDownloadUrlRequest{Name: funcIdentifier})
 	if err != nil {
 		return "", err
 	}
@@ -139,13 +139,13 @@ func getDownloadURLFuncGen1(funcIdentifier string) (string, error) {
 
 func getDownloadURLFuncGen2(funcIdentifier string) (string, error) {
 	ctx := context.Background()
-	client, err := v2.NewFunctionClient(ctx)
+	client, err := funcv2.NewFunctionClient(ctx)
 	if err != nil {
 		return "", fmt.Errorf("cloud functions.NewClient: %w", err)
 	}
 	defer client.Close()
 
-	downloadUrl, err := client.GenerateDownloadUrl(ctx, &p2.GenerateDownloadUrlRequest{Name: funcIdentifier})
+	downloadUrl, err := client.GenerateDownloadUrl(ctx, &funcpb2.GenerateDownloadUrlRequest{Name: funcIdentifier})
 	if err != nil {
 		return "", err
 	}
@@ -153,7 +153,24 @@ func getDownloadURLFuncGen2(funcIdentifier string) (string, error) {
 }
 
 func (p *GCPClient) GetFuncImageURI(funcIdentifier string) (string, error) {
-	panic("not yet supported")
+	ctx := context.Background()
+	client, err := run.NewServicesClient(ctx)
+	if err != nil {
+		return "", fmt.Errorf("cloud run.NewClient: %w", err)
+	}
+	defer client.Close()
+
+	service, err := client.GetService(ctx, &runpb.GetServiceRequest{Name: funcIdentifier})
+	if err != nil {
+		return "", err
+	}
+	if len(service.Annotations) > 1 {
+		return "", fmt.Errorf("there are more than one image connected to service: %v\n", funcIdentifier)
+	}
+	for _, a := range service.Annotations {
+		return a, nil
+	}
+	return "", fmt.Errorf("there are no image connected to service: %v\n", funcIdentifier)
 }
 
 func (p *GCPClient) IsFuncInRegions(regions []string) bool {

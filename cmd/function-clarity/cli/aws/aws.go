@@ -17,6 +17,7 @@ package aws
 
 import (
 	"fmt"
+	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/common"
 	opt "github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	i "github.com/openclarity/function-clarity/pkg/init"
@@ -34,7 +35,7 @@ func AwsSign() *cobra.Command {
 		Short: "sign code/image and upload to aws",
 	}
 	cmd.AddCommand(AwsSignCode())
-	cmd.AddCommand(AwsSignImage())
+	cmd.AddCommand(common.SignImage())
 	return cmd
 }
 
