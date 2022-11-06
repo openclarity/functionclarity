@@ -17,6 +17,7 @@ package gcp
 
 import (
 	"fmt"
+	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/common"
 	opt "github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
 	"github.com/openclarity/function-clarity/pkg/clients"
 	"github.com/openclarity/function-clarity/pkg/options"
@@ -31,6 +32,7 @@ func GcpSign() *cobra.Command {
 		Short: "sign code/image and upload to GCP",
 	}
 	cmd.AddCommand(GCPSignCode())
+	cmd.AddCommand(common.SignImage())
 	return cmd
 }
 
