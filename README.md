@@ -10,7 +10,7 @@ This version supports serverless functions on AWS (Lambda functions) only, suppo
 * Deploy FunctionClarity – deploy FunctionClarity "validation" function in the target cloud account (a one time operation); this function will scan and verify new functions when created or updated in the target account
 * Sign functions  - use FunctionClarity CLI to sign the function code or image in the user’s environment, and then upload it to the target cloud account
 * Deploy the serverless function - using the signed function code/image 
-* Verify functions -  the FunctionClarity verifier function is triggered when user functions are created or updated in case they meets the filter criteria, and does the following:
+* Verify functions -  the FunctionClarity verifier function is triggered when user functions are created or updated in case they meet the filter criteria, and does the following:
   * Fetches the function code from the cloud account
   * Verifies the signature of the function code image or zip file
   * Follows one of these actions, based on the verification results:
