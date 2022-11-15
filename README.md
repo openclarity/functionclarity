@@ -10,8 +10,8 @@ This version supports serverless functions on AWS (Lambda functions) only, suppo
 * Deploy FunctionClarity – deploy FunctionClarity "validation" function in the target cloud account (a one time operation); this function will scan and verify new functions when created or updated in the target account
 * Sign functions  - use FunctionClarity CLI to sign the function code or image in the user’s environment, and then upload it to the target cloud account
 * Deploy the serverless function - using the signed function code/image 
-* Verify functions -  the FunctionClarity verifier function is triggered when user functions are created or updated, and does the following:
-  * Fetches the function code from the cloud account to the local machine
+* Verify functions -  the FunctionClarity verifier function is triggered when user functions are created or updated in case they meet the filter criteria, and does the following:
+  * Fetches the function code from the cloud account
   * Verifies the signature of the function code image or zip file
   * Follows one of these actions, based on the verification results:
     * Detect - marks the function with the verification results
@@ -81,11 +81,16 @@ Use AWS cli to deploy a signed lambda function to your cloud account, or to  upd
 
 #### Verify automatically on function create or update events
 
-If the verifier function is deployed in your account, any function create or update event will trigger it to verify the new or updated function. It will follow the post-verification action (detect, block, or notify). 
+If the verifier function is deployed in your account, and in case it meets the filter criteria then any function create or update event will trigger it to verify the new or updated function. It will follow the post-verification action (detect, block, or notify). 
 
 If the action is 'detect', the function will be tagged with the FunctionClarity message that the function is verified:
 
 ![image](https://user-images.githubusercontent.com/109651023/189880644-bed91413-a81c-4b03-b6f8-00ebea6606a0.png)
+
+If the action is block, the function's concurrency will be set to 0 and the function will be throtelled:
+
+![image](https://user-images.githubusercontent.com/109651023/201917880-d2d2e1c4-dec7-4930-8930-0b8dc655cb0b.png)
+
 
 #### Verify manually
 You can also use the CLI to manually verify a function. In this case, the function is downloaded from the cloud account, and then verified locally.
@@ -117,6 +122,8 @@ function-clarity init aws
 | keyless mode (y/n)          | work in keyless mode                                              |
 | public key for code signing | path to public key to use when verifying functions; if blank a new key-pair will be created |
 | privte key for code signing | private key path; used only if a public key path is also supplied                   |
+| function tag keys to include| tag keys of functions to include in the verification; if empty all functions will be included |
+| function regions to include | function regions to include in the verification, i.e: us-east-1,us-west-1; if empty functions from all regions will be included |
 
 | Flag               | Description                                                             |
 |--------------------|-------------------------------------------------------------------------|
