@@ -19,11 +19,12 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"github.com/openclarity/function-clarity/pkg/clients"
-	i "github.com/openclarity/function-clarity/pkg/init"
-	"github.com/sigstore/cosign/cmd/cosign/cli/generate"
 	"os"
 	"strings"
+
+	"github.com/openclarity/functionclarity/pkg/clients"
+	i "github.com/openclarity/functionclarity/pkg/init"
+	"github.com/sigstore/cosign/cmd/cosign/cli/generate"
 )
 
 func ReceiveParameters(i *i.AWSInput) error {

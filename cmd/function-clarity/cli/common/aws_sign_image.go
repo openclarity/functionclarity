@@ -18,8 +18,9 @@ package common
 import (
 	"flag"
 	"fmt"
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
-	opt "github.com/openclarity/function-clarity/pkg/options"
+
+	"github.com/openclarity/functionclarity/cmd/function-clarity/cli/options"
+	opt "github.com/openclarity/functionclarity/pkg/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/generate"
 	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/sign"

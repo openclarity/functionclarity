@@ -16,7 +16,7 @@
 package cli
 
 import (
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
+	"github.com/openclarity/functionclarity/cmd/function-clarity/cli/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli"
 	"github.com/spf13/cobra"
 )

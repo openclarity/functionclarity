@@ -16,8 +16,8 @@
 package cli
 
 import (
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/aws"
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/gcp"
+	"github.com/openclarity/functionclarity/cmd/function-clarity/cli/aws"
+	"github.com/openclarity/functionclarity/cmd/function-clarity/cli/gcp"
 	"github.com/spf13/cobra"
 )
 
