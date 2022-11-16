@@ -16,7 +16,7 @@
 package main
 
 import (
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli"
+	"github.com/openclarity/functionclarity/cmd/function-clarity/cli"
 )
 
 func main() {

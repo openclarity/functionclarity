@@ -20,13 +20,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/verify"
-	"github.com/openclarity/function-clarity/pkg/clients"
-	"github.com/openclarity/function-clarity/pkg/integrity"
-	"github.com/openclarity/function-clarity/pkg/options"
-	v "github.com/sigstore/cosign/cmd/cosign/cli/verify"
 	"strings"
+
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/openclarity/functionclarity/cmd/function-clarity/cli/verify"
+	"github.com/openclarity/functionclarity/pkg/clients"
+	"github.com/openclarity/functionclarity/pkg/integrity"
+	"github.com/openclarity/functionclarity/pkg/options"
+	v "github.com/sigstore/cosign/cmd/cosign/cli/verify"
 )
 
 func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context,

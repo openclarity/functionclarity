@@ -17,10 +17,11 @@ package sign
 
 import (
 	"fmt"
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/sign"
-	"github.com/openclarity/function-clarity/pkg/clients"
-	"github.com/openclarity/function-clarity/pkg/integrity"
-	"github.com/openclarity/function-clarity/pkg/options"
+
+	"github.com/openclarity/functionclarity/cmd/function-clarity/cli/sign"
+	"github.com/openclarity/functionclarity/pkg/clients"
+	"github.com/openclarity/functionclarity/pkg/integrity"
+	"github.com/openclarity/functionclarity/pkg/options"
 	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
 	"github.com/spf13/viper"
 )
