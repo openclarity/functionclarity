@@ -120,8 +120,8 @@ FunctionClarity leverages [cosign](https://github.com/sigstore/cosign) to sign a
 | secret key                  | AWS secret key                                                                                     |
 | region                      | AWS region in which to deploy FunctionClarity                                                                   |
 | default bucket              | AWS bucket in which to deploy code signatures and FunctionClarity verifier lambda code for the deployment       |
-| post verification action    | action to perform after verification (detect, block, or notify;  leave empty for no action to be performed)  |
-| sns arn                     | for the 'notify' action,  an SNS queue for notifications if verification fails                  |
+| post verification action    | action to perform after verification (detect, block;  leave empty for no action to be performed)  |
+| sns arn                     | an SNS queue for notifications if verification fails, leave empty to skip notifications                  |
 | CloudTrail                  | AWS cloudtrail to use; if  empty a new trail will be created                                   |
 | keyless mode (y/n)          | work in keyless mode                                              |
 | public key for code signing | path to public key to use when verifying functions; if blank a new key-pair will be created |
