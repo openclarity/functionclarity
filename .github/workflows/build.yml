@@ -11,8 +11,6 @@ permissions:  # added using https://github.com/step-security/secure-workflows
 
 jobs:
   build:
-    permissions:
-      id-token: write
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
@@ -32,6 +30,23 @@ jobs:
       - name: Build
         run: go build -v ./...
 
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ebacdc22ef6c2cfb85ee5ded8f2e640f4c776dd5
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+      - name: Set up Go
+        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f
+        with:
+          go-version: 1.19
+          check-latest: true
+          cache: true
+
       - name: Check licenses
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -39,6 +54,23 @@ jobs:
 
       - name: Run verification
         run: make check
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ebacdc22ef6c2cfb85ee5ded8f2e640f4c776dd5
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - name: Checkout
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+      - name: Set up Go
+        uses: actions/setup-go@c4a742cab115ed795e34d4513e2cf7d472deb55f
+        with:
+          go-version: 1.19
+          check-latest: true
+          cache: true
 
       - name: Install required packages
         run: npm install @actions/core@1.6.0 @actions/http-client uuid@^3.3.3
@@ -75,6 +107,7 @@ jobs:
             const coredemo = require('@actions/core')
             let id_token = await coredemo.getIDToken("sigstore")   
             coredemo.setOutput('id_token', id_token)
+
       - name: KeylessTest
         if: always()
         env:
