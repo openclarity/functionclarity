@@ -14,16 +14,21 @@ jobs:
     name: Release AWS Lambda
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Harden Runner
+        uses: step-security/harden-runner@ebacdc22ef6c2cfb85ee5ded8f2e640f4c776dd5
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791
 
       - name: Set APP_VERSION env
         run: echo APP_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
       - name: Set BUILD_TIME env
         run: echo BUILD_TIME=$(date) >> ${GITHUB_ENV}
       - name: Environment Printer
-        uses: managedkaos/print-env@v1.0
+        uses: managedkaos/print-env@cc44fee1591e49c86931a4a7458926ec441a85dd
 
-      - uses: wangyoucao577/go-release-action@v1.16
+      - uses: wangyoucao577/go-release-action@d00bb7360b2dd6a39f1a7ca198b8289582eee2df
         with:
           goversion: https://go.dev/dl/go1.19.1.linux-amd64.tar.gz
           binary_name: aws_function
@@ -51,15 +56,20 @@ jobs:
           - goarch: "386"
             goos: darwin
     steps:
-      - uses: actions/checkout@v2
+      - name: Harden Runner
+        uses: step-security/harden-runner@ebacdc22ef6c2cfb85ee5ded8f2e640f4c776dd5
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - uses: actions/checkout@e2f20e631ae6d7dd3b768f56a5d2af784dd54791
       - name: Set APP_VERSION env
         run: echo APP_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
       - name: Set BUILD_TIME env
         run: echo BUILD_TIME=$(date) >> ${GITHUB_ENV}
       - name: Environment Printer
-        uses: managedkaos/print-env@v1.0
+        uses: managedkaos/print-env@cc44fee1591e49c86931a4a7458926ec441a85dd
 
-      - uses: wangyoucao577/go-release-action@v1.16
+      - uses: wangyoucao577/go-release-action@d00bb7360b2dd6a39f1a7ca198b8289582eee2df
         with:
           goversion: https://go.dev/dl/go1.19.1.linux-amd64.tar.gz
           github_token: ${{ secrets.GITHUB_TOKEN }}
