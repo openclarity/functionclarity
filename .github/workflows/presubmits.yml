@@ -52,8 +52,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: make license-check
 
-      - name: Run verification
+      - name: Run linter and unit tests
         run: make check
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@d9f34f8cd5cb3b3eb79b3e4b5dae3a16df499a70
+        with:
+          files: ./unit-coverage.out
+          verbose: true
 
   test:
     runs-on: ubuntu-latest
