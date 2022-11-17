@@ -17,10 +17,11 @@ package gcp
 
 import (
 	"fmt"
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
-	"github.com/openclarity/function-clarity/pkg/clients"
-	o "github.com/openclarity/function-clarity/pkg/options"
-	"github.com/openclarity/function-clarity/pkg/sign"
+
+	"github.com/openclarity/functionclarity/cmd/function-clarity/cli/options"
+	"github.com/openclarity/functionclarity/pkg/clients"
+	o "github.com/openclarity/functionclarity/pkg/options"
+	"github.com/openclarity/functionclarity/pkg/sign"
 	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

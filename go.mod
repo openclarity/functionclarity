@@ -1,4 +1,4 @@
-module github.com/openclarity/function-clarity
+module github.com/openclarity/functionclarity
 
 go 1.19
 

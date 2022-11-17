@@ -16,6 +16,13 @@
 package clients
 
 import (
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"strings"
+	"time"
+
 	funcv1 "cloud.google.com/go/functions/apiv1"
 	funcpb1 "cloud.google.com/go/functions/apiv1/functionspb"
 	funcv2 "cloud.google.com/go/functions/apiv2"
@@ -23,14 +30,8 @@ import (
 	run "cloud.google.com/go/run/apiv2"
 	"cloud.google.com/go/run/apiv2/runpb"
 	"cloud.google.com/go/storage"
-	"context"
-	"fmt"
 	"github.com/google/uuid"
-	"github.com/openclarity/function-clarity/pkg/utils"
-	"io"
-	"os"
-	"strings"
-	"time"
+	"github.com/openclarity/functionclarity/pkg/utils"
 )
 
 type GCPClient struct {
