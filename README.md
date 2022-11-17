@@ -88,7 +88,7 @@ If the action is 'detect', the function will be tagged with the FunctionClarity 
 
 ![image](https://user-images.githubusercontent.com/109651023/189880644-bed91413-a81c-4b03-b6f8-00ebea6606a0.png)
 
-If the action is block, the function's concurrency will be set to 0 and the function will be throtelled:
+If the action is block, the function's concurrency will be set to 0 and the function will be throttled:
 
 ![image](https://user-images.githubusercontent.com/109651023/201917880-d2d2e1c4-dec7-4930-8930-0b8dc655cb0b.png)
 
