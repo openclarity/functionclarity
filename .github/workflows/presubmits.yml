@@ -8,6 +8,7 @@ on:
 
 permissions:  # added using https://github.com/step-security/secure-workflows
   contents: read
+  id-token: read
 
 jobs:
   build:
