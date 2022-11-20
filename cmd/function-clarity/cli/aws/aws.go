@@ -17,16 +17,17 @@ package aws
 
 import (
 	"fmt"
-	"github.com/openclarity/function-clarity/cmd/function-clarity/cli/common"
-	opt "github.com/openclarity/function-clarity/cmd/function-clarity/cli/options"
-	"github.com/openclarity/function-clarity/pkg/clients"
-	i "github.com/openclarity/function-clarity/pkg/init"
-	"github.com/openclarity/function-clarity/pkg/options"
-	"github.com/openclarity/function-clarity/pkg/verify"
+	"os"
+
+	"github.com/openclarity/functionclarity/cmd/function-clarity/cli/common"
+	opt "github.com/openclarity/functionclarity/cmd/function-clarity/cli/options"
+	"github.com/openclarity/functionclarity/pkg/clients"
+	i "github.com/openclarity/functionclarity/pkg/init"
+	"github.com/openclarity/functionclarity/pkg/options"
+	"github.com/openclarity/functionclarity/pkg/verify"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
-	"os"
 )
 
 func AwsSign() *cobra.Command {

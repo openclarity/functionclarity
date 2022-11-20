@@ -18,9 +18,10 @@ package integrity
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/openclarity/function-clarity/pkg/clients"
 	"os"
 	"strings"
+
+	"github.com/openclarity/functionclarity/pkg/clients"
 )
 
 type Auth struct {

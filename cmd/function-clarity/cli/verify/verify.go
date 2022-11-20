@@ -18,9 +18,10 @@ package verify
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/uuid"
-	"github.com/openclarity/function-clarity/pkg/integrity"
-	opts "github.com/openclarity/function-clarity/pkg/options"
+	"github.com/openclarity/functionclarity/pkg/integrity"
+	opts "github.com/openclarity/functionclarity/pkg/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/verify"
 )

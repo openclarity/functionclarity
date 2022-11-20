@@ -17,9 +17,10 @@ package sign
 
 import (
 	"fmt"
+
 	"github.com/google/uuid"
-	"github.com/openclarity/function-clarity/pkg/integrity"
-	o "github.com/openclarity/function-clarity/pkg/options"
+	"github.com/openclarity/functionclarity/pkg/integrity"
+	o "github.com/openclarity/functionclarity/pkg/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/generate"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
 	co "github.com/sigstore/cosign/cmd/cosign/cli/options"
