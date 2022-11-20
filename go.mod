@@ -12,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.2
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.41
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.23.0
-	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.19.2
+	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.20.2
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.17.22
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.24.8
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.3
