@@ -8,17 +8,17 @@ require (
 	cloud.google.com/go/storage v1.27.0
 	github.com/aws/aws-lambda-go v1.34.1
 	github.com/aws/aws-sdk-go-v2 v1.17.1
-	github.com/aws/aws-sdk-go-v2/config v1.17.10
-	github.com/aws/aws-sdk-go-v2/credentials v1.12.23
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.37
+	github.com/aws/aws-sdk-go-v2/config v1.18.2
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.2
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.41
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.23.0
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.19.2
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.17.20
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.24.8
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.3
 	github.com/aws/aws-sdk-go-v2/service/sns v1.18.3
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.19.10
-	github.com/aws/aws-sdk-go-v2/service/sts v1.17.1
+	github.com/aws/aws-sdk-go-v2/service/sts v1.17.4
 	github.com/aws/smithy-go v1.13.4
 	github.com/google/uuid v1.3.0
 	github.com/sigstore/cosign v1.13.1
