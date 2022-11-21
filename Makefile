@@ -32,16 +32,11 @@ lint: bin/golangci-lint ## Run linter
 
 .PHONY: test
 test: ## Run Unit Tests
-	@(cd cmd && go test ./...)
-	@(cd pkg && go test ./...)
-
+	@(go test -v -covermode=atomic -coverprofile=unit-coverage.out ./cmd/... ./pkg/...)
 
 .PHONY: check
 check: lint test
 
-
 .PHONY: fix
 fix: bin/golangci-lint ## Fix lint violations
 	./bin/golangci-lint run --fix
-
-
