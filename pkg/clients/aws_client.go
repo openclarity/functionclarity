@@ -289,13 +289,17 @@ func (o *AwsClient) BlockFunction(funcIdentifier *string) error {
 }
 
 func (o *AwsClient) updateConcurrencyLevel(funcIdentifier string, concurrencyLevel *int32) error {
-	cfg := o.getConfig()
+	cfg := o.getConfigForLambda()
 	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.PutFunctionConcurrencyInput{
 		FunctionName:                 &funcIdentifier,
 		ReservedConcurrentExecutions: concurrencyLevel,
 	}
 	result, err := lambdaClient.PutFunctionConcurrency(context.TODO(), input)
+	if err != nil {
+		fmt.Println(err)
+		return fmt.Errorf("failed to update function concurrency to %d. %v", concurrencyLevel, err)
+	}
 	if *result.ReservedConcurrentExecutions != *concurrencyLevel {
 		return fmt.Errorf("failed to update function concurrency to %d. %v", *concurrencyLevel, err)
 	}
@@ -310,7 +314,7 @@ func (o *AwsClient) DeleteConcurrencyLevel(funcIdentifier string) error {
 	}
 	_, err := lambdaClient.DeleteFunctionConcurrency(context.TODO(), input)
 	if err != nil {
-		return fmt.Errorf("failed to update function concurrency to 0. %v", err)
+		return fmt.Errorf("failed to update function concurrency. %v", err)
 	}
 	return nil
 }
