@@ -16,7 +16,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.17.22
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.25.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.3
-	github.com/aws/aws-sdk-go-v2/service/sns v1.18.3
+	github.com/aws/aws-sdk-go-v2/service/sns v1.18.5
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.19.14
 	github.com/aws/aws-sdk-go-v2/service/sts v1.17.4
 	github.com/aws/smithy-go v1.13.4
