@@ -72,6 +72,8 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 	}
 	failed := err != nil
 
+	fmt.Printf("verification result. failed: %t\n", failed)
+
 	var e error
 	switch action {
 	case "":
