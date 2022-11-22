@@ -52,7 +52,7 @@ import (
 )
 
 const FunctionClarityBucketName = "functionclarity"
-const FunctionClarityLambdaVerierName = "FunctionClarityLambdaVerifier"
+const FunctionClarityLambdaVerierName = "FunctionClarityLambda"
 
 type AwsClient struct {
 	accessKey    string
