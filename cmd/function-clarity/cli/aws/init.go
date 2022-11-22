@@ -164,11 +164,10 @@ func inputStringArrayParameter(q string, p *[]string, em bool) error {
 	if !em && input == "" {
 		return fmt.Errorf("this is a compulsory parameter")
 	}
-	*p = strings.Split(input, ",")
 	if input == "" {
-		*p = nil
 		return nil
 	}
+	*p = strings.Split(input, ",")
 	for index := range *p {
 		(*p)[index] = strings.TrimSpace((*p)[index])
 	}
