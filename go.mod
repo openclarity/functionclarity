@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-lambda-go v1.35.0
 	github.com/aws/aws-sdk-go-v2 v1.17.1
 	github.com/aws/aws-sdk-go-v2/config v1.18.2
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.2
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.3
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.41
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.24.0
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.20.2
@@ -18,7 +18,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.3
 	github.com/aws/aws-sdk-go-v2/service/sns v1.18.5
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.19.14
-	github.com/aws/aws-sdk-go-v2/service/sts v1.17.4
+	github.com/aws/aws-sdk-go-v2/service/sts v1.17.5
 	github.com/aws/smithy-go v1.13.4
 	github.com/google/uuid v1.3.0
 	github.com/sigstore/cosign v1.13.1
