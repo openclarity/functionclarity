@@ -307,7 +307,7 @@ func (o *AwsClient) updateConcurrencyLevel(funcIdentifier string, concurrencyLev
 }
 
 func (o *AwsClient) DeleteConcurrencyLevel(funcIdentifier string) error {
-	cfg := o.getConfig()
+	cfg := o.getConfigForLambda()
 	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.DeleteFunctionConcurrencyInput{
 		FunctionName: &funcIdentifier,
@@ -383,7 +383,7 @@ func (o *AwsClient) convertToArnIfNeeded(funcIdentifier *string) error {
 }
 
 func (o *AwsClient) GetConcurrencyLevelTag(funcIdentifier string, tag string) (error, *int32) {
-	cfg := o.getConfig()
+	cfg := o.getConfigForLambda()
 	lambdaClient := lambda.NewFromConfig(*cfg)
 	input := &lambda.ListTagsInput{
 		Resource: aws.String(funcIdentifier),
