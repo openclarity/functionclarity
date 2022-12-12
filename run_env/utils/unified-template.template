@@ -116,7 +116,7 @@
             "Arn"
           ]
         },
-        "FilterPattern": "{ $.eventSource=lambda.amazonaws.com && ( $.eventName=CreateFunction* || $.eventName=UpdateFunctionCode* )}",
+        "FilterPattern": "{ $.eventSource=lambda.amazonaws.com && ( $.eventName=CreateFunction* || $.eventName=UpdateFunctionCode* || $.eventName=DeleteFunctionConcurrency* || $.eventName=PutFunctionConcurrency*)}",
         "LogGroupName": {{if .withTrail -}} "FunctionClarityMonitoringLogGroup" {{- else }} "{{.logGroupName}}" {{- end}}
       }
     }{{if .withTrail -}},
