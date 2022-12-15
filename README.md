@@ -254,6 +254,12 @@ FunctionClarity leverages [cosign](https://github.com/sigstore/cosign) to sign a
 |--------------------|-------------------------------------------------------------------------|
 | only-create-config | determine whether to only create config file without actually deploying |
 
+### Import your own signing key
+The ```import-key-pair``` command provide the ability to import your existing PEM-encoded, RSA or EC private key, use this command:
+```shell
+./function-clarity import-key-pair --key key.pem
+```
+
 ### Deploy command detailed use
 The ```deploy``` command does the same as ```init```, but it uses the config file, so you don't
 need to supply parameters  using the command line
