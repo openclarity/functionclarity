@@ -204,11 +204,11 @@ Run the test event:
 
 Edit the code, deploy the change and test the event. This will trigger FunctionClarity to compare the code with what it has previously signed.
 
-https://github.com/eti-demos/eta-advocacy/blob/fc-base-setup/fc-base-setup/images/img_7.png?raw=true
+![image](https://user-images.githubusercontent.com/3701244/207765219-0a81a2d5-ad59-4b85-ae6d-9385e5dc5d88.png)
 
 FunctionClarity checks the new code against what was signed and blocks the function from running by dropping the function run concurrency to zero:
 
-https://github.com/eti-demos/eta-advocacy/blob/fc-base-setup/fc-base-setup/images/img_8.png?raw=true
+![image](https://user-images.githubusercontent.com/3701244/207765406-4c9f1fd0-af6f-4764-8b9d-8e3cb6266cd7.png)
 
 In the FunctionClarity Verifier Function logs entries show the normal behavior at the bottom of the log window. This is what it looks like when a function runs the same code that was signed and verified.
 
