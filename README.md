@@ -22,79 +22,199 @@ This version supports serverless functions on AWS (Lambda functions) only, suppo
 If a function is tagged as blocked, it will be prevented from being run by AWS when it is invoked.
 
 ## Download FunctionClarity
-Go to the [function clarity latest release](https://github.com/openclarity/functionclarity/releases/latest):
-* Create a folder and download:
-  * ```aws_function.tar.gz``` and extract it to the folder
-  * ```functionclarity-v<version_number>``` for your OS type and extract it to the folder 
+- Download the latest `aws_function.tar.gz` and `functionclarity-vYYY<os_type>` files from: https://github.com/openclarity/functionclarity/releases
 
-## Quick start
-This section explains how to get started using FunctionClarity. These steps are involved:
+- Extract both files into the same directory:
+  ```
+  # tar -xzvf aws_function.tar.gz
+  x aws_function
 
-* Initialize and deploy FunctionClarity
-* Sign and upload serverless function code
-* Sign and verify new AWS functions
-* Verify functions:
-  * From the cloud account
-  * From the FunctionClarity command line
+  # tar -xzvf functionclarity-v1.0.2-darwin-amd64.tar.gz
+  x functionclarity unified
+  x unified-template.template
+  ```
+  Other than the original gz files, there should be the following files in the same directory:
+  ```
+  aws_function
+  functionclarity
+  unified-template.template
+  ```
+**Note: Depending on the operating system that you are using to run the `functionclarity` binary, you may have to trust the binary. In MacOS, a warning will popup on first use of the functionclarity command. It will look similar to this:
 
-### Initialize and deploy FunctionClarity
-Follow these  steps from a command line, to install FunctionClarity in your AWS account.
-Run the command from the folder in which the FunctionClarity tar file is located.
-As part of the deployment, a verifier function will be deployed in your cloud account, which will be triggered when lambda functions are created or updated in the account. This function verifies function identities and signatures, according to the FunctionClarity settings.
-A configuration file will also be created locally, in ```~/.fc```, with default values that are used  when signing or verifying functions, unless specific settings are set with command line flags.
+![image](https://user-images.githubusercontent.com/3701244/207752284-f525db61-f1ff-46d5-9a40-d8a85982f0ef.png)
 
-1.	Run the command ```./functionclarity init aws```
-2.	When prompted, enter the following details:
+On a Mac, you can resolve this issue by going to Settings > Security & Privacy > Privacy > Developer Tools and checking the box next to "functionclarity" as shown here:
+
+![image](https://user-images.githubusercontent.com/3701244/207755079-688c7a83-6e7b-4c5c-ba06-33c8fbe4aea8.png)
+
+Go into Finder and locate the `functionclarity` binary and right-click on the file and click "open". Another popup will appear that looks like this:
+
+![image](https://user-images.githubusercontent.com/3701244/207755405-9d784f33-f046-4955-bacc-fb4acc54f251.png)
+
+A new terminal window will open and the command will run one time. You can close this terminal window if you use another terminal type like iTerm2 or you can leave it open for the additional FunctionClarity command-line steps below.
+
+## AWS IAM Role / Policy Creation
+
+If you do not already have an AWS Lambda role and policy defined, you will need to create one in order to deploy and interact with the AWS Lambda service.
+
+Create a file and add the following to it:
 ```
-    enter Access Key: ********
-    enter Secret Key: ********
-    enter region: <your_region_name>
-    enter default bucket (you can leave empty and a bucket with name functionclarity will be created):
-    enter tag keys of functions to include in the verification (leave empty to include all):
-    enter the function regions to include in the verification, i.e: us-east-1,us-west-1 (leave empty to include all): 
-    select post verification action : (1) for detect; (2) for block; leave empty for no post verification action to perform
-    enter SNS arn if you would like to be notified when signature verification fails, otherwise press enter:
-    is there existing trail in CloudTrail (in the region selected above) which you would like to use? (if no, please press enter):
-    do you want to work in keyless mode (y/n): n
-    enter path to custom public key for code signing? (if you want us to generate key pair, please press enter):
-    Enter password for private key:
-    Enter password for private key again:
-    Private key written to cosign.key
-    Public key written to cosign.pub
-    Uploading function-clarity function code to s3 bucket, this may take a few minutes
-    function-clarity function code upload successfully
-    deployment request sent to provider
-    waiting for deployment to complete
-    deployment finished successfully
+# cat > trust-policy.json << EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+EOF
+```
+Create a new AWS IAM role for Lambda using the trust document you just created:
+```
+# aws iam create-role --role-name <my-lambda-role> \
+    --assume-role-policy-document file://trust-policy.json > lambda-role.json
 ```
 
-### Sign function code
-Use the command below to sign a folder containing function code, and then upload it to the user cloud account.
+Attach the AWSLambdaBasicExecutionRole and the AWSLambda_ReadOnlyAccess policies to the role you just created:
+```
+# aws iam attach-role-policy --role-name <my-lambda-role> \
+    --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+# aws iam attach-role-policy --role-name <my-lambda-role> \
+    --policy-arn arn:aws:iam::aws:policy/AWSLambda_ReadOnlyAccess
+```
+Look in the lambda-role.json file that was created during the IAM role creation step and copy the arn section (e.g., arn:aws:iam::<account_number>:role-<my-lambda-role>).
 
-```shell
-./functionclarity sign aws code /sample-code-verified-folder
+Export that ARN as a variable:
+```
+# export ROLE_ARN=arn:aws:iam::<account_number>:role-<my-lambda-role>
+```
 
-using config file: /Users/john/.fc
+## Create a Sample Function
+
+Create a directory called "src" and change to that directory
+```
+# cat > lambda_function.py  << EOF
+import json
+
+def lambda_handler(event, context):
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from FunctionClarity!')
+    }
+EOF
+```
+Zip the code in the src/ directory and move the zip to base path:
+```
+# zip -r hello_world_function.zip lambda_function.py
+# mv hello_world_function.zip ../
+```
+## Initialize FunctionClarity in the AWS Environment
+Questions that needs answers:
+- AWS Access Key (Required)
+- AWS Secret key (Required)
+- The AWS region you want FunctionClarity installed in (Required)
+- Default AWS S3 Bucket for code signing storage (Optional if you have only one FunctionClarity instance across all regions). Note that the FunctionClarity S3 bucket name is global i.e if you have a FunctionClarity deployed per region, it is required to give each instance a unique name even if they are in deployed in different regions. Default sytem generated name is "FunctionClarity".
+- Custom function tags you want to filter on (Optional. Blank scans for all functions. Tag example "sm-hello1" (This translates to key: sm-hello1, value:<blank-this-field-is-not-used>)
+- Function regions (Optional. Blank scans all regions in this account. It is best to start off scanning one region and with specific function tags.) **Warning**: Using blank region filters and blank filter tags means FunctionClarity is scanning (and possibly blocking) ALL functions in ALL regions
+- Post verification action (Required)
+- SNS arn for notifications (Optional)
+- Existing CloudTrail instance to use (Optional)
+- Keyless mode (Optional. See documentation on this mode)
+- Path for custom (existing) codesign key (Optional)
+- Password to protect local private key that is created by FunctionClarity (Required)
+
+```
+# ./functionclarity init aws
+```
+Example output:
+```
+enter Access Key: <YOUR_ACCESS_KEY>
+enter Secret Key: <YOUR_SECRET_KEY>
+enter region: us-west-2
+enter default bucket (you can leave empty and a bucket with name functionclarity will be created):
+enter tag keys of functions to include in the verification (leave empty to include all): sm-hello1
+enter the function regions to include in the verification, i.e: us-east-1,us-west-1 (leave empty to include all): us-west-2
+select post verification action : (1) for detect; (2) for block; leave empty for no post verification action to perform: 2
+enter SNS arn if you would like to be notified when signature verification fails, otherwise press enter:
+is there existing trail in CloudTrail (in the region selected above) which you would like to use? (if no, please press enter):
+do you want to work in keyless mode (y/n): n
+enter path to custom public key for code signing? (if you want us to generate key pair, please press enter):
 Enter password for private key:
+Enter password for private key again:
+File cosign.key already exists. Overwrite (y/n)? y
+Private key written to cosign.key
+Public key written to cosign.pub
+Uploading function-clarity function code to s3 bucket, this may take a few minutes
+function-clarity function code upload successfully
+deployment request sent to provider
+waiting for deployment to complete
+deployment finished successfully
+```
 
+## Use FunctionClarity to Sign Your Code
+
+```
+./functionclarity sign aws code src/
+```
+
+Example output:
+```
+# ./functionclarity sign aws code src/
+using config file: /Users/<ID>/.fc
+Using payload from: /tmp/4f6957e8-6d94-4cf1-a5d0-6670889795ed
+Enter password for private key:
 Code uploaded successfully
 ```
-### Deploy a function or update function code
-Use AWS cli to deploy a signed lambda function to your cloud account, or to update lambda code in the account
 
-### Verify function code
+## Create a Function in AWS Lambda
 
-#### Verify automatically on function create or update events
+You can use whatever method you are familiar with to create a test function (Console, SAM, CLI). An example is provided below using the AWS CLI.
 
-If the verifier function is deployed in your account, and in case it meets the filter criteria then any function create or update event will trigger it to verify the new or updated function. It will follow the post-verification action (detect, block, or notify). 
+Make sure the previous steps for IAM role creation, policy attachment, exporting of the role ARN are completed.
 
-If the action is 'detect', the function will be tagged with the FunctionClarity message that the function is verified:
+Populate the various flags using the information from the previous steps:
 
-![image](https://user-images.githubusercontent.com/109651023/189880644-bed91413-a81c-4b03-b6f8-00ebea6606a0.png)
+```
+# aws lambda create-function --function-name hello_world_function \
+    --runtime python3.9 --timeout 10 --memory-size 128 \
+    --architectures x86_64 --package-type=Zip \
+    --handler lambda_function.lambda_handler \
+    --zip-file fileb://hello_world_function.zip \
+    --role ${ROLE_ARN} \
+    --publish > lambda-function.json \
+    --tags sm-hello1=
+```
 
-If the action is block, the function's concurrency will be set to 0 and the function will be throttled:
+There is a new function in the AWS Lambda service console:
 
-![image](https://user-images.githubusercontent.com/109651023/201917880-d2d2e1c4-dec7-4930-8930-0b8dc655cb0b.png)
+![image](https://user-images.githubusercontent.com/3701244/207760868-5bb1ceed-52c6-4f01-8d83-a5492f1176a2.png)
+
+Setup a test event:
+
+![image](https://user-images.githubusercontent.com/3701244/207761101-c0bcfd7e-c949-400f-8091-94c6d8d25dd4.png)
+
+Run the test event:
+
+![image](https://user-images.githubusercontent.com/3701244/207761232-7b4972e7-ece4-4c12-9e82-5edceee49655.png)
+
+Edit the code, deploy the change and test the event. This will trigger FunctionClarity to compare the code with what it has previously signed.
+
+https://github.com/eti-demos/eta-advocacy/blob/fc-base-setup/fc-base-setup/images/img_7.png?raw=true
+
+FunctionClarity checks the new code against what was signed and blocks the function from running by dropping the function run concurrency to zero:
+
+https://github.com/eti-demos/eta-advocacy/blob/fc-base-setup/fc-base-setup/images/img_8.png?raw=true
+
+In the FunctionClarity Verifier Function logs entries show the normal behavior at the bottom of the log window. This is what it looks like when a function runs the same code that was signed and verified.
+
+The top part of the log is after the code was changed, but not signed and verified by FunctionClarity. The action we chose during the initization step was to 'block' functions that fail signing checks.
+
+![image](https://user-images.githubusercontent.com/3701244/207761711-dd1f9d5a-6b53-4911-a108-e81a13805e77.png)
 
 
 #### Verify manually
