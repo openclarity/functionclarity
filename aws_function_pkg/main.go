@@ -38,16 +38,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type ResponseElement struct {
-	FunctionName string `json:"functionName"`
-	FunctionArn  string `json:"functionArn"`
+type RequestParameters struct {
+	FunctionName                 string `json:"functionName"`
+	ReservedConcurrentExecutions int    `json:"reservedConcurrentExecutions"`
 }
 
 type RecordMessage struct {
-	AwsRegion        string          `json:"awsRegion"`
-	EventSource      string          `json:"eventSource"`
-	EventName        string          `json:"eventName"`
-	ResponseElements ResponseElement `json:"responseElements"`
+	AwsRegion         string            `json:"awsRegion"`
+	EventSource       string            `json:"eventSource"`
+	EventName         string            `json:"eventName"`
+	RequestParameters RequestParameters `json:"requestParameters"`
 }
 
 type Record struct {
@@ -70,6 +70,7 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 	}
 	recordMessage := RecordMessage{}
 	logEvents := filterRecord.LogEvents
+	log.Printf("logEvents: %s", logEvents)
 	if config == nil {
 		err := initConfig()
 		if err != nil {
@@ -83,7 +84,7 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 			continue
 		}
 		if shouldHandleEvent(recordMessage) {
-			log.Printf("handling function name: %s, event name: %s, event source: %s, region: %s\n", recordMessage.ResponseElements.FunctionName, recordMessage.EventName, recordMessage.EventSource, recordMessage.AwsRegion)
+			log.Printf("handling function name: %s, event name: %s, event source: %s, region: %s\n", recordMessage.RequestParameters.FunctionName, recordMessage.EventName, recordMessage.EventSource, recordMessage.AwsRegion)
 			handleFunctionEvent(recordMessage, config.IncludedFuncTagKeys, config.IncludedFuncRegions, context)
 		}
 	}
@@ -92,8 +93,11 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 }
 
 func shouldHandleEvent(recordMessage RecordMessage) bool {
-	return (strings.Contains(recordMessage.EventName, "CreateFunction") || strings.Contains(recordMessage.EventName, "UpdateFunctionCode")) &&
-		clients.FunctionClarityLambdaVerierName != recordMessage.ResponseElements.FunctionName && "" != recordMessage.ResponseElements.FunctionName
+	if clients.FunctionClarityLambdaVerierName == recordMessage.RequestParameters.FunctionName || "" == recordMessage.RequestParameters.FunctionName {
+		return false
+	}
+	return strings.Contains(recordMessage.EventName, "CreateFunction") || strings.Contains(recordMessage.EventName, "UpdateFunctionCode") ||
+		strings.Contains(recordMessage.EventName, "DeleteFunctionConcurrency") || (strings.Contains(recordMessage.EventName, "PutFunctionConcurrency") && recordMessage.RequestParameters.ReservedConcurrentExecutions != 0)
 }
 
 func handleFunctionEvent(recordMessage RecordMessage, tagKeysFilter []string, regionsFilter []string, ctx context.Context) {
@@ -106,10 +110,10 @@ func handleFunctionEvent(recordMessage RecordMessage, tagKeysFilter []string, re
 	o := getVerifierOptions(config.IsKeyless, config.PublicKey)
 	log.Printf("about to execute verification with post action: %s.", config.Action)
 	awsClient := clients.NewAwsClient("", "", config.Bucket, config.Region, recordMessage.AwsRegion)
-	err = verify.Verify(awsClient, recordMessage.ResponseElements.FunctionName, o, ctx, config.Action, config.SnsTopicArn, tagKeysFilter, regionsFilter)
+	err = verify.Verify(awsClient, recordMessage.RequestParameters.FunctionName, o, ctx, config.Action, config.SnsTopicArn, tagKeysFilter, regionsFilter)
 
 	if err != nil {
-		log.Printf("Failed to handle lambda result: %s, %v", recordMessage.ResponseElements.FunctionArn, err)
+		log.Printf("Failed to handle lambda result: %s, %v", recordMessage.RequestParameters.FunctionName, err)
 	}
 }
 
