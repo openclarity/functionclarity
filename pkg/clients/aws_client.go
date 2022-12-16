@@ -648,8 +648,12 @@ func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	folderResultFullPath := "/tmp/" + resultFolderName.String()
-	err = os.Mkdir(folderResultFullPath, os.ModePerm)
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	folderResultFullPath := homeDir + "/function-clarity/" + resultFolderName.String()
+	err = os.MkdirAll(folderResultFullPath, os.ModePerm)
 	if err != nil {
 		return "", err
 	}
