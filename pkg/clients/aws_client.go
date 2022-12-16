@@ -641,9 +641,7 @@ func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
 	fmt.Printf("proto: %q, bucket: %q, key: %q", u.Scheme, u.Host, u.Path)
 	bucketName := u.Host
 	folder := u.Path
-	if strings.HasPrefix(folder, "/") {
-		folder = folder[1:]
-	}
+	folder = strings.TrimPrefix(folder, "/")
 	resultFolderName, err := uuid.NewRandom()
 	if err != nil {
 		return "", err
