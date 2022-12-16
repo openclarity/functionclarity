@@ -182,7 +182,7 @@ func (p *GCPClient) FuncContainsTags(funcIdentifier string, tagKes []string) (bo
 	panic("not yet supported")
 }
 
-func (p *GCPClient) Download(fileName string, outputType string) error {
+func (p *GCPClient) DownloadSignature(fileName string, outputType string) error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -229,5 +229,17 @@ func (p *GCPClient) Notify(msg string, snsArn string) error {
 }
 
 func (p *GCPClient) FillNotificationDetails(notification *Notification, functionIdentifier string) error {
+	panic("not yet supported")
+}
+
+func (o *GCPClient) DownloadBucketContent(bucketPath string) (string, error) {
+	panic("not yet supported")
+}
+
+func (o *GCPClient) DownloadFile(fileName string, path string) error {
+	panic("not yet supported")
+}
+
+func (o *GCPClient) GetFuncHash(funcIdentifier string) (string, error) {
 	panic("not yet supported")
 }
