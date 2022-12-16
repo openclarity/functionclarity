@@ -75,27 +75,27 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 	if err != nil && !errors.Is(err, VerifyError{}) {
 		return false, err
 	}
-	verificationFailed := err != nil
+	isVerified := err == nil
 
-	fmt.Printf("verification result. failed: %t\n", verificationFailed)
+	fmt.Printf("verification result. failed: %t\n", isVerified)
 
 	var e error
 	switch action {
 	case "":
 		fmt.Printf("no action defined, nothing to do\n")
 	case "detect":
-		e = client.HandleDetect(&funcIdentifier, verificationFailed)
+		e = client.HandleDetect(&funcIdentifier, isVerified)
 		if e != nil {
 			e = fmt.Errorf("handleVerification failed on function indication: %w", e)
 		}
 	case "block":
 		{
-			e = client.HandleDetect(&funcIdentifier, verificationFailed)
+			e = client.HandleDetect(&funcIdentifier, isVerified)
 			if e != nil {
 				e = fmt.Errorf("handleVerification failed on function indication: %w", e)
 				break
 			}
-			e = client.HandleBlock(&funcIdentifier, verificationFailed)
+			e = client.HandleBlock(&funcIdentifier, isVerified)
 			if e != nil {
 				e = fmt.Errorf("handleVerification failed on function block: %w", e)
 				break
@@ -103,7 +103,7 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 		}
 	}
 
-	if verificationFailed && topicArn != "" {
+	if isVerified && topicArn != "" {
 		notification := clients.Notification{}
 		err = client.FillNotificationDetails(&notification, funcIdentifier)
 		if err != nil {
@@ -116,10 +116,10 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 		}
 		e = client.Notify(string(msg), topicArn)
 	}
-	if e == nil && verificationFailed {
+	if e == nil && isVerified {
 		return false, err
 	}
-	return verificationFailed, e
+	return isVerified, e
 }
 
 func verifyImage(client clients.Client, functionIdentifier string, o *options.VerifyOpts, bucketPathToPublicKeys string, ctx context.Context) (string, error) {

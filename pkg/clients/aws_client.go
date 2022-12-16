@@ -660,7 +660,7 @@ func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
 		})
 	for {
 		for _, item := range listObjectsV2Response.Contents {
-			log.Printf("item: %v", *item.Key)
+			fmt.Printf("item: %v", *item.Key)
 			if !strings.HasSuffix(*item.Key, "/") {
 				err = o.DownloadFile(*item.Key, folderResultFullPath)
 				if err != nil {
