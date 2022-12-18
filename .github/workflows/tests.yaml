@@ -4,7 +4,7 @@ on:
   workflow_run:
     workflows: [presubmits]
     types:
-      - completed
+      - in_progress
 
 #on:
 #  push:
