@@ -1,16 +1,16 @@
 name: E2E Tests
 
-#on:
-#  workflow_run:
-#    workflows: [Pre test]
-#    types:
-#      - completed
-
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_run:
+    workflows: [presubmits]
+    types:
+      - in_progress
+
+#on:
+#  push:
+#    branches: [ "main" ]
+#  pull_request:
+#    branches: [ "main" ]
 
 jobs:
   test:
