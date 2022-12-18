@@ -1,0 +1,12 @@
+on:
+  pull_request_review:
+    types: [submitted]
+name: Pre-test
+jobs:
+  pre-test:
+    if: github.event.review.state == 'approved'
+    runs-on: ubuntu-latest
+    name: pre-test-step
+    steps:
+      - name: Explanation
+        run: echo "pre-test step run success"
