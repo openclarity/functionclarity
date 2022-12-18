@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/openclarity/functionclarity/cmd/function-clarity/cli/verify"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -77,7 +78,7 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 	}
 	isVerified := err == nil
 
-	fmt.Printf("verification result. failed: %t\n", isVerified)
+	fmt.Printf("verification result. verified: %t\n", isVerified)
 
 	var e error
 	switch action {
@@ -225,7 +226,7 @@ func verifyMultipleKeys(client clients.Client, bucketPathToPublicKeys string, o 
 			return err
 		}
 		if !info.IsDir() {
-			fmt.Printf("File Name: %s\n", info.Name())
+			log.Printf("File Name: %s\n", info.Name())
 			if codeValidationFunc != nil {
 				o.Key = path
 				err = codeValidationFunc(functionIdentity, o, ctx, isKeyless)

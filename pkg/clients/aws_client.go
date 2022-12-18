@@ -638,7 +638,6 @@ func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
 	cfg := o.getConfig()
 	s3Client := s3.NewFromConfig(*cfg)
 	u, _ := url.Parse(bucketPath)
-	fmt.Printf("proto: %q, bucket: %q, key: %q", u.Scheme, u.Host, u.Path)
 	bucketName := u.Host
 	folder := u.Path
 	folder = strings.TrimPrefix(folder, "/")
@@ -662,7 +661,6 @@ func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
 		})
 	for {
 		for _, item := range listObjectsV2Response.Contents {
-			fmt.Printf("item: %v", *item.Key)
 			if !strings.HasSuffix(*item.Key, "/") {
 				err = o.DownloadFile(*item.Key, folderResultFullPath)
 				if err != nil {
@@ -688,7 +686,7 @@ func (o *AwsClient) DownloadFile(filePath string, folderToSave string) error {
 	cfg := o.getConfig()
 	downloader := manager.NewDownloader(s3.NewFromConfig(*cfg))
 	fileName := filePath
-	outputFile := folderToSave + "/" + strings.ReplaceAll(fileName, "/", "")
+	outputFile := folderToSave + "/" + strings.ReplaceAll(fileName, "/", "-")
 	f, err := os.Create(outputFile)
 	if err != nil {
 		return err

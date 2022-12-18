@@ -80,8 +80,7 @@ func AwsVerify() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.Key = viper.GetString("publickey")
 			awsClient := clients.NewAwsClient(viper.GetString("accesskey"), viper.GetString("secretkey"), viper.GetString("bucket"), viper.GetString("region"), lambdaRegion)
-			hash, isVerified, err := verify.Verify(awsClient, args[0], o, cmd.Context(), viper.GetString("action"), viper.GetString("snsTopicArn"), viper.GetStringSlice("includedfunctagkeys"), viper.GetStringSlice("includedfuncregions"), "s3://shai-test-2/accountId/813189926740/")
-			fmt.Printf("hash: %s. is verified: %t", hash, isVerified)
+			_, _, err := verify.Verify(awsClient, args[0], o, cmd.Context(), viper.GetString("action"), viper.GetString("snsTopicArn"), viper.GetStringSlice("includedfunctagkeys"), viper.GetStringSlice("includedfuncregions"), "")
 			return err
 		},
 	}
