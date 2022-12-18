@@ -1,4 +1,4 @@
-name: Pre-test
+name: Pre test
 
 on:
   pull_request_review:

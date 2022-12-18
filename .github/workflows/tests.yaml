@@ -2,8 +2,9 @@ name: E2E Tests
 
 on:
   workflow_run:
-    workflows: [Pre-test]
-    types: [completed]
+    workflows: [Pre test]
+    types:
+      - completed
 
 jobs:
   test:
