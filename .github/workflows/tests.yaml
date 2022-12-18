@@ -1,10 +1,14 @@
 name: E2E Tests
 
+#on:
+#  workflow_run:
+#    workflows: [Pre test]
+#    types:
+#      - completed
+
 on:
-  workflow_run:
-    workflows: [Pre test]
-    types:
-      - completed
+  pull_request:
+    types: [submitted]
 
 jobs:
   test:
