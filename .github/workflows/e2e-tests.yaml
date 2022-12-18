@@ -1,7 +1,6 @@
 on:
   workflow_run:
-    workflows:
-      - preTestAction
+    workflows: [Pre-test]
     types:
       - completed
 
