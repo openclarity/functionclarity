@@ -85,18 +85,18 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 	case "":
 		fmt.Printf("no action defined, nothing to do\n")
 	case "detect":
-		e = client.HandleDetect(&funcIdentifier, isVerified)
+		e = client.HandleDetect(&funcIdentifier, !isVerified)
 		if e != nil {
 			e = fmt.Errorf("handleVerification failed on function indication: %w", e)
 		}
 	case "block":
 		{
-			e = client.HandleDetect(&funcIdentifier, isVerified)
+			e = client.HandleDetect(&funcIdentifier, !isVerified)
 			if e != nil {
 				e = fmt.Errorf("handleVerification failed on function indication: %w", e)
 				break
 			}
-			e = client.HandleBlock(&funcIdentifier, isVerified)
+			e = client.HandleBlock(&funcIdentifier, !isVerified)
 			if e != nil {
 				e = fmt.Errorf("handleVerification failed on function block: %w", e)
 				break
@@ -104,7 +104,7 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 		}
 	}
 
-	if isVerified && topicArn != "" {
+	if !isVerified && topicArn != "" {
 		notification := clients.Notification{}
 		err = client.FillNotificationDetails(&notification, funcIdentifier)
 		if err != nil {
@@ -117,7 +117,7 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 		}
 		e = client.Notify(string(msg), topicArn)
 	}
-	if e == nil && isVerified {
+	if e == nil && !isVerified {
 		return false, err
 	}
 	return isVerified, e
