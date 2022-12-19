@@ -22,14 +22,6 @@ import (
 	b64 "encoding/base64"
 	"errors"
 	"fmt"
-	"io"
-	"log"
-	"os"
-	"strconv"
-	"strings"
-	"text/template"
-	"time"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -49,6 +41,14 @@ import (
 	i "github.com/openclarity/functionclarity/pkg/init"
 	"github.com/openclarity/functionclarity/pkg/utils"
 	"gopkg.in/yaml.v3"
+	"io"
+	"log"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+	"text/template"
+	"time"
 )
 
 const FunctionClarityBucketName = "functionclarity"
@@ -127,7 +127,7 @@ func (o *AwsClient) Upload(signature string, identity string, isKeyless bool) er
 	return nil
 }
 
-func (o *AwsClient) Download(fileName string, outputType string) error {
+func (o *AwsClient) DownloadSignature(fileName string, outputType string) error {
 	cfg := o.getConfig()
 	downloader := manager.NewDownloader(s3.NewFromConfig(*cfg))
 
@@ -226,6 +226,19 @@ func (o *AwsClient) GetFuncImageURI(funcIdentifier string) (string, error) {
 		return "", err
 	}
 	return *result.Code.ImageUri, nil
+}
+
+func (o *AwsClient) GetFuncHash(funcIdentifier string) (string, error) {
+	cfg := o.getConfigForLambda()
+	lambdaClient := lambda.NewFromConfig(*cfg)
+	input := &lambda.GetFunctionInput{
+		FunctionName: aws.String(funcIdentifier),
+	}
+	result, err := lambdaClient.GetFunction(context.TODO(), input)
+	if err != nil {
+		return "", err
+	}
+	return *result.Configuration.CodeSha256, nil
 }
 
 func (o *AwsClient) HandleDetect(funcIdentifier *string, failed bool) error {
@@ -354,7 +367,7 @@ func (o *AwsClient) UnblockFunction(funcIdentifier *string) error {
 	}
 	concurrencyLevelTagName := utils.FunctionClarityConcurrencyTagKey
 	untagKeyArray := []string{concurrencyLevelTagName}
-	cfg := o.getConfig()
+	cfg := o.getConfigForLambda()
 	lambdaClient := lambda.NewFromConfig(*cfg)
 	untagFunctionInput := &lambda.UntagResourceInput{
 		Resource: funcIdentifier,
@@ -619,6 +632,76 @@ func calculateStackTemplate(trailName string, cfg *aws.Config, config i.AWSInput
 	}
 	stackCalculatedTemplate := buf.String()
 	return err, stackCalculatedTemplate
+}
+
+func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
+	cfg := o.getConfig()
+	s3Client := s3.NewFromConfig(*cfg)
+	u, _ := url.Parse(bucketPath)
+	bucketName := u.Host
+	folder := u.Path
+	folder = strings.TrimPrefix(folder, "/")
+	resultFolderName, err := uuid.NewRandom()
+	if err != nil {
+		return "", err
+	}
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	folderResultFullPath := homeDir + "/function-clarity/" + resultFolderName.String()
+	err = os.MkdirAll(folderResultFullPath, os.ModePerm)
+	if err != nil {
+		return "", err
+	}
+	listObjectsV2Response, _ := s3Client.ListObjectsV2(context.TODO(),
+		&s3.ListObjectsV2Input{
+			Bucket: &bucketName,
+			Prefix: &folder,
+		})
+	for {
+		for _, item := range listObjectsV2Response.Contents {
+			if !strings.HasSuffix(*item.Key, "/") {
+				err = o.DownloadFile(*item.Key, folderResultFullPath)
+				if err != nil {
+					return "", err
+				}
+			}
+		}
+		if listObjectsV2Response.IsTruncated {
+			listObjectsV2Response, _ = s3Client.ListObjectsV2(context.TODO(),
+				&s3.ListObjectsV2Input{
+					Bucket:            &bucketName,
+					Prefix:            &folder,
+					ContinuationToken: listObjectsV2Response.ContinuationToken,
+				})
+		} else {
+			break
+		}
+	}
+	return folderResultFullPath, nil
+}
+
+func (o *AwsClient) DownloadFile(filePath string, folderToSave string) error {
+	cfg := o.getConfig()
+	downloader := manager.NewDownloader(s3.NewFromConfig(*cfg))
+	fileName := filePath
+	outputFile := folderToSave + "/" + strings.ReplaceAll(fileName, "/", "-")
+	f, err := os.Create(outputFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = downloader.Download(context.TODO(), f, &s3.GetObjectInput{
+		Bucket: aws.String(o.s3),
+		Key:    aws.String(filePath),
+	})
+
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func trailValid(trail *cloudtrail.GetTrailOutput) error {
