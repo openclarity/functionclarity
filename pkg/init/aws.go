@@ -16,18 +16,19 @@
 package init
 
 type AWSInput struct {
-	AccessKey           string
-	SecretKey           string
-	Region              string
-	Bucket              string
-	Action              string
-	PublicKey           string
-	PrivateKey          string
-	CloudTrail          CloudTrail
-	IsKeyless           bool
-	SnsTopicArn         string
-	IncludedFuncTagKeys []string
-	IncludedFuncRegions []string
+	AccessKey              string
+	SecretKey              string
+	Region                 string
+	Bucket                 string
+	Action                 string
+	PublicKey              string
+	PrivateKey             string
+	CloudTrail             CloudTrail
+	IsKeyless              bool
+	SnsTopicArn            string
+	IncludedFuncTagKeys    []string
+	IncludedFuncRegions    []string
+	BucketPathToPublicKeys string
 }
 
 type CloudTrail struct {
