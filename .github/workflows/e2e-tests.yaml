@@ -3,8 +3,6 @@ on:
     workflows: [Pre-test]
     types:
       - completed
-  push:
-    branches: [ "main" ]
 
 jobs:
   test:
