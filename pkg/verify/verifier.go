@@ -192,7 +192,7 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 	}
 
 	isKeyless := false
-	if !o.SecurityKey.Use && o.Key == "" && o.BundlePath == "" && integrity.IsExperimentalEnv() {
+	if !o.SecurityKey.Use && o.Key == "" && o.BundlePath == "" && bucketPathToPublicKeys != "" && integrity.IsExperimentalEnv() {
 		isKeyless = true
 	}
 	if err = downloadSignatureAndCertificate(client, functionIdentifier, functionIdentity, isKeyless); err != nil {
