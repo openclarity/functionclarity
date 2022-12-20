@@ -654,11 +654,14 @@ func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	listObjectsV2Response, _ := s3Client.ListObjectsV2(context.TODO(),
+	listObjectsV2Response, err := s3Client.ListObjectsV2(context.TODO(),
 		&s3.ListObjectsV2Input{
 			Bucket: &bucketName,
 			Prefix: &folder,
 		})
+	if err != nil {
+		return "", err
+	}
 	for {
 		for _, item := range listObjectsV2Response.Contents {
 			if !strings.HasSuffix(*item.Key, "/") {
