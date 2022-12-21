@@ -135,7 +135,7 @@ func (o *AwsClient) DownloadSignature(fileName string, outputType string, bucket
 	bucket := o.s3
 	filePath := fileName
 	if bucketPathToSignatures != "" {
-		var err error = nil
+		var err error
 		bucket, filePath, err = extractBucketAndPath(signatureFullPath)
 		if err != nil {
 			return err
