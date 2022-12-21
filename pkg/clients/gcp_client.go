@@ -70,7 +70,7 @@ func (p *GCPClient) Upload(signature string, identity string, isKeyless bool) er
 	fmt.Printf("Uploaded %v to: %v\n", identity+".sig", p.bucket)
 
 	if isKeyless {
-		certificatePath := "/tmp/" + identity + ".crt.base64"
+		certificatePath := utils.FunctionClarityHomeDir + identity + ".crt.base64"
 		f, err := os.Open(certificatePath)
 		if err != nil {
 			return err
@@ -117,10 +117,10 @@ func (p *GCPClient) GetFuncCode(funcIdentifier string) (string, error) {
 	if err := utils.DownloadFile(contentName+".zip", &url); err != nil {
 		return "", err
 	}
-	if err := utils.ExtractZip("/tmp/"+zipFileName, "/tmp/"+contentName); err != nil {
+	if err := utils.ExtractZip(utils.FunctionClarityHomeDir+zipFileName, utils.FunctionClarityHomeDir+contentName); err != nil {
 		return "", err
 	}
-	return "/tmp/" + contentName, nil
+	return utils.FunctionClarityHomeDir + contentName, nil
 }
 
 func getDownloadURLFuncGen1(funcIdentifier string) (string, error) {
@@ -193,7 +193,7 @@ func (p *GCPClient) DownloadSignature(fileName string, outputType string, bucket
 	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 
-	outputFile := "/tmp/" + fileName + "." + outputType
+	outputFile := utils.FunctionClarityHomeDir + fileName + "." + outputType
 	f, err := os.Create(outputFile)
 	if err != nil {
 		return fmt.Errorf("os.Create: %v", err)

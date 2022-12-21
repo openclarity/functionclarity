@@ -108,7 +108,7 @@ func (o *AwsClient) Upload(signature string, identity string, isKeyless bool) er
 	}
 
 	if isKeyless {
-		certificatePath := "/tmp/" + identity + ".crt.base64"
+		certificatePath := utils.FunctionClarityHomeDir + identity + ".crt.base64"
 		f, err := os.Open(certificatePath)
 		if err != nil {
 			return err
@@ -141,11 +141,7 @@ func (o *AwsClient) DownloadSignature(fileName string, outputType string, bucket
 			return err
 		}
 	}
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-	outputFile := homeDir + "/" + fileName
+	outputFile := utils.FunctionClarityHomeDir + fileName
 	f, err := os.Create(outputFile)
 	if err != nil {
 		return err
@@ -178,10 +174,10 @@ func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
 	if err := utils.DownloadFile(contentName+".zip", result.Code.Location); err != nil {
 		return "", err
 	}
-	if err := utils.ExtractZip("/tmp/"+zipFileName, "/tmp/"+contentName); err != nil {
+	if err := utils.ExtractZip(utils.FunctionClarityHomeDir+zipFileName, utils.FunctionClarityHomeDir+contentName); err != nil {
 		return "", err
 	}
-	return "/tmp/" + contentName, nil
+	return utils.FunctionClarityHomeDir + contentName, nil
 }
 
 func (o *AwsClient) IsFuncInRegions(regions []string) bool {
@@ -659,11 +655,8 @@ func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	folderResultFullPath := homeDir + "/function-clarity/" + resultFolderName.String()
+
+	folderResultFullPath := utils.FunctionClarityHomeDir + resultFolderName.String()
 	err = os.MkdirAll(folderResultFullPath, os.ModePerm)
 	if err != nil {
 		return "", err

@@ -102,6 +102,7 @@ func TestMain(m *testing.M) {
 }
 
 func setup() {
+	os.Mkdir(utils.FunctionClarityHomeDir, os.ModePerm)
 	suffix = getEnvVar("uuid", "test uuid")
 	fmt.Printf("uuid: %s\n", suffix)
 	accessKey = getEnvVar("ACCESS_KEY", "access key")

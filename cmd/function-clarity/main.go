@@ -17,8 +17,11 @@ package main
 
 import (
 	"github.com/openclarity/functionclarity/cmd/function-clarity/cli"
+	"github.com/openclarity/functionclarity/pkg/utils"
+	"os"
 )
 
 func main() {
+	os.Mkdir(utils.FunctionClarityHomeDir, os.ModePerm)
 	cli.New().Execute() //nolint:errcheck
 }
