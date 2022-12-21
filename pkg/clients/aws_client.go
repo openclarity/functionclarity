@@ -145,7 +145,7 @@ func (o *AwsClient) DownloadSignature(fileName string, outputType string, bucket
 	if err != nil {
 		return err
 	}
-	outputFile := homeDir + "/" + fileName + "." + outputType
+	outputFile := homeDir + "/" + fileName
 	f, err := os.Create(outputFile)
 	if err != nil {
 		return err
