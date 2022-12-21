@@ -131,11 +131,11 @@ func (o *AwsClient) DownloadSignature(fileName string, outputType string, bucket
 	cfg := o.getConfig()
 	downloader := manager.NewDownloader(s3.NewFromConfig(*cfg))
 	fileName = fileName + "." + outputType
-	signatureFullPath := bucketPathToSignatures + fileName
 	bucket := o.s3
 	filePath := fileName
 	if bucketPathToSignatures != "" {
 		var err error
+		signatureFullPath := bucketPathToSignatures + fileName
 		bucket, filePath, err = extractBucketAndPath(signatureFullPath)
 		if err != nil {
 			return err
