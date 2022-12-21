@@ -28,7 +28,11 @@ import (
 )
 
 func VerifyIdentity(identity string, o *opts.VerifyOpts, ctx context.Context, isKeyless bool) error {
-	path := "/tmp/" + uuid.New().String()
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	path := homeDir + "/" + uuid.New().String()
 	if err := integrity.SaveTextToFile(identity, path); err != nil {
 		return err
 	}
@@ -42,10 +46,6 @@ func VerifyIdentity(identity string, o *opts.VerifyOpts, ctx context.Context, is
 	}
 
 	certRef := o.CertVerify.Cert
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
 	if isKeyless {
 		certRef = homeDir + "/" + identity + ".crt.base64"
 	}
