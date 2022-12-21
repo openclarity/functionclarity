@@ -18,6 +18,7 @@ package verify
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/google/uuid"
 	"github.com/openclarity/functionclarity/pkg/integrity"
@@ -41,10 +42,14 @@ func VerifyIdentity(identity string, o *opts.VerifyOpts, ctx context.Context, is
 	}
 
 	certRef := o.CertVerify.Cert
-	if isKeyless {
-		certRef = "/tmp/" + identity + ".crt.base64"
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
 	}
-	sigRef := "/tmp/" + identity + ".sig"
+	if isKeyless {
+		certRef = homeDir + "/" + identity + ".crt.base64"
+	}
+	sigRef := homeDir + "/" + identity + ".sig"
 
 	if err := verify.VerifyBlobCmd(ctx, ko, certRef,
 		o.CertVerify.CertEmail, o.CertVerify.CertIdentity, o.CertVerify.CertOidcIssuer, o.CertVerify.CertChain,
