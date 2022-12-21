@@ -17,6 +17,7 @@ package aws
 
 import (
 	"fmt"
+	"github.com/openclarity/functionclarity/pkg/utils"
 	"os"
 
 	"github.com/openclarity/functionclarity/cmd/function-clarity/cli/common"
@@ -143,10 +144,7 @@ func AwsInit() *cobra.Command {
 				return fmt.Errorf("init command fail: %w", err)
 			}
 
-			h, err := os.UserHomeDir()
-			if err != nil {
-				return fmt.Errorf("init command fail: %w", err)
-			}
+			h := utils.HomeDir
 			f, err := os.Create(h + "/.fc")
 			if err != nil {
 				return fmt.Errorf("init command fail: %w", err)

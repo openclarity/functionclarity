@@ -25,6 +25,6 @@ const FunctionVerifyResultTagKey = "Function clarity result"
 
 const FunctionClarityConcurrencyTagKey = "FUNCTION_CLARITY_CONCURRENCY_LEVEL"
 
-var homeDir, _ = os.UserHomeDir()
+var HomeDir, _ = os.UserHomeDir()
 
-var FunctionClarityHomeDir = homeDir + "/function-clarity/"
+var FunctionClarityHomeDir = HomeDir + "/function-clarity/"

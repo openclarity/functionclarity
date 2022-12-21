@@ -17,9 +17,8 @@ package options
 
 import (
 	"fmt"
+	"github.com/openclarity/functionclarity/pkg/utils"
 	"github.com/spf13/viper"
-	"log"
-	"os"
 )
 
 var Config string = ""
@@ -29,10 +28,7 @@ func CobraInit() {
 		viper.SetConfigFile(Config)
 		viper.SetConfigType("yaml")
 	} else {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatal(err)
-		}
+		home := utils.FunctionClarityHomeDir
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".fc")
 		viper.SetConfigType("yaml")
