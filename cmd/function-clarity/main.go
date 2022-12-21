@@ -18,10 +18,13 @@ package main
 import (
 	"github.com/openclarity/functionclarity/cmd/function-clarity/cli"
 	"github.com/openclarity/functionclarity/pkg/utils"
+	"log"
 	"os"
 )
 
 func main() {
-	os.Mkdir(utils.FunctionClarityHomeDir, os.ModePerm)
+	if err := os.Mkdir(utils.FunctionClarityHomeDir, os.ModePerm); err != nil {
+		log.Fatal("Can't create home dir", err)
+	}
 	cli.New().Execute() //nolint:errcheck
 }
