@@ -35,7 +35,7 @@ import (
 )
 
 func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context, action string,
-	topicArn string, tagKeysFilter []string, filteredRegions []string, bucketPathToPublicKeys string) (string, bool, error) {
+	topicArn string, tagKeysFilter []string, filteredRegions []string, bucketPathToPublicKeys string, bucketPathToSignatures string) (string, bool, error) {
 
 	if filteredRegions != nil && (len(filteredRegions) > 0) {
 		funcInRegions := client.IsFuncInRegions(filteredRegions)
@@ -62,7 +62,7 @@ func Verify(client clients.Client, functionIdentifier string, o *options.VerifyO
 	hash := ""
 	switch packageType {
 	case "Zip":
-		hash, err = verifyCode(client, functionIdentifier, o, bucketPathToPublicKeys, ctx)
+		hash, err = verifyCode(client, functionIdentifier, o, bucketPathToPublicKeys, bucketPathToSignatures, ctx)
 	case "Image":
 		hash, err = verifyImage(client, functionIdentifier, o, bucketPathToPublicKeys, ctx)
 	default:
@@ -180,7 +180,7 @@ func verifyImage(client clients.Client, functionIdentifier string, o *options.Ve
 	return funcHash, nil
 }
 
-func verifyCode(client clients.Client, functionIdentifier string, o *options.VerifyOpts, bucketPathToPublicKeys string, ctx context.Context) (string, error) {
+func verifyCode(client clients.Client, functionIdentifier string, o *options.VerifyOpts, bucketPathToPublicKeys string, bucketPathToSignatures string, ctx context.Context) (string, error) {
 	codePath, err := client.GetFuncCode(functionIdentifier)
 	if err != nil {
 		return "", fmt.Errorf("verify code: failed to fetch function code for function: %s: %w", functionIdentifier, err)
@@ -195,7 +195,7 @@ func verifyCode(client clients.Client, functionIdentifier string, o *options.Ver
 	if !o.SecurityKey.Use && o.Key == "" && o.BundlePath == "" && bucketPathToPublicKeys == "" && integrity.IsExperimentalEnv() {
 		isKeyless = true
 	}
-	if err = downloadSignatureAndCertificate(client, functionIdentifier, functionIdentity, isKeyless); err != nil {
+	if err = downloadSignatureAndCertificate(client, functionIdentifier, functionIdentity, isKeyless, bucketPathToSignatures); err != nil {
 		return functionIdentity, err
 	}
 	if bucketPathToPublicKeys != "" {
@@ -249,8 +249,8 @@ func verifyMultipleKeys(client clients.Client, bucketPathToPublicKeys string, o 
 	return nil
 }
 
-func downloadSignatureAndCertificate(client clients.Client, functionIdentifier string, functionIdentity string, isKeyless bool) error {
-	if err := client.DownloadSignature(functionIdentity, "sig"); err != nil {
+func downloadSignatureAndCertificate(client clients.Client, functionIdentifier string, functionIdentity string, isKeyless bool, bucketPathToSignatures string) error {
+	if err := client.DownloadSignature(functionIdentity, "sig", bucketPathToSignatures); err != nil {
 		var nsk *s3types.NoSuchKey
 		if errors.As(err, &nsk) || strings.Contains(err.Error(), "storage: object doesn't exist") {
 			return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}
@@ -258,7 +258,7 @@ func downloadSignatureAndCertificate(client clients.Client, functionIdentifier s
 		return fmt.Errorf("verify code: failed to get signed identity for function: %s, function idenity: %s: %w", functionIdentifier, functionIdentity, err)
 	}
 	if isKeyless {
-		if err := client.DownloadSignature(functionIdentity, "crt.base64"); err != nil {
+		if err := client.DownloadSignature(functionIdentity, "crt.base64", bucketPathToSignatures); err != nil {
 			var nsk *s3types.NoSuchKey
 			if errors.As(err, &nsk) || strings.Contains(err.Error(), "storage: object doesn't exist") {
 				return VerifyError{Err: fmt.Errorf("code verification error: %w", err)}

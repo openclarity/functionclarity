@@ -33,11 +33,11 @@ type Client interface {
 	IsFuncInRegions(regions []string) bool
 	FuncContainsTags(funcIdentifier string, tagKes []string) (bool, error)
 	Upload(signature string, identity string, isKeyless bool) error
-	DownloadSignature(fileName string, outputType string) error
+	DownloadSignature(fileName string, outputType string, bucketPathToSignatures string) error
 	HandleBlock(funcIdentifier *string, failed bool) error
 	HandleDetect(funcIdentifier *string, failed bool) error
 	Notify(msg string, snsArn string) error
 	FillNotificationDetails(notification *Notification, functionIdentifier string) error
 	DownloadBucketContent(bucketPath string) (string, error)
-	DownloadFile(fileName string, path string) error
+	DownloadFile(fileName string, folderToSave string, bucketName string) error
 }
