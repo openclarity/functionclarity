@@ -236,6 +236,8 @@ func verifyMultipleKeys(client clients.Client, bucketPathToPublicKeys string, o 
 			}
 			if err == nil {
 				return io.EOF
+			} else {
+				log.Printf("error from validation func: %v", err)
 			}
 		}
 		return nil
