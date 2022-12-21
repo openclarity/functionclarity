@@ -28,7 +28,7 @@ func CobraInit() {
 		viper.SetConfigFile(Config)
 		viper.SetConfigType("yaml")
 	} else {
-		home := utils.FunctionClarityHomeDir
+		home := utils.HomeDir
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".fc")
 		viper.SetConfigType("yaml")

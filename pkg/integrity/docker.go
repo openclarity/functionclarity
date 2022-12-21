@@ -55,7 +55,7 @@ func InitDocker(awsClient *clients.AwsClient) error {
 		return err
 	}
 
-	homeDir := utils.FunctionClarityHomeDir
+	homeDir := utils.HomeDir
 
 	dockerConfigDir := homeDir + "/.docker"
 	err = os.MkdirAll(dockerConfigDir, 0700)
