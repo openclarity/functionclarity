@@ -232,11 +232,7 @@ func (p *GCPClient) FillNotificationDetails(notification *Notification, function
 	panic("not yet supported")
 }
 
-func (o *GCPClient) DownloadBucketContent(bucketPath string) (string, error) {
-	panic("not yet supported")
-}
-
-func (o *GCPClient) DownloadFile(fileName string, path string, bucketName string) error {
+func (o *GCPClient) DownloadPublicKeys(path string) (string, error) {
 	panic("not yet supported")
 }
 
