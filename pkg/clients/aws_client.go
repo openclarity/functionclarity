@@ -108,7 +108,7 @@ func (o *AwsClient) Upload(signature string, identity string, isKeyless bool) er
 	}
 
 	if isKeyless {
-		certificatePath := "/tmp/" + identity + ".crt.base64"
+		certificatePath := utils.FunctionClarityHomeDir + identity + ".crt.base64"
 		f, err := os.Open(certificatePath)
 		if err != nil {
 			return err
@@ -127,11 +127,21 @@ func (o *AwsClient) Upload(signature string, identity string, isKeyless bool) er
 	return nil
 }
 
-func (o *AwsClient) DownloadSignature(fileName string, outputType string) error {
+func (o *AwsClient) DownloadSignature(fileName string, outputType string, bucketPathToSignatures string) error {
 	cfg := o.getConfig()
 	downloader := manager.NewDownloader(s3.NewFromConfig(*cfg))
-
-	outputFile := "/tmp/" + fileName + "." + outputType
+	fileName = fileName + "." + outputType
+	bucket := o.s3
+	filePath := fileName
+	if bucketPathToSignatures != "" {
+		var err error
+		signatureFullPath := bucketPathToSignatures + fileName
+		bucket, filePath, err = extractBucketAndPath(signatureFullPath)
+		if err != nil {
+			return err
+		}
+	}
+	outputFile := utils.FunctionClarityHomeDir + fileName
 	f, err := os.Create(outputFile)
 	if err != nil {
 		return err
@@ -139,8 +149,8 @@ func (o *AwsClient) DownloadSignature(fileName string, outputType string) error 
 	defer f.Close()
 
 	_, err = downloader.Download(context.TODO(), f, &s3.GetObjectInput{
-		Bucket: aws.String(o.s3),
-		Key:    aws.String(fileName + "." + outputType),
+		Bucket: aws.String(bucket),
+		Key:    aws.String(filePath),
 	})
 
 	if err != nil {
@@ -164,10 +174,10 @@ func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
 	if err := utils.DownloadFile(contentName+".zip", result.Code.Location); err != nil {
 		return "", err
 	}
-	if err := utils.ExtractZip("/tmp/"+zipFileName, "/tmp/"+contentName); err != nil {
+	if err := utils.ExtractZip(utils.FunctionClarityHomeDir+zipFileName, utils.FunctionClarityHomeDir+contentName); err != nil {
 		return "", err
 	}
-	return "/tmp/" + contentName, nil
+	return utils.FunctionClarityHomeDir + contentName, nil
 }
 
 func (o *AwsClient) IsFuncInRegions(regions []string) bool {
@@ -637,32 +647,32 @@ func calculateStackTemplate(trailName string, cfg *aws.Config, config i.AWSInput
 func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
 	cfg := o.getConfig()
 	s3Client := s3.NewFromConfig(*cfg)
-	u, _ := url.Parse(bucketPath)
-	bucketName := u.Host
-	folder := u.Path
-	folder = strings.TrimPrefix(folder, "/")
+	bucketName, folder, err := extractBucketAndPath(bucketPath)
+	if err != nil {
+		return "", err
+	}
 	resultFolderName, err := uuid.NewRandom()
 	if err != nil {
 		return "", err
 	}
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	folderResultFullPath := homeDir + "/function-clarity/" + resultFolderName.String()
+
+	folderResultFullPath := utils.FunctionClarityHomeDir + resultFolderName.String()
 	err = os.MkdirAll(folderResultFullPath, os.ModePerm)
 	if err != nil {
 		return "", err
 	}
-	listObjectsV2Response, _ := s3Client.ListObjectsV2(context.TODO(),
+	listObjectsV2Response, err := s3Client.ListObjectsV2(context.TODO(),
 		&s3.ListObjectsV2Input{
 			Bucket: &bucketName,
 			Prefix: &folder,
 		})
+	if err != nil {
+		return "", err
+	}
 	for {
 		for _, item := range listObjectsV2Response.Contents {
 			if !strings.HasSuffix(*item.Key, "/") {
-				err = o.DownloadFile(*item.Key, folderResultFullPath)
+				err = o.DownloadFile(*item.Key, folderResultFullPath, bucketName)
 				if err != nil {
 					return "", err
 				}
@@ -682,7 +692,7 @@ func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
 	return folderResultFullPath, nil
 }
 
-func (o *AwsClient) DownloadFile(filePath string, folderToSave string) error {
+func (o *AwsClient) DownloadFile(filePath string, folderToSave string, bucketName string) error {
 	cfg := o.getConfig()
 	downloader := manager.NewDownloader(s3.NewFromConfig(*cfg))
 	fileName := filePath
@@ -692,9 +702,12 @@ func (o *AwsClient) DownloadFile(filePath string, folderToSave string) error {
 		return err
 	}
 	defer f.Close()
+	if bucketName == "" {
+		bucketName = o.s3
+	}
 
 	_, err = downloader.Download(context.TODO(), f, &s3.GetObjectInput{
-		Bucket: aws.String(o.s3),
+		Bucket: aws.String(bucketName),
 		Key:    aws.String(filePath),
 	})
 
@@ -702,6 +715,17 @@ func (o *AwsClient) DownloadFile(filePath string, folderToSave string) error {
 		return err
 	}
 	return nil
+}
+
+func extractBucketAndPath(bucketPath string) (string, string, error) {
+	u, err := url.Parse(bucketPath)
+	if err != nil {
+		return "", "", err
+	}
+	bucketName := u.Host
+	folder := u.Path
+	folder = strings.TrimPrefix(folder, "/")
+	return bucketName, folder, nil
 }
 
 func trailValid(trail *cloudtrail.GetTrailOutput) error {

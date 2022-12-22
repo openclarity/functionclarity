@@ -18,16 +18,16 @@ package verify
 import (
 	"context"
 	"fmt"
-
 	"github.com/google/uuid"
 	"github.com/openclarity/functionclarity/pkg/integrity"
 	opts "github.com/openclarity/functionclarity/pkg/options"
+	"github.com/openclarity/functionclarity/pkg/utils"
 	"github.com/sigstore/cosign/cmd/cosign/cli/options"
 	"github.com/sigstore/cosign/cmd/cosign/cli/verify"
 )
 
 func VerifyIdentity(identity string, o *opts.VerifyOpts, ctx context.Context, isKeyless bool) error {
-	path := "/tmp/" + uuid.New().String()
+	path := utils.FunctionClarityHomeDir + uuid.New().String()
 	if err := integrity.SaveTextToFile(identity, path); err != nil {
 		return err
 	}
@@ -42,9 +42,9 @@ func VerifyIdentity(identity string, o *opts.VerifyOpts, ctx context.Context, is
 
 	certRef := o.CertVerify.Cert
 	if isKeyless {
-		certRef = "/tmp/" + identity + ".crt.base64"
+		certRef = utils.FunctionClarityHomeDir + identity + ".crt.base64"
 	}
-	sigRef := "/tmp/" + identity + ".sig"
+	sigRef := utils.FunctionClarityHomeDir + identity + ".sig"
 
 	if err := verify.VerifyBlobCmd(ctx, ko, certRef,
 		o.CertVerify.CertEmail, o.CertVerify.CertIdentity, o.CertVerify.CertOidcIssuer, o.CertVerify.CertChain,

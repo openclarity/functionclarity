@@ -17,6 +17,7 @@ package sign
 
 import (
 	"fmt"
+	"github.com/openclarity/functionclarity/pkg/utils"
 
 	"github.com/google/uuid"
 	"github.com/openclarity/functionclarity/pkg/integrity"
@@ -29,7 +30,7 @@ import (
 )
 
 func SignIdentity(identity string, o *o.SignBlobOptions, ro *co.RootOptions, isKeyless bool) (string, error) {
-	path := "/tmp/" + uuid.New().String()
+	path := utils.FunctionClarityHomeDir + uuid.New().String()
 	if err := integrity.SaveTextToFile(identity, path); err != nil {
 		return "", fmt.Errorf("signing identity: %w", err)
 	}
@@ -58,8 +59,8 @@ func SignIdentity(identity string, o *o.SignBlobOptions, ro *co.RootOptions, isK
 	outputSignature := o.OutputSignature
 	outputCertificate := o.OutputCertificate
 	if isKeyless {
-		outputSignature = "/tmp/" + identity + ".sig"
-		outputCertificate = "/tmp/" + identity + ".crt.base64"
+		outputSignature = utils.FunctionClarityHomeDir + identity + ".sig"
+		outputCertificate = utils.FunctionClarityHomeDir + identity + ".crt.base64"
 	}
 
 	sig, err := sign.SignBlobCmd(ro, ko, o.Registry, path, o.Base64Output, outputSignature, outputCertificate)

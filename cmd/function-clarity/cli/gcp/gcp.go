@@ -59,7 +59,7 @@ func GcpVerify() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.Key = viper.GetString("publickey")
 			gcpClient := clients.NewGCPClientInit(viper.GetString("bucket"), viper.GetString("location"), functionRegion)
-			_, _, err := verify.Verify(gcpClient, args[0], o, cmd.Context(), "", "", nil, nil, "")
+			_, _, err := verify.Verify(gcpClient, args[0], o, cmd.Context(), "", "", nil, nil, "", "")
 			return err
 		},
 	}

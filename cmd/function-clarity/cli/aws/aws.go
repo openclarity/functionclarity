@@ -17,6 +17,7 @@ package aws
 
 import (
 	"fmt"
+	"github.com/openclarity/functionclarity/pkg/utils"
 	"os"
 
 	"github.com/openclarity/functionclarity/cmd/function-clarity/cli/common"
@@ -80,7 +81,9 @@ func AwsVerify() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			o.Key = viper.GetString("publickey")
 			awsClient := clients.NewAwsClient(viper.GetString("accesskey"), viper.GetString("secretkey"), viper.GetString("bucket"), viper.GetString("region"), lambdaRegion)
-			_, _, err := verify.Verify(awsClient, args[0], o, cmd.Context(), viper.GetString("action"), viper.GetString("snsTopicArn"), viper.GetStringSlice("includedfunctagkeys"), viper.GetStringSlice("includedfuncregions"), "")
+			_, _, err := verify.Verify(awsClient, args[0], o, cmd.Context(), viper.GetString("action"),
+				viper.GetString("snsTopicArn"), viper.GetStringSlice("includedfunctagkeys"), viper.GetStringSlice("includedfuncregions"),
+				"", "")
 			return err
 		},
 	}
@@ -141,10 +144,7 @@ func AwsInit() *cobra.Command {
 				return fmt.Errorf("init command fail: %w", err)
 			}
 
-			h, err := os.UserHomeDir()
-			if err != nil {
-				return fmt.Errorf("init command fail: %w", err)
-			}
+			h := utils.HomeDir
 			f, err := os.Create(h + "/.fc")
 			if err != nil {
 				return fmt.Errorf("init command fail: %w", err)

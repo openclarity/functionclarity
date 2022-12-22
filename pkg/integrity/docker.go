@@ -18,6 +18,7 @@ package integrity
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/openclarity/functionclarity/pkg/utils"
 	"os"
 	"strings"
 
@@ -54,10 +55,7 @@ func InitDocker(awsClient *clients.AwsClient) error {
 		return err
 	}
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
+	homeDir := utils.HomeDir
 
 	dockerConfigDir := homeDir + "/.docker"
 	err = os.MkdirAll(dockerConfigDir, 0700)

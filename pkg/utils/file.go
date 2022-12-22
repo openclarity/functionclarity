@@ -35,7 +35,7 @@ func DownloadFile(fileName string, url *string) error {
 	defer resp.Body.Close()
 
 	// Create the file
-	out, err := os.Create("/tmp/" + fileName)
+	out, err := os.Create(FunctionClarityHomeDir + fileName)
 	if err != nil {
 		return err
 	}
