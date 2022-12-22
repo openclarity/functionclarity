@@ -3,7 +3,7 @@ FunctionClarity is a code integrity solution for serverless functions. It allows
 
 This version supports serverless functions on AWS (Lambda functions) only, support for Azure functions and Google functions/cloud-run are part of the near-term roadmap plan.
 
-## How does it work?
+## How does it work? 
 
 
 ![FunctionClarity Diagram](https://user-images.githubusercontent.com/110329574/197707276-10cd650e-a84d-4a9f-a83a-ee60dc2cbf28.png)
