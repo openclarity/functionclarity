@@ -5,13 +5,15 @@ on:
       - completed
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     if: >
-      github.event.workflow_run.event == 'pull_request_review' &&
-      github.event.workflow_run.conclusion == 'success'
+      ! github.event.push.head.repo.fork || ! github.event.pull_request.head.repo.fork || (github.event.workflow_run.event == 'pull_request_review' &&
+      github.event.workflow_run.conclusion == 'success')
     permissions:
       id-token: write
     steps:
