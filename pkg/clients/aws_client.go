@@ -154,6 +154,10 @@ func (o *AwsClient) DownloadSignature(fileName string, outputType string, bucket
 	})
 
 	if err != nil {
+		var nsk *s3types.NoSuchKey
+		if errors.As(err, &nsk) || strings.Contains(err.Error(), "storage: object doesn't exist") {
+			return fmt.Errorf(utils.FunctionClaritySignatureNotFoundMessage+" : %w", err)
+		}
 		return err
 	}
 	return nil
@@ -644,7 +648,7 @@ func calculateStackTemplate(trailName string, cfg *aws.Config, config i.AWSInput
 	return err, stackCalculatedTemplate
 }
 
-func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
+func (o *AwsClient) DownloadPublicKeys(bucketPath string) (string, error) {
 	cfg := o.getConfig()
 	s3Client := s3.NewFromConfig(*cfg)
 	bucketName, folder, err := extractBucketAndPath(bucketPath)
@@ -672,7 +676,7 @@ func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
 	for {
 		for _, item := range listObjectsV2Response.Contents {
 			if !strings.HasSuffix(*item.Key, "/") {
-				err = o.DownloadFile(*item.Key, folderResultFullPath, bucketName)
+				err = o.downloadFile(*item.Key, folderResultFullPath, bucketName)
 				if err != nil {
 					return "", err
 				}
@@ -692,7 +696,7 @@ func (o *AwsClient) DownloadBucketContent(bucketPath string) (string, error) {
 	return folderResultFullPath, nil
 }
 
-func (o *AwsClient) DownloadFile(filePath string, folderToSave string, bucketName string) error {
+func (o *AwsClient) downloadFile(filePath string, folderToSave string, bucketName string) error {
 	cfg := o.getConfig()
 	downloader := manager.NewDownloader(s3.NewFromConfig(*cfg))
 	fileName := filePath

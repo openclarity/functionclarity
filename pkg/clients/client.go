@@ -38,6 +38,5 @@ type Client interface {
 	HandleDetect(funcIdentifier *string, failed bool) error
 	Notify(msg string, snsArn string) error
 	FillNotificationDetails(notification *Notification, functionIdentifier string) error
-	DownloadBucketContent(bucketPath string) (string, error)
-	DownloadFile(fileName string, folderToSave string, bucketName string) error
+	DownloadPublicKeys(path string) (string, error)
 }

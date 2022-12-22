@@ -25,6 +25,8 @@ const FunctionVerifyResultTagKey = "Function clarity result"
 
 const FunctionClarityConcurrencyTagKey = "FUNCTION_CLARITY_CONCURRENCY_LEVEL"
 
+const FunctionClaritySignatureNotFoundMessage = "storage: object doesn't exist"
+
 var HomeDir, _ = os.UserHomeDir()
 
 var FunctionClarityHomeDir = HomeDir + "/function-clarity/"
