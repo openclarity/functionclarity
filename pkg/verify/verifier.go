@@ -34,7 +34,7 @@ import (
 )
 
 func Verify(client clients.Client, functionIdentifier string, o *options.VerifyOpts, ctx context.Context, action string,
-	topicArn string, tagKeysFilter []string, filteredRegions []string, bucketPathToPublicKeys string, bucketPathToSignatures string) (string, bool, error) {
+	topicArn string, tagKeysFilter []string, filteredRegions []string, pathToPublicKeys string, pathToSignatures string) (string, bool, error) {
 
 	if filteredRegions != nil && (len(filteredRegions) > 0) {
 		funcInRegions := client.IsFuncInRegions(filteredRegions)
@@ -61,9 +61,9 @@ func Verify(client clients.Client, functionIdentifier string, o *options.VerifyO
 	hash := ""
 	switch packageType {
 	case "Zip":
-		hash, err = verifyCode(client, functionIdentifier, o, bucketPathToPublicKeys, bucketPathToSignatures, ctx)
+		hash, err = verifyCode(client, functionIdentifier, o, pathToPublicKeys, pathToSignatures, ctx)
 	case "Image":
-		hash, err = verifyImage(client, functionIdentifier, o, bucketPathToPublicKeys, ctx)
+		hash, err = verifyImage(client, functionIdentifier, o, pathToPublicKeys, ctx)
 	default:
 		return "", false, fmt.Errorf("unsupported package type: %s for function: %s", packageType, functionIdentifier)
 	}
@@ -122,7 +122,7 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 	return isVerified, e
 }
 
-func verifyImage(client clients.Client, functionIdentifier string, o *options.VerifyOpts, bucketPathToPublicKeys string, ctx context.Context) (string, error) {
+func verifyImage(client clients.Client, functionIdentifier string, o *options.VerifyOpts, pathToPublicKeys string, ctx context.Context) (string, error) {
 	funcHash, err := client.GetFuncImageURI(functionIdentifier)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch function hash for function: %s: %w", functionIdentifier, err)
@@ -166,8 +166,8 @@ func verifyImage(client clients.Client, functionIdentifier string, o *options.Ve
 		SignatureRef:                 o.SignatureRef,
 		LocalImage:                   o.LocalImage,
 	}
-	if bucketPathToPublicKeys != "" {
-		err = verifyMultipleKeys(client, bucketPathToPublicKeys, o, "", ctx, false, []string{imageURI}, nil, &vc)
+	if pathToPublicKeys != "" {
+		err = verifyMultipleKeys(client, pathToPublicKeys, o, "", ctx, false, []string{imageURI}, nil, &vc)
 		if err != nil {
 			return funcHash, err
 		}
