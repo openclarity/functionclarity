@@ -3,10 +3,14 @@ name: Pre-test
 on:
   pull_request_review:
     types: [submitted]
+  push:
+    branches: [ "main" ]
 
 jobs:
   pre-test:
-    if: github.event.review.state == 'approved'
+    if: >
+      github.event.push.branch == 'main' ||
+      github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     name: pre-test-step
     steps:

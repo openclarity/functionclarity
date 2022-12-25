@@ -2,7 +2,7 @@ name: E2E Tests
 
 on:
   workflow_run:
-    workflows: [Pre-test, On-push-to-master]
+    workflows: [Pre-test]
     types:
       - completed
 
