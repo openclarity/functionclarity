@@ -102,7 +102,7 @@ func TestMain(m *testing.M) {
 }
 
 func setup() {
-	if err := os.Mkdir(utils.FunctionClarityHomeDir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(utils.FunctionClarityHomeDir, os.ModePerm); err != nil {
 		log.Fatal(err)
 	}
 	suffix = getEnvVar("uuid", "test uuid")

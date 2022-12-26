@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/openclarity/functionclarity/pkg/utils"
 	"io"
 	"log"
 	"os"
@@ -76,6 +77,10 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 		if err != nil {
 			return err
 		}
+	}
+	log.Printf("creating folder: %s", utils.FunctionClarityHomeDir)
+	if err := os.MkdirAll(utils.FunctionClarityHomeDir, os.ModePerm); err != nil {
+		return err
 	}
 	for logEvent := range logEvents {
 		err = json.Unmarshal([]byte(logEvents[logEvent].Message), &recordMessage)
