@@ -1,0 +1,13 @@
+name: On-push-to-master
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  pre-test:
+    runs-on: ubuntu-latest
+    name: on-push-to-master-step
+    steps:
+      - name: Explanation
+        run: echo "on-push-to-master step run success"
