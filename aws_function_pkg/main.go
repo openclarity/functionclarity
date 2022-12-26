@@ -22,6 +22,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/openclarity/functionclarity/pkg/utils"
 	"io"
 	"log"
 	"os"
@@ -118,6 +119,9 @@ func handleFunctionEvent(recordMessage RecordMessage, tagKeysFilter []string, re
 }
 
 func initConfig() error {
+	if err := os.MkdirAll(utils.FunctionClarityHomeDir, os.ModePerm); err != nil {
+		return err
+	}
 	envConfig := os.Getenv(clients.ConfigEnvVariableName)
 	log.Printf("config: %s", envConfig)
 	decodedConfig, err := base64.StdEncoding.DecodeString(envConfig)
