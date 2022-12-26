@@ -78,6 +78,7 @@ func HandleRequest(context context.Context, cloudWatchEvent events.CloudwatchLog
 			return err
 		}
 	}
+	log.Printf("creating folder: %s", utils.FunctionClarityHomeDir)
 	if err := os.MkdirAll(utils.FunctionClarityHomeDir, os.ModePerm); err != nil {
 		return err
 	}
