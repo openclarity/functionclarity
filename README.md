@@ -192,6 +192,7 @@ Command for verification
 ./functionclarity verify aws <function name to verify> --function-region=<function region location> --flags (optional if you have configuration file)
 ```
 
+
 These are  optional flags for the ```verify``` command:
 
 | flag       | Description                                                        |
