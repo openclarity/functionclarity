@@ -116,9 +116,7 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 		}
 		e = client.Notify(string(msg), topicArn)
 	}
-	if e == nil && !isVerified {
-		return false, err
-	}
+
 	return isVerified, e
 }
 
