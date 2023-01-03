@@ -15,7 +15,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.21.1
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.17.24
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.25.0
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.5
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.6
 	github.com/aws/aws-sdk-go-v2/service/sns v1.18.5
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.19.14
 	github.com/aws/aws-sdk-go-v2/service/sts v1.17.7
@@ -68,12 +68,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.27 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.21 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.27 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.17 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.18 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecrpublic v1.13.19 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.11 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.21 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.22 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.21 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.20 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.21 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.11.26 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.13.9 // indirect
 	github.com/awslabs/amazon-ecr-credential-helper/ecr-login v0.0.0-20221027043306-dc425bc05c64 // indirect
