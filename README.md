@@ -204,7 +204,7 @@ These are  optional flags for the ```verify``` command:
 
 ### Update verifier function configuration command detailed use
 
-The ```update-func-config``` command updates the runtime configuration of the verifier lambda function in the aws environment.
+The ```update-func-config``` command is usefull when you want to update configuration related to the verifier lambda. The command updates the runtime configuration of the verifier lambda function in the aws environment.
 ---
 
 **NOTE**:
