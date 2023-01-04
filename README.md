@@ -201,3 +201,32 @@ These are  optional flags for the ```verify``` command:
 | region     | AWS region from which  to load the signature from (relevant only for code signing) |
 | bucket     | AWS bucket from which to load signatures from (relevant only for code signing)    |
 | key        | public key for verification                                        |
+
+### Update verifier function configuration command detailed use
+
+The ```update-func-config``` command is usefull when you want to update configuration related to the verifier lambda. The command updates the runtime configuration of the verifier lambda function in the aws environment.
+
+---
+
+**NOTE**:
+If  a default config file exists (in  ```~/.fc```) it will be used. If a custom config file flag is included in the command line, it will be used instead of the default file. If flags are included in the command line, they will be used and take precedence.
+
+---
+
+Command for updating verifier configuration
+```shell
+./function-clarity update-func-config aws --flags (optional if you have configuration file)
+```
+
+These are  optional flags for the ```update-func-config``` command:
+
+| flag       | Description                                                        |
+|------------|--------------------------------------------------------------------|
+| access key | AWS access key                                                     |
+| secret key | AWS secret key                                                     |
+| region     | AWS region where the verifier lambda runs |
+| action     | action to perform after verification (detect, block;  leave empty for no action to be performed)    |
+| includedfunctagkeys     | tag keys of functions to include in the verification; if empty all functions will be included    |
+| includedfuncregions        | function regions to include in the verification, i.e: us-east-1,us-west-1; if empty functions from all regions will be included|
+| snsTopicArn        | an SNS queue for notifications if verification fails, leave empty to skip notifications                                        |
+
