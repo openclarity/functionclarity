@@ -14,7 +14,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudformation v1.24.2
 	github.com/aws/aws-sdk-go-v2/service/cloudtrail v1.21.1
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.17.24
-	github.com/aws/aws-sdk-go-v2/service/lambda v1.25.0
+	github.com/aws/aws-sdk-go-v2/service/lambda v1.27.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.29.5
 	github.com/aws/aws-sdk-go-v2/service/sns v1.18.5
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.19.14
