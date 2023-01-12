@@ -1,8 +1,6 @@
 # Contributing Guidelines
 
-Welcome to FunctionClarity. We are excited about the prospect of you joining our community! The FunctionClarity communitry abides by the CNCF [code of conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md). Here is an excerpt:
-
-_As contributors and maintainers of this project, and in the interest of fostering an open and welcoming community, we pledge to respect all people who contribute through reporting issues, posting feature requests, updating documentation, submitting pull requests or patches, and other activities._
+Welcome to FunctionClarity. We are excited about the prospect of you joining our community! 
 
 - [Contributing Code](#contributing-code)
 - [Coding Style](#coding-style)
@@ -91,7 +89,7 @@ Function Clarity prefers not to maintain its own style guide, but we do
 enforce the style and best practices established by the Go project and its
 community. This means contributors should:
 
-- Follow the guidelines set out by the [Effective Go] document.
+- Follow the guidelines set out by the [go][Effective Go] document.
 - Preempt common Go [code review comments] and [test review comments].
 
 These coding style guidelines apply to Function Clarity repository unless
@@ -454,3 +452,20 @@ func TestExample(t *testing.T) {
                 })
         }
 }
+```
+
+[contact]: #contact-information
+[build submodule]: https://github.com/upbound/build/
+[`kind`]: https://kind.sigs.k8s.io/
+[kubernetes-release-cycle]: https://kubernetes.io/releases/release/
+[good git commit hygiene]: https://www.futurelearn.com/info/blog/telling-stories-with-your-git-history
+[Developer Certificate of Origin]: https://github.com/apps/dco
+[code review comments]: https://github.com/golang/go/wiki/CodeReviewComments
+[test review comments]: https://github.com/golang/go/wiki/TestComments
+[Effective Go]: https://golang.org/doc/effective_go
+[Dave Cheney's blog]: https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis
+[`crossplane-runtime/pkg/errors`]: https://pkg.go.dev/github.com/crossplane/crossplane-runtime/pkg/errors
+[golangci-lint]: https://golangci-lint.run/
+[mage]: https://magefile.org/
+[sig-release-subprojects]: https://git.k8s.io/community/sig-release#subprojects
+[template-project]: https://git.k8s.io/kubernetes-template-project
