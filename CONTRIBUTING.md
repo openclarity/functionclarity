@@ -1,6 +1,6 @@
 # Contributing Guidelines
 
-Welcome to Function Clarity. We are excited about the prospect of you joining our community! The Function Clarity communitry abides by the CNCF [code of conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md). Here is an excerpt:
+Welcome to FunctionClarity. We are excited about the prospect of you joining our community! The FunctionClarity communitry abides by the CNCF [code of conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md). Here is an excerpt:
 
 _As contributors and maintainers of this project, and in the interest of fostering an open and welcoming community, we pledge to respect all people who contribute through reporting issues, posting feature requests, updating documentation, submitting pull requests or patches, and other activities._
 
@@ -16,7 +16,7 @@ _As contributors and maintainers of this project, and in the interest of fosteri
 
 ## Contributing Code
 
-To contribute bug fixes or features to Function Clarity repository:
+To contribute bug fixes or features to FunctionClarity repository:
 
 1. Communicate your intent.
 1. Make your changes.
@@ -24,7 +24,7 @@ To contribute bug fixes or features to Function Clarity repository:
 1. Update documentation and examples where appropriate.
 1. Open a Pull Request (PR).
 
-Communicating your intent lets Function Clarity members know that you intend
+Communicating your intent lets FunctionClarity members know that you intend
 to contribute, and how. This sets you up for success - you can avoid duplicating
 an effort that may already be underway, adding a feature that may be rejected,
 or heading down a path that you would be steered away from at review time. The
@@ -37,7 +37,7 @@ Be sure to practice [good git commit hygiene] as you make your changes. All but
 the smallest changes should be broken up into a few commits that tell a story.
 Use your git commits to provide context for the folks who will review PR, and
 the folks who will be spelunking the codebase in the months and years to come.
-Ensure each of your commits is signed-off by using `git commit -s`. Function Clarity
+Ensure each of your commits is signed-off by using `git commit -s`. FunctionClarity
 members highly values readable, idiomatic Go code. Familiarize yourself with
 the [Coding Style](#coding-style) section below and try to preempt any comments
 your reviewers would otherwise leave. Most repos will contain `Makefile`s or
