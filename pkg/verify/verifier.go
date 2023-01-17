@@ -121,7 +121,7 @@ func HandleVerification(client clients.Client, action string, funcIdentifier str
 }
 
 func verifyImage(client clients.Client, functionIdentifier string, o *options.VerifyOpts, pathToPublicKeys string, ctx context.Context) (string, error) {
-	funcHash, err := client.GetFuncImageURI(functionIdentifier)
+	funcHash, err := client.GetFuncHash(functionIdentifier)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch function hash for function: %s: %w", functionIdentifier, err)
 	}
