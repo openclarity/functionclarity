@@ -90,3 +90,9 @@ func ExtractZip(zipPath string, dstToExtract string) error {
 	}
 	return nil
 }
+
+func CleanDirectory(directory string) {
+	if err := os.RemoveAll(directory); err != nil {
+		fmt.Printf("failed to delete directory %v: %v", directory, err)
+	}
+}
