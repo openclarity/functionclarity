@@ -178,6 +178,7 @@ func (o *AwsClient) GetFuncCode(funcIdentifier string) (string, error) {
 	if err := utils.DownloadFile(contentName+".zip", result.Code.Location); err != nil {
 		return "", err
 	}
+	defer utils.CleanDirectory(utils.FunctionClarityHomeDir + zipFileName)
 	if err := utils.ExtractZip(utils.FunctionClarityHomeDir+zipFileName, utils.FunctionClarityHomeDir+contentName); err != nil {
 		return "", err
 	}
