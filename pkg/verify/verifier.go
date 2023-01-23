@@ -216,6 +216,7 @@ func verifyMultipleKeys(client clients.Client, pathToPublicKeys string, o *optio
 	verifyCommand *v.VerifyCommand) error {
 
 	publicKeysFolder, err := client.DownloadPublicKeys(pathToPublicKeys)
+	defer utils.CleanDirectory(publicKeysFolder)
 	if err != nil {
 		return fmt.Errorf("code verification error: %w", err)
 	}

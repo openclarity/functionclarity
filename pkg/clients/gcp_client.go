@@ -113,6 +113,7 @@ func (p *GCPClient) GetFuncCode(funcIdentifier string) (string, error) {
 
 	contentName := uuid.New().String()
 	zipFileName := contentName + ".zip"
+	defer utils.CleanDirectory(utils.FunctionClarityHomeDir + zipFileName)
 
 	if err := utils.DownloadFile(contentName+".zip", &url); err != nil {
 		return "", err
