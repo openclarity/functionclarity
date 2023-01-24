@@ -179,6 +179,7 @@ func verifyImage(client clients.Client, functionIdentifier string, o *options.Ve
 
 func verifyCode(client clients.Client, functionIdentifier string, o *options.VerifyOpts, pathToPublicKeys string, pathToSignatures string, ctx context.Context) (string, error) {
 	codePath, err := client.GetFuncCode(functionIdentifier)
+	defer utils.CleanDirectory(codePath)
 	if err != nil {
 		return "", fmt.Errorf("verify code: failed to fetch function code for function: %s: %w", functionIdentifier, err)
 	}
@@ -215,6 +216,7 @@ func verifyMultipleKeys(client clients.Client, pathToPublicKeys string, o *optio
 	verifyCommand *v.VerifyCommand) error {
 
 	publicKeysFolder, err := client.DownloadPublicKeys(pathToPublicKeys)
+	defer utils.CleanDirectory(publicKeysFolder)
 	if err != nil {
 		return fmt.Errorf("code verification error: %w", err)
 	}
