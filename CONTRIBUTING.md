@@ -454,10 +454,34 @@ func TestExample(t *testing.T) {
 }
 ```
 
+## Attribution
+
+This guide was initially created from the
+[`kubernetes-template-project`][template-project].
+
+The style guide was copied from the amazing
+[CONTRIBUTING.md][crossplane-contributing] created by the
+[Crossplane][crossplane] project maintainers.
+
+Copied at [this commit][crossplane-contributing-commit], with attribution to
+the following Crossplane contributors:
+
+- [negz](https://github.com/negz)
+- [hasheddan](https://github.com/hasheddan)
+- [jbw976](https://github.com/jbw976)
+- [bassam](https://github.com/bassam)
+- [alvarodelvalle](https://github.com/alvarodelvalle)
+- [tv42](https://github.com/tv42)
+- [ravisantoshgudimetla](https://github.com/ravisantoshgudimetla)
+- [nchetan](https://github.com/nchetan)
+- [muvaf](https://github.com/muvaf)
+
 [contact]: #contact-information
 [build submodule]: https://github.com/upbound/build/
 [`kind`]: https://kind.sigs.k8s.io/
 [kubernetes-release-cycle]: https://kubernetes.io/releases/release/
+[crossplane-contributing]: https://github.com/crossplane/crossplane/blob/master/CONTRIBUTING.md
+[crossplane-contributing-commit]: https://github.com/crossplane/crossplane/blob/2c10ff0e81b83d609cfa81c3a24ce842ab234c38/CONTRIBUTING.md
 [good git commit hygiene]: https://www.futurelearn.com/info/blog/telling-stories-with-your-git-history
 [Developer Certificate of Origin]: https://github.com/apps/dco
 [code review comments]: https://github.com/golang/go/wiki/CodeReviewComments
