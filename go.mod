@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/functions v1.9.0
 	cloud.google.com/go/run v0.4.0
 	cloud.google.com/go/storage v1.28.0
-	github.com/aws/aws-lambda-go v1.35.0
+	github.com/aws/aws-lambda-go v1.38.0
 	github.com/aws/aws-sdk-go-v2 v1.17.3
 	github.com/aws/aws-sdk-go-v2/config v1.18.4
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.4
