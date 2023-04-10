@@ -4,6 +4,9 @@ repository:
   # The name of the repository. Changing this will rename the repository
   name: functionclarity
 
+  # Indicate the public archival status of the repository
+  archived: true
+
   # A short description of the repository that will show up on GitHub
   description: FunctionClarity is an infrastructure solution for signing and verifying serverless functions
 

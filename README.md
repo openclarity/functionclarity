@@ -1,4 +1,11 @@
 ![image](https://user-images.githubusercontent.com/109651023/189649537-95638785-618f-4c74-93af-2cafedec2f07.png)
+
+## Public Archival
+
+This project has been publicly archived. Please visit **[github.com/openclarity](https://github.com/openclarity)** or **[openclarity.io](https://openclarity.io)** to discover our other projects!
+
+## Description
+
 FunctionClarity is a code integrity solution for serverless functions. It allows users to sign their serverless functions and verify their integrity prior to their execution in their cloud environments. FunctionClarity includes a CLI tool, complemented by a "verification" function deployed in the target cloud account.  The solution is designed for CI/CD insertion, where the serverless function code/images can be signed and uploaded before the function is created in the cloud repository.
 
 This version supports serverless functions on AWS (Lambda functions) only, support for Azure functions and Google functions/cloud-run are part of the near-term roadmap plan.
